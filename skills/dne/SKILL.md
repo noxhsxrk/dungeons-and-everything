@@ -11,6 +11,7 @@ tools: Read, Write, Edit, Glob, Bash, AskUserQuestion
 > This skill runs in any agent that can read files and run shell commands (Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot, Cursor, Crush, Droid, Amp, Qwen, Goose, …). Everything it does goes through plain Python scripts and markdown files.
 >
 > - **`${CLAUDE_SKILL_DIR}`** = the directory containing this `SKILL.md`. Some hosts substitute it for you; if yours doesn't, use that absolute path everywhere these files write `${CLAUDE_SKILL_DIR}` (scripts are `python3 <skill dir>/scripts/<script>.py`).
+> - **Campaign files are NOT inside the skill folder.** They live under the data root (`~/.dne/` or `$DNE_CAMPAIGN_ROOT`): `python3 ${CLAUDE_SKILL_DIR}/scripts/paths.py campaign-dir <campaign>` prints a campaign's folder. Rules data comes only from the scripts (`lookup.py`, `worldkit.py show`, `character.py`) — never read or guess the JSON files directly.
 > - **`AskUserQuestion`** = your host's structured-question tool if it has one; otherwise ask in chat with numbered options and wait for the answer.
 > - **Background task** (the autorun wait loop) = your host's way to run a command in the background and be woken when it finishes (Claude Code: Bash `run_in_background`; Antigravity: `run_command` with `WaitMsBeforeAsync`). If your host has none, autorun is unavailable — play with `display: none` or have players type in chat.
 > - **Subagents** (autonomous companions) = your host's subagent tool if it has one; otherwise you play companions yourself (`companion mode <name> dm`).
