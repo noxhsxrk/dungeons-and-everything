@@ -25,8 +25,8 @@ if [[ -z "$CAMP" ]]; then
 fi
 
 # Resolve the campaign root the same way the Python side does.
-# DNE_CAMPAIGN_ROOT env var > default ~/.dne/campaigns
-ROOT="${DNE_CAMPAIGN_ROOT:-$HOME/.dne/campaigns}"
+# DNE_CAMPAIGN_ROOT is the DATA root (default ~/.dne); campaigns live under it in campaigns/
+ROOT="${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns"
 TAIL="$ROOT/$CAMP/session_tail.json"
 
 if [[ ! -f "$TAIL" ]]; then

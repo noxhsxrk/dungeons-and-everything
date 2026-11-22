@@ -59,6 +59,7 @@ import sys
 import subprocess
 import argparse
 import time
+from datetime import datetime, timezone
 from paths import find_campaign as _find_campaign, display_dir as _display_dir
 
 PUSH_STATS = str(_display_dir() / "push_stats.py")
@@ -108,7 +109,9 @@ def _load(campaign: str) -> dict:
             state = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
-    for ent in state.values():
+    for key, ent in state.items():
+        if key.startswith("_") or not isinstance(ent, dict):
+            continue   # bookkeeping like "_round_checks", not an entity
         ent["effects"] = [_migrate_effect(e) for e in ent.get("effects", [])]
     return state
 

@@ -44,10 +44,9 @@ def _resolve_campaign_root() -> Path:
     """Mirror paths.py logic without importing the skill (this script is
     self-contained so the SKILL-commands.md backstop can run even when
     /dne is dead)."""
-    env = os.environ.get("DNE_CAMPAIGN_ROOT")
-    if env:
-        return Path(env).expanduser()
-    return Path.home() / ".dne" / "campaigns"
+    env = os.environ.get("DNE_CAMPAIGN_ROOT", "").strip()
+    root = Path(env).expanduser() if env else Path.home() / ".dne"
+    return root / "campaigns"   # DNE_CAMPAIGN_ROOT is the data root, as in paths.py
 
 
 def main() -> int:

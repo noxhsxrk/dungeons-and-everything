@@ -50,7 +50,13 @@ CAMPAIGN_FILES = [
     "battlemap.json",
     "events.jsonl",
     ".economy_ledger.json",
+    "calendar.json",
+    "xp-ledger.jsonl",
+    "worldkit.json",
 ]
+
+#: What snapshots tracked before "tracked" was recorded in meta.json.
+_LEGACY_TRACKED = [f for f in CAMPAIGN_FILES if f not in ("calendar.json", "xp-ledger.jsonl", "worldkit.json")]
 
 # Optional runtime display files to snapshot alongside campaign state
 RUNTIME_FILES = [
@@ -142,6 +148,7 @@ def save_snapshot(campaign: str, label: str = "", keep: int = MAX_SNAPSHOTS_DEFA
         "label": label.strip(),
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "files": files_saved,
+        "tracked": list(CAMPAIGN_FILES),
         "characters": chars_saved,
         "runtime_files": rt_saved,
         "dir": str(snap_dir),
@@ -227,13 +234,16 @@ def undo_snapshot(
     if not dry_run:
         # 1. Restore campaign files (and remove files that didn't exist at that turn)
         snap_camp = snap_dir / "campaign"
+        # Only files this snapshot was taking care of: one saved before a file joined
+        # CAMPAIGN_FILES must not delete it (e.g. calendar.json, worldkit.json).
+        tracked = set(target.get("tracked") or _LEGACY_TRACKED)
         for rel in CAMPAIGN_FILES:
             src = snap_camp / rel
             dst = cdir / rel
             if src.exists():
                 shutil.copy2(src, dst)
                 restored_files.append(rel)
-            elif dst.exists():
+            elif dst.exists() and rel in tracked:
                 dst.unlink()
                 removed_files.append(rel)
 
