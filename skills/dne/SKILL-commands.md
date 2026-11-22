@@ -13,9 +13,9 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
    - `Display + autorun (ngrok) (Recommended / Default)` → `bash ${CLAUDE_SKILL_DIR}/display/start-display.sh --ngrok`, print public ngrok HTTPS URL, set `_display_running = true`, write `autorun: true` to `state.md → ## Session Flags`, then `python3 ${CLAUDE_SKILL_DIR}/display/push_stats.py --clear`. Always enter the autorun wait loop (`autorun_wait.py`) at the end of each turn.
    - `Display + autorun (LAN)` → `bash ${CLAUDE_SKILL_DIR}/display/start-display.sh --lan`, print both URLs, set `_display_running = true`, write `autorun: true` to `state.md → ## Session Flags`, then `--clear` as above.
    - `Display (local)` → `bash ${CLAUDE_SKILL_DIR}/display/start-display.sh`, print URL, set `_display_running = true`, then `--clear` as above.
-   - `No display` → continue without display.
+   - `No display` → continue without display; write `display: none` and `autorun: false`.
 
-   *(Standing rule: Default to `Display + autorun (ngrok)` whenever requested or dismissed so players can play directly from mobile devices seamlessly).*
+   Record the choice as `display: ngrok|lan|local|none` in `state.md → ## Session Flags` (written in step 4). If the question is dismissed, use `Display + autorun (ngrok)`; an explicit `No display` always wins over that default.
 
    **Q2 *"Dice rolls?"*** — set how PC d20s are handled (see SKILL.md "Dice convention"):
    - `Players roll their own` (default) → write `roll_mode: players` to `state.md → ## Session Flags`. You will call for each PC roll and wait — never auto-roll a PC.
@@ -24,42 +24,43 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
    Default to `roll_mode: players` if the question is dismissed.
 2. **Ruleset selection.** Ask: *"D&D 5e ruleset for this campaign? **2014** (SRD 5.1, default — full mechanics, classic Player's Handbook structure) or **2024** (SRD 5.2, weapon mastery + origin feats + background ASIs + revised exhaustion)?"* Default to `2014` if no answer or ambiguous. Write the chosen value to `state.md` header line as `**Ruleset:** 2014` or `**Ruleset:** 2024`.
 
-   If 2024 was chosen: verify the dataset exists with `ls ${CLAUDE_SKILL_DIR}/data/dnd5e_srd_2024.json`. If missing, run `python3 ${CLAUDE_SKILL_DIR}/scripts/build_srd.py --ruleset 2024` (one-time, ~3 min). Until the dataset exists, lookup-based features will fall back to 2014.
-3. `mkdir -p ~/.dne/campaigns/<name>/characters` (or under `$DNE_CAMPAIGN_ROOT`)
-4. Copy and populate templates from `${CLAUDE_SKILL_DIR}/templates/` — state.md, world.md, npcs.md, session-log.md (worldkit.json is written in step 7). The state.md header keeps the `**Ruleset:**` field set in step 2.
-5. Ask: **party size** and **starting level**
+   If 2024 was chosen: verify the dataset exists with `ls ${CLAUDE_SKILL_DIR}/data/dnd5e_srd_2024.json`. If missing, offer to run `python3 ${CLAUDE_SKILL_DIR}/scripts/build_srd.py --ruleset 2024` (one-time, ~3 min, needs network). Until it exists, `lookup.py` uses the 2014 SRD automatically (it prints a one-line notice) — World Kit content is unaffected.
+3. `mkdir -p "${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/characters"`
+4. Copy templates from `${CLAUDE_SKILL_DIR}/templates/` — state.md, world.md, npcs.md, npcs-full.md, session-log.md (worldkit.json is written in step 7). The state.md header keeps the `**Ruleset:**` field from step 2 and the Session Flags from step 1. Template wording is fantasy-neutral but generic — rewrite any placeholder that doesn't fit the world once step 6 has defined it.
+5. Ask: **party size** and **starting level**. Write them to the state.md header (`**Party size:**`, `**Starting level:**`).
 6. **World Wizard — the players define the world.** Ask one open question (prose, not a menu): *"What world are we playing in? Describe it however you like — genre, era, what happened to it, who the players are, how it starts. Or say **classic fantasy** for traditional D&D."* Accept anything from one word (*"cyberpunk"*) to a full setting document. If `[theme]` was supplied, treat it as the start of this description and ask only what's missing.
 
-   Then, in one message, confirm or fill four dials (pre-fill everything the description already answers; randomise any blank via dice.py and log `"d6=N → [result]"` in world.md):
+   Then, in one message, confirm or fill four dials (pre-fill everything the description already answers). Randomise a blank only if the player asks you to choose — roll with `dice.py` on the die given and log `"dN=X → [result]"` in world.md:
    - **Genre tags:** free-form, 1–4 (e.g. `sci-fi · post-apocalyptic · survival · mystery`)
-   - **Tone:** `grimdark / dark / heroic / horror / political / swashbuckling / cosmic / noir / hopeful` (or the player's own word)
-   - **Power level:** how common and strong the world's supernatural or advanced powers are (magic, tech, psionics, mutation) — `none / low / medium / high`
-   - **Danger level:** `lethal / gritty / standard / heroic`
+   - **Tone:** `grimdark / dark / heroic / horror / political / swashbuckling / cosmic / noir / hopeful` (or the player's own word) — random: d10, 1–9 in that order, 10 = re-roll
+   - **Power level:** how common and strong the world's supernatural or advanced powers are (magic, tech, psionics, mutation) — `none / low / medium / high` (random: d4 in that order). It shapes the kit in step 7: `none` → no casting chassis at all; `low` → at most 2 casting classes, spells to level 3; `medium` → up to half the classes cast; `high` → most classes may cast.
+   - **Danger level:** `lethal / gritty / standard / heroic` (random: d4 in that order). Also set the matching Table Dial `difficulty` in Session Flags: lethal → `deadly`, gritty → `hard`, standard → `standard`, heroic → `easy`. Mention the other Table Dials (`spotlight`, `pacing` — SKILL.md) in the same message; leave them unset unless the player picks.
 
    **Classic fantasy** → skip step 7; the bundled SRD is the world's content (no `worldkit.json`). Continue at step 7b.
 
-7. **World Kit — build the world's infrastructure (Opus).** Everything a 5e table normally takes from the Player's Handbook and Monster Manual is re-imagined for *this* world and written to `<campaign>/worldkit.json` (schema: SKILL.md → *World Kit*; full example: `${CLAUDE_SKILL_DIR}/templates/worldkit.example.json`). Derive every entry from the player's description — reuse their names, factions, enemies and roles verbatim where they gave them.
+7. **World Kit — build the world's infrastructure (Strongest tier).** Everything a 5e table normally takes from the Player's Handbook and Monster Manual is re-imagined for *this* world and written to `<campaign>/worldkit.json` (schema: SKILL.md → *World Kit*; full example: `${CLAUDE_SKILL_DIR}/templates/worldkit.example.json`). Derive every entry from the player's description — reuse their names, factions, enemies and roles verbatim where they gave them.
    - **`_meta`** — `name`, `genre`, one-line `premise`, `base_ruleset` (the step-2 ruleset), `srd_fallback: false`.
    - **`lexicon`** — 8–15 renames of 5e terms that would break immersion here (spell, spell slot, cantrip, magic, gold, long/short rest, temple, tavern, dungeon…). **`currency`** — the world's money.
    - **`skills`** — rename only the SRD skills whose names don't fit (Arcana, Religion, Nature, Animal Handling usually; keep the governing ability).
    - **`races`** — 3–6 origins/peoples/backgrounds-of-birth that exist in this world; each with legal 5e ability bonuses (total +3: +2/+1, or +1/+1/+1), speed, size, 2–3 traits on par with SRD racial traits, languages. If the world has only humans, make origins out of upbringing or augmentation.
-   - **`classes`** — 5–8 professions players would plausibly be (use the roles the player named — e.g. soldier, mechanic, infiltrator, ex-EDEN technician). Each picks the SRD **`chassis`** whose mechanics fit (armed fighter → `fighter`, stealth specialist → `rogue`, tech caster → `wizard`, healer → `cleric`, scout → `ranger`, unarmed brawler → `monk`, berserker → `barbarian`, face/charmer → `bard`, innate power → `sorcerer`, bargain-with-entity → `warlock`, nature/mutation → `druid`, crusader → `paladin`). Add `power_source` (`none`, `tech`, `psionic`, …) and a one-line `description`. If a chassis casts spells, the class's powers come from the kit's `spells`.
+   - **`classes`** — 5–8 professions players would plausibly be (use the roles the player named — e.g. soldier, mechanic, infiltrator, ex-EDEN technician). Each picks the SRD **`chassis`** whose mechanics fit (armed fighter → `fighter`, stealth specialist → `rogue`, tech caster → `wizard`, healer → `cleric`, scout → `ranger`, unarmed brawler → `monk`, berserker → `barbarian`, face/charmer → `bard`, innate power → `sorcerer`, bargain-with-entity → `warlock`, nature/mutation → `druid`, crusader → `paladin`). Add `power_source` (`none`, `tech`, `psionic`, …) and a one-line `description`. If a chassis casts spells, the class's powers come from the kit's `spells`. A role the player named that is really a birth or people ("half-kinnaree", "tunnel-born") becomes an origin, not a class. In a `power: none` world only fighter, rogue, barbarian and monk qualify (ranger and paladin cast from level 2); a non-magical healer is a rogue or fighter whose description leans on Medicine plus the kit's healing gear. Chassis features that are plainly supernatural (a monk's Empty Body, a totem barbarian's rituals) are re-described as training or grit in the class `description`, or noted as "not available in this world" — never silently kept.
    - **`backgrounds`** — 4–6, each with exactly 3 `ability_options` and 2 skills.
    - **Ability increases follow the ruleset, never both:** 2014 → the origin's `ability_bonuses` apply (`calc --race`) and background `ability_options` are ignored; 2024 → the background's +2/+1 or +1/+1/+1 applies (`calc --background … --background-asi …`) and origins grant traits only. Write both fields anyway so the kit works under either ruleset.
-   - **`classes[*].subclass_label` + `subclasses`** — the world's own specialisations (2–3 per class, each `{name, description}` noting the SRD subclass it re-skins). `character.py levelup -c` offers these instead of the chassis's SRD subclasses.
-   - **`spells`** — the world's powers: at least the cantrips + levels 1–3 every casting chassis in the kit needs (≈4–6 per level). Re-skin an SRD spell's exact mechanics and note `(chassis: <SRD spell>)` at the end of the description so rulings stay 5e-exact. In a world with no powers at all, use only non-casting chassis and omit `spells`.
-   - **`equipment`** — signature weapons (5e damage dice/properties), 3–4 armors with valid `ac` strings, key gear and consumables, priced in the world currency.
-   - **`monsters`** — 8–15 threats spanning CR 1/8 → the campaign's endgame CR, full 5e stat blocks (`cr`, `xp` matching the CR, `hp`, `hp_dice`, `ac`, six scores, `speed`, `type`, `description` with actions), `biomes` (the world's own location types, e.g. `tunnels`, `ruins`, `surface`) and a tactical `role` (`brute|skirmisher|ranged|caster|support`). The player's named enemies are mandatory entries; scale "unbeatable" ones (a Titan) as set-piece CRs the party should avoid, not fight.
+   - **`classes[*].subclass_label` + `subclasses`** — the world's own specialisations, 2–3 per class, each `{name, description}`. The first re-skins the chassis's SRD subclass (the only one the bundled data covers — e.g. Champion, Thief, Life Domain, Evocation); the others may re-skin any 5e subclass the table knows, and must then spell out their key features in the description because the engine has no data for them. `character.py levelup -c` offers these instead of the chassis's SRD subclasses.
+   - **`class_options`** (warlock chassis only) — re-skin the invocations the world's warlock-type classes will meet (at least the level-2 ones): `{name, index, kind: "invocation", level, description … (chassis: <SRD invocation>)}`. Level-up then lists these instead of SRD invocation names.
+   - **`spells`** — the world's powers, counted **per casting class**: cantrips for every chassis that has them (at least its starting count), at least 4 level-1 powers per class (6 for a wizard chassis — the starting spellbook), and 3+ per class at levels 2 and 3. One power may list several classes. Re-skin an SRD spell's exact mechanics and end the description with `(chassis: <SRD spell name>)`; the validator checks that name exists in the bundled SRD 5.1 (Hex, for example, does not — use Hellish Rebuke or Bane instead). In a world with no powers, use only non-casting chassis and omit `spells`: with `srd_fallback: false` no SRD spell or magic item is reachable in this campaign.
+   - **`equipment`** — signature weapons (5e damage dice/properties), 3–4 armors with valid `ac` strings, key gear and consumables, priced in the world currency. 1 world coin = 1 gp mechanically, so set prices on the 5e scale (a revolver ≈ a crossbow ≈ 25–50, plate-grade armor ≈ 1,500) and starting funds per the chassis's 5e starting gold; in a realistic modern world, say in the lexicon what one coin is ("1 = about $10"). A shield is an armor record with `ac: "AC +2"` and is worn with `calc --shield`.
+   - **`monsters`** — 8–15 threats spanning CR 1/8 → the campaign's endgame CR, full 5e stat blocks (`cr`, `xp` matching the CR, `hp`, `hp_dice`, `ac`, six scores, `speed`, `type`, `description` with actions), `biomes` (the world's own location types, e.g. `tunnels`, `ruins`, `surface`) and a tactical `role` (`brute|skirmisher|ranged|caster|support`). Give every biome a spread of CRs (at least one low, one mid) so `encounter_gen.py` can fill a budget there. The player's named enemies are mandatory entries; scale "unbeatable" ones (a Titan) as set-piece CRs the party should avoid, not fight.
 
-   **Validate before moving on:** `python3 ${CLAUDE_SKILL_DIR}/scripts/worldkit.py validate <campaign>`. Fix every reported error and re-run until it prints `OK`. Then `worldkit.py show <campaign>` and give the player a short tour (origins, classes, signature threats) — they can ask for changes now; re-validate after any edit.
+   **Validate before moving on:** `python3 ${CLAUDE_SKILL_DIR}/scripts/worldkit.py validate <campaign>`. Fix every error and re-run until it prints `OK`; treat its `warning:` lines as a checklist against the counts above. Then `worldkit.py show <campaign>` and give the player a short tour from its output (origins, classes and their specialisations, signature threats) — they can ask for changes now; re-validate after any edit.
 
-7b. **World Foundations** — geography/biome/climate, power system (how the world's magic/tech/psionics works and what it costs), beliefs (gods, ideologies, AIs, cults — whatever this world worships or fears), calendar. Write to `## World Foundations` in world.md. Seed `state.md → ## World State → In-world date`.
+7b. **World Foundations** — geography/biome/climate, power system (how the world's magic/tech/psionics works and what it costs), beliefs (gods, ideologies, AIs, cults — whatever this world worships or fears), calendar. Write to `## World Foundations` in world.md. Seed `state.md → ## World State → In-world date`, then `python3 ${CLAUDE_SKILL_DIR}/scripts/calendar.py -c <campaign> init --date "<day month year>" --time "<time of day>" --months "<the world's month names>" --month-length <N> --day-names "<the world's day names>"` (real-world calendars: Gregorian names, 31-day months are fine) so timed effects and the in-game clock work from session 1.
 8. **Three Truths** — one settlement, one nearby threat, one mystery (with clue trail). Write to respective sections in world.md.
 9. **Threat Escalation Arc** — fill the five-stage table in world.md immediately after threat generation. Set current stage to 1. Write `Threat arc stage: 1 — Now` to `state.md → ## World State`.
 10. **2 Factions** — archetype, all fields including current activity. Write to `## Factions` in world.md. Write one-line faction states to `state.md → ## World State`.
-11. **3 NPCs with relationship web** — full entries (role, stats, demeanor, motivation, secret, speech quirk, faction, current goal, schedule, personality axes). Generate all three first, then fill Relationships (every NPC needs ≥2 links to others). Update index table.
-12. **3–5 Quest Seeds** from threat, factions, mystery, NPC motivations. Write to `## Quest Seed Bank` in world.md.
-13. **Dynamic Campaign Arc** — auto-generate the arc from all world data just created. Use Opus for this step. Ask: *"Generate a committed narrative arc? [y/n — recommended]"*
+11. **3 NPCs with relationship web** — for each proposed name run `python3 ${CLAUDE_SKILL_DIR}/scripts/name_registry.py check "<name>"` and regenerate duplicates. Write full entries (role, stats, demeanor, motivation, secret, speech quirk, faction, current goal, schedule, personality axes) to **`npcs-full.md`**, one `## <Name>` section each; write one index row per NPC to **`npcs.md`**. Generate all three first, then fill Relationships (every NPC needs ≥2 links to others). Then `name_registry.py add --name "<name>" --type npc --campaign <campaign> --session 0` for each.
+12. **3–5 Quest Seeds** from threat, factions, mystery, NPC motivations. Write to `## Quest Seed Bank` in world.md. Then turn the strongest 3 into `## Adventure Nodes` (situation, ways in, what happens if the party never arrives, connections).
+13. **Dynamic Campaign Arc** — auto-generate the arc from all world data just created. Use the Strongest tier for this step. Ask: *"Generate a committed narrative arc? [y/n — recommended]"*
 
    **If yes:** Drawing from theme, threat arc stages, factions, Three Truths, NPC motivations, and quest seeds, derive:
    - **`theme`** — one sentence: what is this story ultimately about? Not the threat — its meaning.
@@ -95,7 +96,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
    - `Display + autorun (ngrok) (Recommended / Default)` → `bash ${CLAUDE_SKILL_DIR}/display/start-display.sh --ngrok` (or `bash ${CLAUDE_SKILL_DIR}/display/start-ngrok.sh`), print public ngrok HTTPS URL, set `_display_running = true`, write `autorun: true` to `state.md → ## Session Flags`; enter the autorun wait (`autorun_wait.py`) after the recap and at the end of every turn.
    - `Display + autorun (LAN)` → `bash ${CLAUDE_SKILL_DIR}/display/start-display.sh --lan`, print both URLs, set `_display_running = true`, write `autorun: true` to `state.md → ## Session Flags`; enter the autorun wait.
    - `Display (local)` → `bash ${CLAUDE_SKILL_DIR}/display/start-display.sh`, print URL, set `_display_running = true`.
-   - `No display` → continue without display.
+   - `No display` → continue without display; write `display: none` and `autorun: false` to `state.md → ## Session Flags` (other choices: write `display: ngrok|lan|local`).
 
    *(Standing rule: Default to `Display + autorun (ngrok)` so players can immediately play via phone over internet).*
 
@@ -682,7 +683,7 @@ The script always backs up the campaign to `<name>.backup-rename-<old-slug>-YYYY
 After rename, the name registry is updated: old name marked `retired_from` this campaign with `replaced_by` pointing at the new slug; new name added with this campaign's current session as `first_session`.
 
 ## `/dne registry <subcommand>`
-View and manage the cross-campaign name registry at `~/.dne/.name_registry.json`. Used by `/dne npc rename --random` to never reuse a name and (in a follow-up) by `/dne new` / `/dne character new` / `/dne npc <new>` to flag duplicates at creation time.
+View and manage the cross-campaign name registry at `<DNE_CAMPAIGN_ROOT>/.name_registry.json` (default `~/.dne/`). Used by `/dne npc rename --random` to never reuse a name, and by `/dne new` step 11 and `/dne character new` / `/dne npc <new>` to flag duplicates at creation time.
 
 Maps to: `python3 ${CLAUDE_SKILL_DIR}/scripts/name_registry.py <subcommand> [args]`.
 
@@ -798,7 +799,7 @@ Manage the dynamic campaign arc. The `advance`/`revise`/`new` subcommands are ac
   - **Yes** → run `/dne arc new` (see below).
   - **No** → set `type: sandbox` and clear `outstanding_beats`. The campaign continues open-ended from the resolution state.
 
-- **`/dne arc new`** — generate a new arc for a campaign that has completed its previous arc. Use Opus for this step.
+- **`/dne arc new`** — generate a new arc for a campaign that has completed its previous arc. Use the Strongest tier for this step.
 
   The new arc must be **intentionally distinct** — not a continuation of the same conflict, but a new chapter that grows from the changed world. The resolution of arc N is the status quo of arc N+1.
 
@@ -939,11 +940,11 @@ Toggle autorun (taxi) mode — Antigravity drives the turn loop automatically wh
 1. Write `autorun: true` to `state.md → ## Session Flags`.
 2. Confirm to the DM: *"Autorun enabled. Players submit via the display; I'll pick up each action automatically. Send me a message at any time to take control of a turn."*
 3. If the user specified an interval (e.g. `/dne autorun on 45`), write `autorun_interval: 45` to `state.md → ## Session Flags`. Default is 60 if omitted.
-4. Launch `autorun_wait.py` as an asynchronous background task (`WaitMsBeforeAsync: 500`):
+4. Launch `autorun_wait.py` as a background task (Antigravity: `run_command` with `WaitMsBeforeAsync: 500`; Claude Code: Bash with `run_in_background: true`):
    ```bash
    python3 ${CLAUDE_SKILL_DIR}/display/autorun_wait.py
    ```
-   When the player submits on the web, Antigravity will automatically be woken up with the `<SYSTEM_MESSAGE>` containing the player's action.
+   When the player submits on the web, the host wakes you with the background task's completion containing the player's action.
 
 The display shows a pie-clock countdown draining from full to empty over the interval. Green pulse = actively waiting. Configurable via `autorun_interval: N` in state.md (default 60 seconds).
 

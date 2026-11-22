@@ -1,10 +1,11 @@
 # Campaign: <name>
 **Created:** <date>  **Last session:** —  **Session count:** 0  **Ruleset:** 2014
+**World Kit:** <worldkit.json | none — classic SRD fantasy>  **Party size:** <N>  **Starting level:** <N>
 
 ## Current Situation
 - **Location:**
 - **In-world date/time:**
-- **Party:** <Name> — <Race> <Class> <Level> | HP X/X | AC X | <resources>
+- **Party:** <Name> — <Origin/Race> <Class> <Level> | HP X/X | AC X | <resources>
 - **Party status:**
 
 ## Pinned Facts
@@ -159,10 +160,11 @@ revision_log: []
 *(leave empty until the first arc completes)*
 
 ## Session Flags
-- roll_mode: auto
-- autorun: true
+- roll_mode: players
+- display: none
+- autorun: false
 - autorun_interval: 60
-*(tutor_mode, autorun, autorun_interval, tts_voice, sfx_languages, autosave — session-scoped flags set via /dne commands or by the display companion)*
+*(display: none|local|lan|ngrok — the mode chosen at /dne new or /dne load; autorun is only ever true with a display running. roll_mode: players|auto. tutor_mode, autorun, autorun_interval, tts_voice, sfx_languages, autosave — session-scoped flags set via /dne commands or by the display companion)*
 *(autosave: on|off — default on. Governs the behind-the-scenes continuity checkpoint (Live State Flags + graph + session tail). Toggle with /dne autosave on|off.)*
 
 ## DM Notes (hidden from players)

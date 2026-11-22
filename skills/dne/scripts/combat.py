@@ -140,6 +140,9 @@ def resolve_attack(atk_bonus: int, target_ac: int, dmg_notation: str, is_crit: b
     }
 
     if hit:
+        # A damage type may follow the dice ("1d10 Piercing", as weapon records write it).
+        dmg_notation, _, dmg_type = dmg_notation.strip().partition(" ")
+        dmg_type = dmg_type.strip()
         dmg, rolls = dice(dmg_notation)
         if crit:
             # Double the dice rolls on crit
@@ -154,6 +157,7 @@ def resolve_attack(atk_bonus: int, target_ac: int, dmg_notation: str, is_crit: b
         result["damage"] = max(0, dmg)
         result["damage_rolls"] = rolls
         result["damage_notation"] = dmg_notation
+        result["damage_type"] = dmg_type
 
     return result
 
@@ -174,7 +178,8 @@ def format_attack(r: dict) -> str:
 
     if r.get("damage") is not None:
         note = " (crit: doubled dice)" if r["crit"] else ""
-        lines.append(f"Damage: {r['damage_rolls']} + mod = {r['damage']} {r['damage_notation'].split('+')[0].split('-')[0][1:]}dmg{note}")
+        dtype = f" {r['damage_type'].lower()}" if r.get("damage_type") else ""
+        lines.append(f"Damage: {r['damage_rolls']} ({r['damage_notation']}) = {r['damage']}{dtype} damage{note}")
 
     if r.get("mastery_text"):
         lines.append(f"Mastery: {r['mastery_text']}")

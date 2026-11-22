@@ -124,14 +124,16 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/combat.py attack --atk 5 --ac 13 --dmg 1d8+3
 
 ## World Kit Script — `scripts/worldkit.py`
 ```bash
-# Validate a campaign's worldkit.json (or a path) — exit 0 "OK: …", exit 1 + one error per line
+# Validate a campaign's worldkit.json (or a path) — exit 0 "OK: …" (+ "warning: …" lines for
+# step-7 counts / missing subclasses / currency), exit 1 + one error per line
 python3 ${CLAUDE_SKILL_DIR}/scripts/worldkit.py validate <campaign | path/to/worldkit.json>
 
-# Summary: meta, counts, class → chassis, lexicon
+# Readable tour: origins + bonuses, classes → chassis + specialisations, backgrounds, powers per class,
+# gear, threats by CR with role and biomes, lexicon, currency
 python3 ${CLAUDE_SKILL_DIR}/scripts/worldkit.py show <campaign>
 ```
 Every rules script below that takes `-c/--campaign` reads the campaign's `worldkit.json` ahead of the SRD:
-`lookup.py --campaign <c>` (categories the kit defines replace the SRD unless `_meta.srd_fallback: true`; extra aliases `origin`, `class`, `background`, `power`/`protocol`), `character.py calc|levelup -c <c>` (world origins, classes via `chassis`, backgrounds, armor, renamed skills), `encounter_gen.py -c <c> --biome <world biome>` (only kit monsters; biome is free-form, matched against each monster's `biomes`).
+`lookup.py --campaign <c>` (categories the kit defines replace the SRD unless `_meta.srd_fallback: true`; extra aliases `origin`, `class`, `background`, `power`/`protocol`), `character.py calc|levelup -c <c>` (world origins, classes via `chassis`, backgrounds, armor, renamed skills), `encounter_gen.py -c <c> --biome <world biome>` (only kit monsters; biome is free-form, matched against each monster's `biomes` — an unknown biome exits 2 and lists the kit's biomes). `lookup.py` exits 1 on "No match".
 
 ---
 
@@ -613,10 +615,10 @@ Validates that every chapter id in `source-index.md` has a matching `source/<id>
 ### Autorun Wait Loop — `display/autorun_wait.py`
 Blocks until player input is queued from the web/mobile companion, session invalidates, or 9 minutes timeout:
 ```bash
-# In Antigravity: launch as asynchronous background task (WaitMsBeforeAsync: 500)
+# Launch as a background task (Antigravity: run_command, WaitMsBeforeAsync: 500; Claude Code: Bash run_in_background)
 python3 ${CLAUDE_SKILL_DIR}/display/autorun_wait.py
 ```
-When player input arrives in `.input_queue`, prints the sanitized action and exits, triggering an automatic reactive wakeup in Antigravity.
+When player input arrives in `.input_queue`, prints the sanitized action and exits, which wakes the host session (Antigravity system message / Claude Code task notification).
 
 ### Check Input Queue — `display/check_input.py`
 Non-blocking check to inspect and drain any queued player inputs from `.input_queue`:

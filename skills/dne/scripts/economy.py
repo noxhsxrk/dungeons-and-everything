@@ -43,7 +43,32 @@ from paths import find_campaign
 COIN_TO_CP = {"pp": 1000, "gp": 100, "ep": 50, "sp": 10, "cp": 1}
 
 
+#: World Kit currency unit (abbr) for the campaign being worked on; None = classic gp/sp/cp.
+#: 1 world coin = 1 gp mechanically (SKILL.md → World Kit).
+_WORLD_UNIT = None
+
+
+def _use_world_currency(campaign: str) -> None:
+    global _WORLD_UNIT
+    _WORLD_UNIT = None
+    try:
+        import worldkit
+        kit = worldkit.load(campaign)
+    except (ImportError, ValueError):
+        return
+    cur = (kit or {}).get("currency") or {}
+    _WORLD_UNIT = (cur.get("abbr") or cur.get("name") or "").strip() or None
+
+
+def _units_pattern() -> str:
+    units = "pp|gp|ep|sp|cp"
+    if _WORLD_UNIT:
+        units = re.escape(_WORLD_UNIT.lower()) + "|" + units
+    return units
+
+
 def _find_char_file(campaign: str, char_name: str) -> pathlib.Path:
+    _use_world_currency(campaign)
     cdir = find_campaign(campaign) / "characters"
     if not cdir.exists():
         raise FileNotFoundError(f"Characters directory not found: {cdir}")
@@ -77,7 +102,7 @@ def parse_coin_amount(spec: str) -> int:
     sign = -1 if s.startswith("-") else 1
     if s[0] in "+-":
         s = s[1:].strip()
-    tokens = re.findall(r"(\d+)\s*(pp|gp|ep|sp|cp)?", s)
+    tokens = re.findall(rf"(\d+(?:\.\d+)?)\s*({_units_pattern()})?", s)
     if not tokens:
         raise ValueError(f"Invalid coin amount: {spec!r}")
     total_cp = 0
@@ -85,7 +110,7 @@ def parse_coin_amount(spec: str) -> int:
         if not num_s:
             continue
         u = unit or "gp"
-        total_cp += int(num_s) * COIN_TO_CP[u]
+        total_cp += round(float(num_s) * COIN_TO_CP.get(u, 100))   # world unit = gp
     return sign * total_cp
 
 
@@ -93,6 +118,9 @@ def format_cp(total_cp: int) -> str:
     """Format copper pieces into canonical 'Xgp Ysp Zcp' string."""
     sign = "-" if total_cp < 0 else ""
     rem = abs(total_cp)
+    if _WORLD_UNIT:
+        whole, frac = divmod(rem, 100)
+        return f"{sign}{whole}{'.%02d' % frac if frac else ''} {_WORLD_UNIT}"
     gp, rem = divmod(rem, 100)
     sp, cp = divmod(rem, 10)
     return f"{sign}{gp}gp {sp}sp {cp}cp"
@@ -104,8 +132,14 @@ def _read_currency_cp(text: str) -> tuple[int, "re.Match | None"]:
         return 0, None
     raw = m.group(2).strip()
     total_cp = 0
-    for num_s, unit in re.findall(r"(\d+)\s*(pp|gp|ep|sp|cp)", raw.lower()):
+    low = raw.lower()
+    for num_s, unit in re.findall(r"(\d+)\s*(pp|gp|ep|sp|cp)\b", low):
         total_cp += int(num_s) * COIN_TO_CP[unit]
+    if _WORLD_UNIT and not total_cp:
+        # "120 sc", "12.50 sc" or a bare number in a World Kit campaign
+        m2 = re.search(rf"(\d+(?:\.\d{{1,2}})?)\s*(?:{re.escape(_WORLD_UNIT.lower())})?", low)
+        if m2:
+            total_cp = round(float(m2.group(1)) * 100)
     return total_cp, m
 
 
