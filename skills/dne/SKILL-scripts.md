@@ -90,7 +90,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py award \
 **Encounter types:** `combat` `noncombat` (both use the same difficulty threshold table)
 **Monster CR formats:** `1/4`, `0.25`, `1/2`, `0.5`, `1/8`, `0.125`, or integer (`1`, `5`, `10`)
 **Monster count:** omit for 1 (e.g. `"dragon:10"`); explicit for groups (e.g. `"goblin:1/4:3"`)
-**Monster multiplier** (applied automatically): ×1 (1), ×1.5 (2), ×2 (3–6), ×2.5 (7–10), ×3 (11–14), ×4 (15+)
+**Monster multiplier** (applied automatically): ×1 (1), ×1.5 (2), ×2 (3–6), ×2.5 (7–10), ×3 (11–14), ×4 (15+) — rates difficulty only (each PC is awarded raw monster XP ÷ party size). Parties of fewer than 3 use the next step up, 6+ the next step down (DMG).
 
 `award` updates the character file XP field, flags LEVEL UP PENDING if a threshold is crossed, and pushes XP to the display via `push_stats.py`. The `--note` label prints to terminal only — not stored.
 
@@ -101,12 +101,19 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py award \
 # Roll initiative and print tracker
 python3 ${CLAUDE_SKILL_DIR}/scripts/combat.py init '<JSON>'
 # JSON: [{"name":"Flerb","dex_mod":0,"hp":12,"ac":16,"type":"pc"}, ...]
+#   optional per entry: "roll": 14 (a player's own d20, roll_mode: players), "init_bonus": 2 (Alert etc.),
+#   "max_hp": 24 (when current hp is below max)
 
 # Reprint tracker from saved state
 python3 ${CLAUDE_SKILL_DIR}/scripts/combat.py tracker '<JSON>' <round_num>
 
 # Resolve a single attack
 python3 ${CLAUDE_SKILL_DIR}/scripts/combat.py attack --atk 4 --ac 15 --dmg 2d6+2
+
+# A player's own d20 (roll_mode: players); advantage/disadvantage takes both naturals; Champion crits on 19+
+python3 ${CLAUDE_SKILL_DIR}/scripts/combat.py attack --atk 6 --ac 14 --dmg "1d10+4 piercing" --roll 17
+python3 ${CLAUDE_SKILL_DIR}/scripts/combat.py attack --atk 6 --ac 14 --dmg 1d8+4 --roll 4,17 --adv --crit-range 19
+# --dmg: dice/number terms joined by + or - (e.g. 1d6+5+1d4), optionally followed by a damage type word
 
 # Target paralyzed or unconscious and within 5 ft: any hit is a critical hit
 python3 ${CLAUDE_SKILL_DIR}/scripts/combat.py attack --atk 4 --ac 15 --dmg 2d6+2 --crit
@@ -150,6 +157,13 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/character.py calc --class fighter --level 1 
 
 # Armor Class from the SRD armor record (+ shield, + Defense fighting style; --armor none for unarmored)
 python3 ${CLAUDE_SKILL_DIR}/scripts/character.py calc --class fighter ... --armor chain-mail --shield --fighting-style defense
+
+# Rogue/bard expertise doubles proficiency; calc also prints Passive Perception and, for casters,
+# spellcasting ability, save DC, spell attack and slots
+python3 ${CLAUDE_SKILL_DIR}/scripts/character.py calc --class rogue ... --proficient Stealth Perception --expertise Stealth
+
+# Hit Dice with the player's own rolls (one per die)
+python3 ${CLAUDE_SKILL_DIR}/scripts/character.py hitdie --die d8 --con-mod 2 --hp 5 --max-hp 20 --remaining 3 --count 2 --roll 6,3
 
 # Level-up HP and bonus calculation, plus the choices the level owes
 # (ASI, subclass, invocations, pact boon, fighting style, retroactive CON HP)
@@ -336,6 +350,8 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c $CAMP effect advance 90m      
 
 # Typed modifier: Bless adds +1d4 to attacks and saves; dice.py / combat.py --effects apply it
 python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c $CAMP effect start "Piper" "Bless" 10r conc --mod +1d4 --on attack,save
+# An effect placed on a target that lasts "until the start/end of the caster's next turn" counts down on the caster's turn:
+python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c $CAMP effect start "Ghoul" "Vicious Mockery" 1r --until "Piper"
 
 # Rests (when there is no calendar; calendar.py rest does this for you)
 python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c $CAMP rest short   # +1 hour, effects keep running
@@ -382,6 +398,9 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/calendar.py -c $CAMP init \
 # Time advancement
 python3 ${CLAUDE_SKILL_DIR}/scripts/calendar.py -c $CAMP advance 8 hours
 python3 ${CLAUDE_SKILL_DIR}/scripts/calendar.py -c $CAMP advance 2 days
+python3 ${CLAUDE_SKILL_DIR}/scripts/calendar.py -c $CAMP advance 20 minutes
+# Real-world settings: init --gregorian --date "14 September 2077" (real month lengths and weekdays);
+# set an exact hour with: set "<date>" --hour 23
 python3 ${CLAUDE_SKILL_DIR}/scripts/calendar.py -c $CAMP rest short   # +1 hour
 python3 ${CLAUDE_SKILL_DIR}/scripts/calendar.py -c $CAMP rest long    # +8 hours
 # advance and rest also run tracker.py's timed effects down by the same time
@@ -648,6 +667,7 @@ Public URL is saved to `${CLAUDE_SKILL_DIR}/display/.ngrok_url`.
 python3 ${CLAUDE_SKILL_DIR}/scripts/turn_snapshot.py -c <campaign> save --label "Before ambush"
 python3 ${CLAUDE_SKILL_DIR}/scripts/turn_snapshot.py -c <campaign> list
 python3 ${CLAUDE_SKILL_DIR}/scripts/turn_snapshot.py -c <campaign> undo [--to N] [--dry-run]
+python3 ${CLAUDE_SKILL_DIR}/scripts/turn_snapshot.py -c <campaign> redo    # re-apply what the last undo rolled back
 ```
 
 ### Deterministic Economy & Rest — `scripts/economy.py`

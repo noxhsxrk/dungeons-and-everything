@@ -57,7 +57,7 @@ A campaign is set in whatever world the players describe. `/dne new` turns that 
 | `spells` | the world's powers (tech protocols, psionics, rituals, mutations) in SRD spell schema | slots/levels/concentration exactly as 5e |
 | `equipment` | weapons, armor (`ac` string like `AC 14 + DEX (max 2)`), gear | `calc --armor <index>` |
 | `monsters` | the world's threats as full 5e stat blocks (+ `biomes`, `role`) | `encounter_gen.py -c <camp>` draws only these; an unknown biome is an error |
-| `class_options` | re-skinned invocations / fighting styles (`kind`) | `levelup -c` lists these instead of SRD names |
+| `class_options` | re-skinned invocations, pact boons and fighting styles (`kind`: invocation, pact_boon, fighting_style) | `levelup -c` lists these instead of SRD names |
 
 **At the table:**
 - Pass `-c/--campaign <name>` to `lookup.py`, `character.py`, `encounter_gen.py` so they read the kit ahead of the SRD. In a world campaign, never pull an SRD monster, race, class or spell the kit doesn't contain — if a scene needs something new (a new machine, a new drug, a new faction weapon), **add it to `worldkit.json` first** (full 5e stats, CR-correct XP), run `python3 ${CLAUDE_SKILL_DIR}/scripts/worldkit.py validate <campaign>`, then use it. The world grows; it never borrows a goblin.
@@ -245,7 +245,7 @@ Once a campaign is loaded, stay in DM mode. Interpret all player messages as in-
 **Narration principles:**
 - Open scenes with sensory atmosphere (smell, sound, light, texture)
 - Present situations — not solutions. Let the player choose.
-- Hidden rolls (Perception, Insight, Stealth) → roll secretly via `dice.py --silent`, narrate only the perceived result
+- Hidden rolls (Perception, Insight, Stealth): under `roll_mode: auto` roll them secretly via `dice.py --silent`; under `roll_mode: players` the player still rolls (or a passive score is used) and you deliver the result privately (`send.py --to "<Char>"`) — narrate only what is perceived
 - NPCs have their own goals; they lie, withhold, pursue agendas independently
 - Foreshadow danger before it kills; reward preparation and clever thinking
 - After major choices, note what ripples forward: *"The merchant's eyes narrow — he'll remember this."*
@@ -356,7 +356,7 @@ Roll handling is chosen at game start and stored as `roll_mode` in `state.md →
     The roll routes to that PC's **phone** if one is bound, or **auto-opens the on-screen Dice drawer** on the shared screen when no phone is bound (or the display's *Roll on screen* setting is on) — the same roller either way. `--wait` blocks until the player rolls and then prints their result for you to resolve (it exits non-zero on timeout — fall back to asking out loud). When the display is **not** running, just call for the roll verbally and wait. Never roll the PC yourself under `players`.
 - **`roll_mode: auto` — you roll everything openly.** Resolve PC d20s yourself via `dice.py` and show full math inline (`Piper — Perception: d20+5 = 18 → …`), no waiting. For solo / fast play.
 
-**Initiative** is always DM-rolled via `combat.py init` for all combatants (PCs and NPCs) regardless of `roll_mode`.
+**Initiative** runs through `combat.py init`. Under `roll_mode: players` each player rolls their own d20 and you pass it as `"roll": N` in that PC's JSON entry; NPCs and monsters (and every combatant under `auto`) are rolled by the script. Attack rolls follow the same rule: pass a player's natural d20 to `combat.py attack --roll N` (`--roll A,B --adv|--dis` for advantage/disadvantage).
 
 **Per-player override:** a player can flip their own PC via the phone Settings → *Rolls* toggle. When that player has a queued action, `check_input.py` prepends a `[[<Char> roll mode: auto|players]]` directive — honor it for that character, overriding the campaign default. Precedence: **per-character directive > campaign `roll_mode`**.
 

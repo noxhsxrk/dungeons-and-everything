@@ -26,7 +26,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
 
    If 2024 was chosen: verify the dataset exists with `ls ${CLAUDE_SKILL_DIR}/data/dnd5e_srd_2024.json`. If missing, offer to run `python3 ${CLAUDE_SKILL_DIR}/scripts/build_srd.py --ruleset 2024` (one-time, ~3 min, needs network). Until it exists, `lookup.py` uses the 2014 SRD automatically (it prints a one-line notice) — World Kit content is unaffected.
 3. `mkdir -p "${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/characters"`
-4. Copy templates from `${CLAUDE_SKILL_DIR}/templates/` — state.md, world.md, npcs.md, npcs-full.md, session-log.md (worldkit.json is written in step 7). The state.md header keeps the `**Ruleset:**` field from step 2 and the Session Flags from step 1. Template wording is fantasy-neutral but generic — rewrite any placeholder that doesn't fit the world once step 6 has defined it.
+4. Copy templates from `${CLAUDE_SKILL_DIR}/templates/` — state.md, world.md, npcs.md, npcs-full.md, session-log.md (worldkit.json is written in step 7) — and replace every `<campaign-name>`/`<date>` placeholder in them. The state.md header keeps the `**Ruleset:**` field from step 2 and the Session Flags from step 1. Template wording is fantasy-neutral but generic — rewrite any placeholder that doesn't fit the world once step 6 has defined it.
 5. Ask: **party size** and **starting level**. Write them to the state.md header (`**Party size:**`, `**Starting level:**`).
 6. **World Wizard — the players define the world.** Ask one open question (prose, not a menu): *"What world are we playing in? Describe it however you like — genre, era, what happened to it, who the players are, how it starts. Or say **classic fantasy** for traditional D&D."* Accept anything from one word (*"cyberpunk"*) to a full setting document. If `[theme]` was supplied, treat it as the start of this description and ask only what's missing.
 
@@ -44,17 +44,19 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
    - **`skills`** — rename only the SRD skills whose names don't fit (Arcana, Religion, Nature, Animal Handling usually; keep the governing ability).
    - **`races`** — 3–6 origins/peoples/backgrounds-of-birth that exist in this world; each with legal 5e ability bonuses (total +3: +2/+1, or +1/+1/+1), speed, size, 2–3 traits on par with SRD racial traits, languages. If the world has only humans, make origins out of upbringing or augmentation.
    - **`classes`** — 5–8 professions players would plausibly be (use the roles the player named — e.g. soldier, mechanic, infiltrator, ex-EDEN technician). Each picks the SRD **`chassis`** whose mechanics fit (armed fighter → `fighter`, stealth specialist → `rogue`, tech caster → `wizard`, healer → `cleric`, scout → `ranger`, unarmed brawler → `monk`, berserker → `barbarian`, face/charmer → `bard`, innate power → `sorcerer`, bargain-with-entity → `warlock`, nature/mutation → `druid`, crusader → `paladin`). Add `power_source` (`none`, `tech`, `psionic`, …) and a one-line `description`. If a chassis casts spells, the class's powers come from the kit's `spells`. A role the player named that is really a birth or people ("half-kinnaree", "tunnel-born") becomes an origin, not a class. In a `power: none` world only fighter, rogue, barbarian and monk qualify (ranger and paladin cast from level 2); a non-magical healer is a rogue or fighter whose description leans on Medicine plus the kit's healing gear. Chassis features that are plainly supernatural (a monk's Empty Body, a totem barbarian's rituals) are re-described as training or grit in the class `description`, or noted as "not available in this world" — never silently kept.
-   - **`backgrounds`** — 4–6, each with exactly 3 `ability_options` and 2 skills.
+   - **`backgrounds`** — 4–6, each with exactly 3 `ability_options` and 2 skills (SRD skill names or the kit's renamed ones). In a 2024 campaign also give each a `feat`: one SRD 5.2 origin feat (`lookup.py feat <name> --ruleset 2024` — Alert, Magic Initiate, Savage Attacker, Skilled …).
    - **Ability increases follow the ruleset, never both:** 2014 → the origin's `ability_bonuses` apply (`calc --race`) and background `ability_options` are ignored; 2024 → the background's +2/+1 or +1/+1/+1 applies (`calc --background … --background-asi …`) and origins grant traits only. Write both fields anyway so the kit works under either ruleset.
    - **`classes[*].subclass_label` + `subclasses`** — the world's own specialisations, 2–3 per class, each `{name, description}`. The first re-skins the chassis's SRD subclass (the only one the bundled data covers — e.g. Champion, Thief, Life Domain, Evocation); the others may re-skin any 5e subclass the table knows, and must then spell out their key features in the description because the engine has no data for them. `character.py levelup -c` offers these instead of the chassis's SRD subclasses.
    - **`class_options`** (warlock chassis only) — re-skin the invocations the world's warlock-type classes will meet (at least the level-2 ones): `{name, index, kind: "invocation", level, description … (chassis: <SRD invocation>)}`. Level-up then lists these instead of SRD invocation names.
    - **`spells`** — the world's powers, counted **per casting class**: cantrips for every chassis that has them (at least its starting count), at least 4 level-1 powers per class (6 for a wizard chassis — the starting spellbook), and 3+ per class at levels 2 and 3. One power may list several classes. Re-skin an SRD spell's exact mechanics and end the description with `(chassis: <SRD spell name>)`; the validator checks that name exists in the bundled SRD 5.1 (Hex, for example, does not — use Hellish Rebuke or Bane instead). In a world with no powers, use only non-casting chassis and omit `spells`: with `srd_fallback: false` no SRD spell or magic item is reachable in this campaign.
-   - **`equipment`** — signature weapons (5e damage dice/properties), 3–4 armors with valid `ac` strings, key gear and consumables, priced in the world currency. 1 world coin = 1 gp mechanically, so set prices on the 5e scale (a revolver ≈ a crossbow ≈ 25–50, plate-grade armor ≈ 1,500) and starting funds per the chassis's 5e starting gold; in a realistic modern world, say in the lexicon what one coin is ("1 = about $10"). A shield is an armor record with `ac: "AC +2"` and is worn with `calc --shield`.
+   - **`equipment`** — signature weapons (5e damage dice/properties; in 2024 a `mastery` property from `lookup.py mastery <name> --ruleset 2024`), 3–4 armors with valid `ac` strings, key gear and consumables, priced in the world currency. 1 world coin = 1 gp mechanically, so set prices on the 5e scale (a revolver ≈ a crossbow ≈ 25–50, plate-grade armor ≈ 1,500) and starting funds per the chassis's 5e starting gold; in a realistic modern world, say in the lexicon what one coin is ("1 = about $10"). A shield is an armor record with `ac: "AC +2"` and is worn with `calc --shield`.
    - **`monsters`** — 8–15 threats spanning CR 1/8 → the campaign's endgame CR, full 5e stat blocks (`cr`, `xp` matching the CR, `hp`, `hp_dice`, `ac`, six scores, `speed`, `type`, `description` with actions), `biomes` (the world's own location types, e.g. `tunnels`, `ruins`, `surface`) and a tactical `role` (`brute|skirmisher|ranged|caster|support`). Give every biome a spread of CRs (at least one low, one mid) so `encounter_gen.py` can fill a budget there. The player's named enemies are mandatory entries; scale "unbeatable" ones (a Titan) as set-piece CRs the party should avoid, not fight.
+
+   **No dangling references:** every spell, power, item or creature that a class, subclass, `class_options` record or power description names must exist in this kit — with `srd_fallback: false` the SRD versions are unreachable. A subclass that grants extra spells lists them as kit powers; a feature that needs an item (a 300-coin component) has that item in `equipment`.
 
    **Validate before moving on:** `python3 ${CLAUDE_SKILL_DIR}/scripts/worldkit.py validate <campaign>`. Fix every error and re-run until it prints `OK`; treat its `warning:` lines as a checklist against the counts above. Then `worldkit.py show <campaign>` and give the player a short tour from its output (origins, classes and their specialisations, signature threats) — they can ask for changes now; re-validate after any edit.
 
-7b. **World Foundations** — geography/biome/climate, power system (how the world's magic/tech/psionics works and what it costs), beliefs (gods, ideologies, AIs, cults — whatever this world worships or fears), calendar. Write to `## World Foundations` in world.md. Seed `state.md → ## World State → In-world date`, then `python3 ${CLAUDE_SKILL_DIR}/scripts/calendar.py -c <campaign> init --date "<day month year>" --time "<time of day>" --months "<the world's month names>" --month-length <N> --day-names "<the world's day names>"` (real-world calendars: Gregorian names, 31-day months are fine) so timed effects and the in-game clock work from session 1.
+7b. **World Foundations** — geography/biome/climate, power system (how the world's magic/tech/psionics works and what it costs), beliefs (gods, ideologies, AIs, cults — whatever this world worships or fears), calendar. Write to `## World Foundations` in world.md. Seed `state.md → ## World State → In-world date`, then `python3 ${CLAUDE_SKILL_DIR}/scripts/calendar.py -c <campaign> init --date "<day month year>" --time <label>` — a real-world setting uses `--gregorian` (real month lengths and weekdays); an invented one adds `--months "<names>" --month-length <N> --day-names "<names>"`. Time labels: dawn, morning, midday, afternoon, dusk, evening, night, midnight (or `set … --hour N`). Timed effects and the in-game clock work from session 1.
 8. **Three Truths** — one settlement, one nearby threat, one mystery (with clue trail). Write to respective sections in world.md.
 9. **Threat Escalation Arc** — fill the five-stage table in world.md immediately after threat generation. Set current stage to 1. Write `Threat arc stage: 1 — Now` to `state.md → ## World State`.
 10. **2 Factions** — archetype, all fields including current activity. Write to `## Factions` in world.md. Write one-line faction states to `state.md → ## World State`.
@@ -401,12 +403,13 @@ Then update `## Faction Moves` in state.md: for each active faction, answer *"wh
 
 **Session tail archive:** `dne-display-app.py` continuously writes `~/.dne/campaigns/<name>/session_tail.json` — campaign-specific path, atomic-write, skip-on-empty guarded (since 2026-05-01). At save time:
 
-1. Verify the campaign-side file exists and is non-empty:
+1. Verify the campaign-side file exists and is non-empty (with `display: none` there is no live tail — skip straight to writing the canonical one with `write_canonical_tail.py`):
    ```bash
    bash ${CLAUDE_SKILL_DIR}/display/verify_tail.sh <campaign-name>
    ```
    The script returns 0 if the tail is healthy (non-empty + valid JSON list), 1 if missing/empty/corrupt. If it returns 1, the tail is unsafe to rely on for next session's replay — **write a canonical replacement directly to the campaign path** with this session's 5–8 most important narrative beats as a JSON list of `{"text": "...", "_camp": "<name>"}` entries (no display call needed; the display may already be dead). Use the `${CLAUDE_SKILL_DIR}/display/write_canonical_tail.py` helper.
-2. Also write `~/.dne/campaigns/<name>/session-tail.md` (human-readable snapshot — companion to the JSON, used as fallback during /dne load if JSON read fails).
+2. Also write `<campaign dir>/session-tail.md` (human-readable snapshot — companion to the JSON, used as fallback during /dne load if JSON read fails).
+3. **Keep world.md in step with state.md:** if the threat stage, a faction's attitude toward the party, or a settlement fact changed this session, update the matching lines in `world.md` (`**Current stage:**`, each faction's `**Attitude toward party:**`, `**Current activity:**`). `/dne load` reads world.md in full, so a stale value there contradicts state.md.
 
 **Session log archival (run on every save after session count > 3):**
 session-log.md keeps only the **2 most recent full session entries**. Older entries move to `session-log-archive.md` (append, never delete). Before archiving each entry, extract a 3–5 bullet continuity summary and write it to `## Continuity Archive` in state.md. Format:
@@ -454,7 +457,7 @@ For each candidate, draft an `add-edge` or `close-edge` call. Then **present the
 - `pick` → DM names the numbers to apply (e.g. `1, 3, 5`); skip the rest
 - `skip` → don't apply any
 
-Always supply `--since <current-session-N>` from state.md. Never write proposed edges silently.
+Always supply `--since <current-session-N>` from state.md (use `1` for anything that was true before the first session — a fresh campaign's session count is 0). Never write proposed edges silently.
 
 If `graph.json` doesn't exist yet for this campaign, skip the sweep entirely (no proposal block) — graph isn't seeded.
 
@@ -476,11 +479,11 @@ If `graph.json` doesn't exist yet for this campaign, skip the sweep entirely (no
         - **Pressure not yet delivered** → leave beat alone; expected to deliver next session.
       iv. Update `steering_notes` for the next outstanding beat with the *consequence shape* expected, not the specific event.
    e2. **Companions** (only if a companion subagent was spawned this session): run the *At end* step of `SKILL-companions.md`.
-   f. **Tail verification:** before killing the display, verify the campaign-side `session_tail.json` is healthy:
+   f. **Tail verification** (display sessions; with `display: none` just write the canonical tail): before killing the display, verify the campaign-side `session_tail.json` is healthy:
       ```bash
       bash ${CLAUDE_SKILL_DIR}/display/verify_tail.sh <campaign-name>
       ```
-      Exit 0 = healthy. Exit 1 = missing/empty/corrupt → write a canonical replacement to `~/.dne/campaigns/<name>/session_tail.json` from session context (5–8 entries, each `{"text": "...", "_camp": "<name>"}`) BEFORE the display kill — once the display is dead, only the file matters. The display's own `_persist_tail` has skip-on-empty + atomic-write guards, but the backstop ensures a worst-case file state is impossible.
+      Exit 0 = healthy. Exit 1 = missing/empty/corrupt → write a canonical replacement to `<campaign dir>/session_tail.json` (`write_canonical_tail.py`) from session context (5–8 entries, each `{"text": "...", "_camp": "<name>"}`) BEFORE the display kill — once the display is dead, only the file matters. The display's own `_persist_tail` has skip-on-empty + atomic-write guards, but the backstop ensures a worst-case file state is impossible.
 2. Stop the display — only when Session Flags say `display` is not `none` (or a display process is running):
    ```bash
    kill $(cat ${CLAUDE_SKILL_DIR}/display/app.pid 2>/dev/null) 2>/dev/null
@@ -593,8 +596,11 @@ Default to `Step by step` if the question is dismissed. Either path lands in the
 3. Ask: roll or point buy
    - Roll → `ability-scores.py roll`, present 3 arrays, player assigns
    - Point buy → `ability-scores.py pointbuy --check <scores>` to validate
-4. Run `character.py calc -c <campaign> --class <class> --race <race> [--subrace <subrace>]` with the BASE ability array (World Kit origins and classes resolve through `-c`; a world background takes `--background <name> --background-asi …` using its own three `ability_options`). **It applies the racial bonuses itself** and prints base / race / final, along with every secondary stat — do not add racial bonuses by hand first, and do not omit `--race`. An unknown race exits non-zero rather than applying nothing, so a typo cannot produce a sheet quietly missing its bonuses. `lookup.py race <name>` has the full entry (bonuses, traits, speed, languages) if the player wants to read it. **In a 2024 campaign the increase comes from the background instead:** run `character.py calc --background <acolyte|criminal|sage|soldier> --background-asi STR=2,CON=1` (or `+1/+1/+1`) and no `--race`; it checks the increase is one the background allows and prints base / background / final. Add `--armor <srd-armor-index> [--shield]` (or `--armor none`) for the Armor Class.
-5. Ask: Fighting Style (Fighter/Paladin/Ranger), spells (if caster)
+4. Run `character.py calc -c <campaign> --class <class> …` with the BASE ability array; it applies the ability increases itself and prints base / increase / final plus every secondary stat (and a spellcasting block for casters) — never add increases by hand first. Which flags depends on the ruleset:
+   - **2014:** `--race <origin/race> [--subrace <subrace>]` grants the increase (an unknown race exits non-zero, so a typo can't silently drop bonuses). A background is passed too — `--background <name>` — for its skills only; `--background-asi` is refused in 2014.
+   - **2024:** `--background <name> --background-asi STR=2,CON=1` (or `+1/+1/+1`, checked against the background's three abilities) grants the increase; `--race <origin/species>` may still be given for its traits, and grants no increase. Note the background's origin feat (`lookup.py feat <name>`).
+   Add `--armor <armor index> [--shield]` (or `--armor none`) for AC, `--proficient …` for chosen class skills, `--expertise …` for rogue/bard expertise, `--fighting-style <style>`, and `--subclass <name>` when one is owed at this level. `lookup.py race|origin <name>` shows the full entry. **Starting above level 1:** run `character.py levelup -c <campaign> --class <class> --from N` for each level from 1 up to the starting level and resolve every owed choice (subclass, ASIs, invocations, new powers); use maximum HP at level 1 and the listed average (or player rolls) after.
+5. Ask: Fighting Style (fighter/paladin/ranger chassis — World Kit names from `class_options` kind `fighting_style` when the kit has them), powers/spells (if caster), and in 2024 the weapon masteries (fighter 3, barbarian/paladin/ranger 2) from `lookup.py mastery <property>`; record masteries on the sheet under `### Class Features → Weapon Mastery:`.
 6. Assign starting equipment per class + background
 7. Write to `characters/<file>.md` using `templates/character-sheet.md` — `<file>` is the name in lowercase with spaces as hyphens (`walt-brennan.md`; Thai names as written, `ทองดี.md`); scripts accept the display name or the file name. Set `## Campaign History → Origin campaign`
 8. Add to `state.md` party line
@@ -718,7 +724,7 @@ Run `scripts/dice.py <notation>`. Display output verbatim. Examples: `d20`, `2d6
 
 ## `/dne combat start`
 1. Identify combatants; collect name, DEX mod, HP, AC, type (pc/npc) for each.
-2. Run `combat.py init '<JSON>'` — auto-roll initiative for every combatant including PCs. Display tracker and per-combatant roll breakdown.
+2. Run `combat.py init '<JSON>'` — under `roll_mode: players` collect each player's d20 and add `"roll": N` to that PC's entry (`"init_bonus"` for Alert-style bonuses, `"max_hp"` when a PC starts wounded); everyone else is rolled by the script. Display tracker and per-combatant roll breakdown.
 3. Send initiative to display:
    ```bash
    python3 ${CLAUDE_SKILL_DIR}/display/send.py << 'DNDEND'
@@ -824,7 +830,7 @@ Manage the dynamic campaign arc. The `advance`/`revise`/`new` subcommands are ac
      - **Cost path** — `what_changes` becomes "the party paid a concrete cost for moving fast"; `world_pressure` becomes the specific cost (cover blown, ally compromised, position lost). Best when the party pre-empted cleanly.
      - **Secondary consequence path** — `what_changes` becomes "the world responded to being pre-empted in a way the party didn't anticipate"; `world_pressure` becomes the new escalation (the antagonist reads the disruption as a signal and does something WORSE). Best when the antagonist is intelligent and adaptive.
      - **Deferred path** — keep the original `what_changes` shape; rewrite `world_pressure` to a NEW pressure pointing at the same consequence, scheduled for the next 1–2 sessions. Best when the original consequence is still narratively essential and only the timing slipped.
-  4. Rewrite `what_changes` (consequence-shaped per the rule in /dne new step 12) and `world_pressure` (event-shaped is fine) for the affected beat. Do NOT modify completed beats.
+  4. Rewrite `what_changes` (consequence-shaped per the rule in /dne new step 13) and `world_pressure` (event-shaped is fine) for the affected beat. Do NOT modify completed beats.
   5. Append to `revision_log`: `"<date>: <beat-id> — <path: cost/secondary/deferred> — <what changed and why — one sentence>"`
   6. Update `steering_notes` to describe the next session's expected delivery.
   7. Confirm what was revised. Show before/after for `what_changes` and `world_pressure`.
@@ -835,7 +841,7 @@ Manage the dynamic campaign arc. The `advance`/`revise`/`new` subcommands are ac
 
 Local-only typed-edge relationship graph supplementing markdown. Stored at `~/.dne/campaigns/<name>/graph.json`. Supplements `npcs-full.md` / `session-log.md` — does not replace them. Edges are time-stamped (`since_session` / `until_session`), so historical state is recoverable.
 
-**Auto-pulled at `/dne load` step 5** (scene-context) and **swept at `/dne save`** (relationship-shift extraction). The DM also uses `/dne graph scene-context` on demand mid-session, especially before heavy social or political scenes.
+**Auto-pulled at `/dne load` step 7** (scene-context) and **swept at `/dne save`** (relationship-shift extraction). The DM also uses `/dne graph scene-context` on demand mid-session, especially before heavy social or political scenes.
 
 
 All subcommands invoke `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_graph.py <subcommand> --campaign <name> [args]`.
@@ -991,11 +997,12 @@ Toggle the behind-the-scenes continuity checkpoint. Writes `autosave: on|off` to
 
 ## `/dne undo [turn-number]`
 
-Atomically roll back the campaign to the previous turn snapshot (or a specific turn number). Restores `state.md`, `world.md`, `npcs*.md`, `session-log.md`, `graph.json`, `tracker.json`, `lorebook.json`, `.economy_ledger.json`, all `characters/*.md`, and refreshes connected display browsers.
+Atomically roll back the campaign to the previous turn snapshot (or a specific turn number). Restores every campaign file the snapshot tracked — `state.md`, `world.md`, `world-nodes.md`, `world-map.json`, `npcs*.md`, `arc.md`, `session-log.md`, `graph.json`, `tracker.json`, `lorebook.json`, `entropy.json`, `battlemap.json`, `events.jsonl`, `.economy_ledger.json`, `calendar.json`, `xp-ledger.jsonl`, `worldkit.json`, the session tail, and all `characters/*.md` — and refreshes connected display browsers. `redo` re-applies what the last undo rolled back. The global roster (`<root>/characters/`) is not part of a campaign snapshot: re-mirror any restored character after an undo.
 
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/turn_snapshot.py -c <campaign> list
 python3 ${CLAUDE_SKILL_DIR}/scripts/turn_snapshot.py -c <campaign> undo [--to N]
+python3 ${CLAUDE_SKILL_DIR}/scripts/turn_snapshot.py -c <campaign> redo
 ```
 
 ## `/dne shop <buy|sell|gold>`
