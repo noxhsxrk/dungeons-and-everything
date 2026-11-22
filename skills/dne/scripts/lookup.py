@@ -95,6 +95,7 @@ CATEGORY_MAP = {
     "pact_boon":      "class_options",
     "option":         "class_options",
     "options":        "class_options",
+    "class_options":  "class_options",
 }
 
 ALL_CATEGORIES = ["spells", "equipment", "magic_items", "conditions", "monsters",
@@ -103,6 +104,7 @@ ALL_CATEGORIES = ["spells", "equipment", "magic_items", "conditions", "monsters"
 
 #: The 2024 dataset names some categories differently; an empty primary falls back here.
 _CATEGORY_FALLBACK = {"races": "species", "subraces": "subspecies", "feats": "features"}
+_CATEGORIES_2024_ONLY = {"feats", "weapon_mastery_properties", "species", "subspecies"}
 
 # ─── Data loading / index ─────────────────────────────────────────────────────
 
@@ -179,14 +181,20 @@ def _load_ruleset(ruleset: str) -> None:
 _ALWAYS_MERGE = {"conditions", "features", "class_options", "feats", "weapon_mastery_properties"}
 
 
-def _dataset_key(ruleset=None, campaign=None):
+def _dataset_key(ruleset=None, campaign=None, category=None):
     import worldkit
-    rs = ruleset or (_paths.campaign_ruleset(campaign) if campaign else _active_ruleset)
+    rs = ruleset
+    if rs is None:
+        if campaign:
+            rs = _paths.campaign_ruleset(campaign)
+        elif CATEGORY_MAP.get((category or "").lower()) in _CATEGORIES_2024_ONLY:
+            rs = "2024"
+        else:
+            rs = _active_ruleset
     kit = worldkit.load(campaign) if campaign else None
     if kit is None:
         _load_ruleset(rs)
         return rs
-    rs = kit.get("_meta", {}).get("base_ruleset", rs)
     key = f"{rs}@{worldkit.path(campaign).resolve()}"
     if key not in _data_by_rs:
         _load_ruleset(rs)
@@ -311,7 +319,10 @@ def _fmt_spell(r: dict) -> str:
 
 
 def _fmt_equipment(r: dict) -> str:
-    lines = [f"## {r.get('name','?')}  [{r.get('category','')}]", ""]
+    title = f"## {r.get('name','?')}"
+    if r.get("category"):
+        title += f"  [{r['category']}]"
+    lines = [title, ""]
     if r.get("cost"):
         lines.append(f"Cost       : {r['cost']}")
     if r.get("weight") is not None:
@@ -324,10 +335,12 @@ def _fmt_equipment(r: dict) -> str:
         lines.append(f"Armour     : {r['ac']}")
     if r.get("properties"):
         lines.append(f"Properties : {', '.join(r['properties'])}")
+    if r.get("mastery"):
+        lines.append(f"Mastery: {r['mastery']}")
     if r.get("range"):
-        lines.append(f"Range      : {r['range']}")
+        lines.append("Range      : " + r["range"].replace("/? ft", " ft"))
     if r.get("throw_range"):
-        lines.append(f"Throw      : {r['throw_range']}")
+        lines.append("Throw      : " + r["throw_range"].replace("/? ft", " ft"))
     if r.get("stealth_disadv"):
         lines.append("Stealth    : disadvantage")
     if r.get("str_minimum"):
@@ -522,17 +535,18 @@ def wikidot_url(name: str, category: str = None, record: dict = None) -> str:
 
 def _fallback_categories(ruleset: str) -> set:
     """Return the set of categories that should fall back to 2014 when missing
-    in the requested ruleset's dataset (per `_meta.fallback_2014`)."""
+    in the requested ruleset's dataset."""
     meta = _meta_by_rs.get(ruleset, {}) or {}
     fb = meta.get("fallback_2014") or []
-    if isinstance(fb, list):
-        return set(fb)
-    return set()
+    categories = set(fb) if isinstance(fb, list) else set()
+    if ruleset == "2024":
+        categories.update({"classes", "class_options"} - _data_by_rs.get(ruleset, {}).keys())
+    return categories
 
 
 OPTION_KINDS = {"invocation": "invocation", "invocations": "invocation",
                 "fighting-style": "fighting_style", "fighting_style": "fighting_style",
-                "pact-boon": "pact_boon"}
+                "pact-boon": "pact_boon", "pact_boon": "pact_boon"}
 
 
 def _find_in_ruleset(query: str, cat_key, ruleset: str, top_n: int = 1, kind=None):
@@ -564,7 +578,7 @@ def lookup_record(query: str, category=None, ruleset=None, campaign=None):
     `ruleset` overrides the module-level active ruleset if supplied.
     The returned record is annotated with `_cat`, `_ruleset`, and `_fallback`.
     """
-    rs = _dataset_key(ruleset, campaign)
+    rs = _dataset_key(ruleset, campaign, category)
     _load_ruleset(rs)
     if not _data_by_rs.get(rs):
         return None
@@ -582,6 +596,7 @@ def lookup_record(query: str, category=None, ruleset=None, campaign=None):
                 break
         # Fallback for 2024 cross-category — scan fallback categories in 2014
         if not results and rs.split("@", 1)[0] == "2024":
+            _load_ruleset("2014")
             for ck in ALL_CATEGORIES:
                 if ck not in _fallback_categories(rs):
                     continue
@@ -687,7 +702,7 @@ def suggest(query: str, category=None, ruleset=None, n: int = 3, cutoff: float =
     that catches a good word buried in a longer query. Returns a list of
     (name, category) tuples, best first, deduped by name.
     """
-    rs = _dataset_key(ruleset, campaign)
+    rs = _dataset_key(ruleset, campaign, category)
     _load_ruleset(rs)
     data = _data_by_rs.get(rs, {})
     if not data:
@@ -787,7 +802,7 @@ def main() -> None:
             print("paths.py unavailable — cannot resolve --campaign", file=sys.stderr)
             sys.exit(2)
         ruleset = _paths.campaign_ruleset(campaign_arg)
-    else:
+    elif not args or CATEGORY_MAP.get(args[0].lower()) not in _CATEGORIES_2024_ONLY:
         # Default 2014, but emit a hint if 2024 is on disk
         ruleset = "2014"
         if os.path.exists(DATA_FILE_2024):
@@ -797,7 +812,7 @@ def main() -> None:
                 file=sys.stderr,
             )
 
-    ruleset = _dataset_key(ruleset, campaign_arg)
+    ruleset = _dataset_key(ruleset, campaign_arg, args[0] if args else None)
     srd_file = _srd_path_for(ruleset)
     if ruleset.split("@", 1)[0] == "2024" and not os.path.exists(srd_file) and os.path.exists(DATA_FILE_2014):
         srd_file = DATA_FILE_2014
@@ -825,8 +840,7 @@ def main() -> None:
         query = " ".join(args)
         cat_key = None
 
-    # Search the active ruleset; fall back to 2014 for categories listed
-    # in the active ruleset's _meta.fallback_2014 when the category is given.
+    # Search the active ruleset, then any categories eligible for 2014 fallback.
     fallback_used = False
     if cat_specified:
         results, hit_rs, fb = _find_in_ruleset(query, cat_key, ruleset, top_n=top_n, kind=OPTION_KINDS.get(category))
@@ -839,6 +853,7 @@ def main() -> None:
         hit_rs  = ruleset
         # If nothing in 2024, try 2014 across fallback categories
         if not results and ruleset.split("@", 1)[0] == "2024":
+            _load_ruleset("2014")
             fb_records = []
             for ck in ALL_CATEGORIES:
                 if ck in _fallback_categories(ruleset):

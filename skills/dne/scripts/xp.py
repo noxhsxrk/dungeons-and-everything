@@ -159,7 +159,8 @@ def party_xp_thresholds(levels) -> tuple:
 
 
 def classify_difficulty(adjusted_xp: int, thresholds: tuple) -> str:
-    return next((name for name in reversed(DIFF_IDX) if adjusted_xp >= thresholds[DIFF_IDX[name]]), "trivial")
+    tiers = zip(DIFF_IDX, thresholds)
+    return next((name for name, limit in reversed(list(tiers)) if adjusted_xp >= limit), "trivial")
 
 
 def _xp_per_player(difficulty: str, level: int) -> int:

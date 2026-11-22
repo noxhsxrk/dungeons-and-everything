@@ -60,7 +60,7 @@ import subprocess
 import argparse
 import time
 from datetime import datetime, timezone
-from paths import find_campaign as _find_campaign, display_dir as _display_dir
+from paths import campaign_ruleset, find_campaign as _find_campaign, display_dir as _display_dir
 
 PUSH_STATS = str(_display_dir() / "push_stats.py")
 SEND_PY    = str(_display_dir() / "send.py")
@@ -300,6 +300,9 @@ def active_modifiers(campaign: str, entity_name: str, roll_type: str) -> list:
         mod = e.get("modifier")
         if mod and roll_type in mod.get("applies", []):
             out.append((e["name"], mod["value"]))
+    exhaustion = ent.get("exhaustion", int("exhausted" in ent.get("conditions", [])))
+    if exhaustion > 0 and roll_type in ("attack", "save", "check") and campaign_ruleset(campaign) == "2024":
+        out.append((f"Exhaustion {exhaustion}", str(-2 * exhaustion)))
     return out
 
 

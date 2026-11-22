@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from paths import find_campaign, norm_key, srd_path
+from paths import campaign_ruleset, find_campaign, norm_key, srd_path
 
 CATEGORIES = ('races', 'classes', 'backgrounds', 'monsters', 'spells',
               'equipment', 'features', 'conditions', 'class_options')
@@ -31,7 +31,7 @@ def load(campaign):
         kit = json.loads(source.read_text(encoding='utf-8'))
     except ValueError as exc:
         raise ValueError(f'{source}: invalid JSON: {exc}') from exc
-    errors = validate(kit)
+    errors = validate(kit, campaign)
     if errors:
         raise ValueError('\n'.join(errors))
     return kit
@@ -62,7 +62,7 @@ def class_chassis(name, campaign=None):
     return _race_key(record['chassis'] if record else name)
 
 
-def validate(kit):
+def validate(kit, campaign=None):
     from character import HIT_DICE, STATS, SKILLS, _AC_PAT, _race_key
     from combat import parse_damage
     if not isinstance(kit, dict):
@@ -71,6 +71,16 @@ def validate(kit):
     meta = kit.get('_meta', {})
     if isinstance(meta, dict) and 'power' in meta and meta['power'] not in ('none', 'low', 'medium', 'high'):
         errors.append('_meta.power must be none, low, medium or high')
+    rules_2024 = (isinstance(meta, dict) and meta.get('base_ruleset') == '2024'
+                  or campaign is not None and campaign_ruleset(campaign) == '2024')
+    srd_2024 = {}
+    if rules_2024 and srd_path('2024').exists():
+        try:
+            srd_2024 = json.loads(srd_path('2024').read_text(encoding='utf-8'))
+        except (OSError, ValueError) as exc:
+            errors.append(f'cannot load 2024 SRD for validation: {exc}')
+    masteries = {norm_key(r['name']) for r in srd_2024.get('weapon_mastery_properties', [])}
+    feats = {norm_key(r['name']) for r in srd_2024.get('feats', [])}
     classes = [r for r in kit.get('classes', []) if isinstance(r, dict)] if isinstance(kit.get('classes', []), list) else []
     class_keys = {norm_key(r.get(k)) for r in classes for k in ('name', 'index') if r.get(k)}
     skills = set(SKILLS) | set(kit.get('skills', {}).values())
@@ -130,6 +140,8 @@ def validate(kit):
                         if ability not in STATS or type(value) is not int:
                             errors.append(f'{label}: invalid ability_bonuses {ability}={value!r}')
             elif category == 'backgrounds':
+                if rules_2024 and 'feat' in record and norm_key(record['feat']) not in feats:
+                    errors.append(f'{label}: unknown 2024 feat {record["feat"]!r}')
                 options = record.get('ability_options')
                 if (not isinstance(options, list) or len(options) != 3
                         or any(a not in STATS for a in options)
@@ -179,18 +191,22 @@ def validate(kit):
                         errors.append(f'{label}: unknown class {cls!r}')
                 for chassis in re.findall(r'\(chassis:\s*([^),]+)', str(record.get('description', '')), re.I):
                     if srd_spells is None:
+                        srd_spells = {}
                         try:
                             base_spells = json.loads(srd_path('2014').read_text(encoding='utf-8')).get('spells', [])
-                            srd_spells = {norm_key(r[k]): r['level'] for r in base_spells
-                                          for k in ('name', 'index') if r.get(k)}
                         except (OSError, ValueError) as exc:
                             errors.append(f'{label}: cannot validate spell chassis: {exc}')
-                            srd_spells = {}
-                    chassis_level = srd_spells.get(norm_key(chassis))
-                    if chassis_level is None:
+                            base_spells = []
+                        for spell in base_spells + srd_2024.get('spells', []):
+                            for key in ('name', 'index'):
+                                if spell.get(key):
+                                    srd_spells.setdefault(norm_key(spell[key]), set()).add(spell['level'])
+                    chassis_levels = srd_spells.get(norm_key(chassis))
+                    if not chassis_levels:
                         errors.append(f'{label}: unknown SRD spell chassis {chassis.strip()}')
-                    elif record.get('level') != chassis_level:
-                        errors.append(f'{label}: level must match {chassis.strip()} (level {chassis_level})')
+                    elif type(level) is int and level not in chassis_levels:
+                        levels = ' or '.join(str(n) for n in sorted(chassis_levels))
+                        errors.append(f'{label}: level must match {chassis.strip()} (level {levels})')
             elif category == 'class_options':
                 if record.get('kind') not in ('invocation', 'fighting_style', 'pact_boon', 'metamagic', 'other'):
                     errors.append(f'{label}: invalid kind {record.get("kind")!r}')
@@ -214,6 +230,9 @@ def validate(kit):
             if category == 'equipment' and record.get('ac'):
                 if not isinstance(record['ac'], str) or not _AC_PAT.fullmatch(record['ac']):
                     errors.append(f'{label}: invalid ac {record["ac"]!r}')
+            if category == 'equipment' and rules_2024 and 'mastery' in record:
+                if norm_key(record['mastery']) not in masteries:
+                    errors.append(f'{label}: unknown 2024 mastery {record["mastery"]!r}')
     for cls in classes:
         # An omitted spells category explicitly represents a no-powers world.
         if 'spells' in kit and cls.get('chassis', '').lower() in ('bard', 'cleric', 'druid', 'sorcerer', 'warlock', 'wizard', 'paladin', 'ranger'):
@@ -319,11 +338,15 @@ def main():
     parser.add_argument('source')
     args = parser.parse_args()
     source = Path(args.source)
+    campaign = None
     if args.command == 'show' or not source.is_file():
+        campaign = args.source
         source = path(args.source)
+    elif source.name == 'worldkit.json':
+        campaign = str(source.resolve().parent)
     try:
         kit = json.loads(source.read_text(encoding='utf-8'))
-        errors = validate(kit)
+        errors = validate(kit, campaign)
         if errors:
             raise ValueError('\n'.join(errors))
     except (OSError, ValueError) as exc:

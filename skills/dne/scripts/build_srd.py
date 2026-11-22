@@ -1409,21 +1409,38 @@ def _format_armor_ac(r: dict) -> str:
     return f"AC {base} + DEX"
 
 
+def _format_equipment_range(rng: dict) -> str:
+    if not rng or not rng.get("normal"):
+        return ""
+    distance = str(rng["normal"])
+    if rng.get("long"):
+        distance += f"/{rng['long']}"
+    return distance + " ft"
+
+
 def _norm_equipment(r: dict) -> dict:
-    cat  = r.get("equipment_category", {})
+    cat = r.get("equipment_category") or r.get("category", "")
+    if isinstance(cat, dict):
+        cat = cat.get("name", "")
+    if not cat:
+        categories = {ref["index"]: ref["name"] for ref in r.get("equipment_categories", [])}
+        cat = next((categories[k] for k in ("weapons", "armor", "adventuring-gear", "tools")
+                    if k in categories), next(reversed(categories.values()), ""))
+    if cat == "Weapons":
+        cat = "Weapon"
+    mastery = r.get("mastery")
+    if isinstance(mastery, dict):
+        mastery = mastery.get("name")
     cost = r.get("cost", {})
     dmg  = r.get("damage", {})
     dmg2 = r.get("two_handed_damage", {})
-    rng  = r.get("range", {})
-    trng = r.get("throw_range", {})
-    ac   = r.get("armor_class", {})
     props = [p.get("name", p) if isinstance(p, dict) else str(p)
              for p in r.get("properties", [])]
-    return {
+    equipment = {
         "name":          r.get("name", ""),
         "index":         r.get("index", _slugify(r.get("name", ""))),
         "description":   _join_desc(r.get("desc", [])),
-        "category":      cat.get("name", "") if isinstance(cat, dict) else str(cat),
+        "category":      cat,
         "cost":          f"{cost.get('quantity','?')} {cost.get('unit','?')}"
                          if isinstance(cost, dict) else "",
         "weight":        r.get("weight"),
@@ -1433,12 +1450,14 @@ def _norm_equipment(r: dict) -> dict:
                          .strip() if dmg2 else "",
         "ac":            _format_armor_ac(r),
         "properties":    props,
-        "range":         f"{rng.get('normal','?')}/{rng.get('long','?')} ft"
-                         if rng and rng.get("normal") else "",
-        "throw_range":   f"{trng.get('normal','?')}/{trng.get('long','?')} ft" if trng else "",
+        "range":         _format_equipment_range(r.get("range", {})),
+        "throw_range":   _format_equipment_range(r.get("throw_range", {})),
         "stealth_disadv":r.get("stealth_disadvantage", False),
         "str_minimum":   r.get("str_minimum"),
     }
+    if mastery:
+        equipment["mastery"] = mastery
+    return equipment
 
 
 #: Parent feature index -> option kind, for the choices a level-up owes.
@@ -1637,20 +1656,8 @@ def _build_features_2014() -> list:
     return features
 
 
-def cmd_refresh_features() -> None:
-    """Refresh features and their counts; preserve other category bytes."""
-    from pathlib import Path
-    path = Path(_out_file(RULESET_2014))
-    original = path.read_text(encoding="utf-8")
-    data = json.loads(original)
-    if "features" not in data:
-        raise ValueError("Existing dataset has no features list")
-    features = _build_features_2014()
-    meta = data.get("_meta", {})
-    counts = {k: len(v) for k, v in data.items() if k != "_meta"}
-    counts["features"] = len(features)
-    meta.update(record_counts=counts, total_records=sum(counts.values()))
-    values = {"features": features, "_meta": meta}
+def _write_refreshed_categories(path, original: str, values: dict) -> None:
+    """Replace top-level values without reserializing the rest of the dataset."""
     decoder = json.JSONDecoder()
     replacements = []
     pos = original.index("{") + 1
@@ -1669,8 +1676,39 @@ def cmd_refresh_features() -> None:
     updated = original
     for start, end, replacement in reversed(replacements):
         updated = updated[:start] + replacement + updated[end:]
-    path.write_text(updated, encoding="utf-8")
+    path.write_bytes(updated.encode("utf-8"))
+
+
+def cmd_refresh_features() -> None:
+    """Refresh features and their counts; preserve other category bytes."""
+    from pathlib import Path
+    path = Path(_out_file(RULESET_2014))
+    original = path.read_bytes().decode("utf-8")
+    data = json.loads(original)
+    if "features" not in data:
+        raise ValueError("Existing dataset has no features list")
+    features = _build_features_2014()
+    meta = data.get("_meta", {})
+    counts = {k: len(v) for k, v in data.items() if k != "_meta"}
+    counts["features"] = len(features)
+    meta.update(record_counts=counts, total_records=sum(counts.values()))
+    _write_refreshed_categories(path, original, {"features": features, "_meta": meta})
     print(f"Refreshed {len(features)} SRD 2014 features and metadata counts; other categories unchanged")
+
+
+def cmd_refresh_equipment(ruleset: str) -> None:
+    from pathlib import Path
+    path = Path(_out_file(ruleset))
+    original = path.read_bytes().decode("utf-8")
+    if not isinstance(json.loads(original).get("equipment"), list):
+        raise ValueError("Existing dataset has no equipment list")
+    files = BITS_FILES_2024 if ruleset == RULESET_2024 else BITS_FILES_2014
+    records = _load_bits_records(files["equipment"], ruleset)
+    equipment = [_norm_equipment(r) for r in records if isinstance(r, dict) and r.get("name")]
+    if not equipment:
+        raise ValueError(f"Cannot refresh {ruleset} equipment: failed to fetch equipment records")
+    _write_refreshed_categories(path, original, {"equipment": equipment})
+    print(f"Refreshed {len(equipment)} SRD {ruleset} equipment records")
 
 
 # ─── FoundryVTT normaliser ────────────────────────────────────────────────────
@@ -1759,8 +1797,9 @@ def _norm_feature(doc: dict, path: str, scale_tables=None):
 
 # ─── Fetch 5e-bits datasets ───────────────────────────────────────────────────
 
-def _load_bits_records(filename: str) -> list:
-    raw = json.loads(_fetch(f"{RAW_5EBITS}/{filename}") or "null")
+def _load_bits_records(filename: str, ruleset: str | None = None) -> list:
+    base = RAW_5EBITS if ruleset is None else _bits_url(ruleset)
+    raw = json.loads(_fetch(f"{base}/{filename}") or "null")
     if raw is None:
         return []
     if isinstance(raw, list):
@@ -2123,11 +2162,15 @@ def main() -> None:
                 sys.exit(2)
     if "--refresh" in args:
         i = args.index("--refresh")
-        if i + 1 >= len(args) or args[i + 1] != "features" or ruleset != RULESET_2014:
-            print("--refresh supports only features for ruleset 2014", file=sys.stderr)
-            sys.exit(2)
+        category = args[i + 1] if i + 1 < len(args) else None
         try:
-            cmd_refresh_features()
+            if category == "equipment":
+                cmd_refresh_equipment(ruleset)
+            elif category == "features" and ruleset == RULESET_2014:
+                cmd_refresh_features()
+            else:
+                print("--refresh supports equipment, or features for ruleset 2014", file=sys.stderr)
+                sys.exit(2)
         except (OSError, ValueError) as exc:
             print(f"Refresh failed: {exc}", file=sys.stderr)
             sys.exit(1)

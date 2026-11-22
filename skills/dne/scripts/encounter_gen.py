@@ -24,9 +24,32 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
-from paths import CHARACTER_LEVEL_RE, srd_path, find_campaign
+from paths import CHARACTER_LEVEL_RE, campaign_ruleset, srd_path, find_campaign
 from xp import DIFF_IDX, XP_THRESHOLDS, classify_difficulty, _monster_multiplier as _encounter_multiplier
 import worldkit
+
+XP_BUDGETS_2024 = dict(enumerate((
+    (50, 75, 100),
+    (100, 150, 200),
+    (150, 225, 400),
+    (250, 375, 500),
+    (500, 750, 1100),
+    (600, 1000, 1400),
+    (750, 1300, 1700),
+    (1000, 1700, 2100),
+    (1300, 2000, 2600),
+    (1600, 2300, 3100),
+    (1900, 2900, 4100),
+    (2200, 3700, 4700),
+    (2600, 4200, 5400),
+    (2900, 4900, 6200),
+    (3300, 5400, 7800),
+    (3800, 6100, 9800),
+    (4500, 7200, 11700),
+    (5000, 8700, 14200),
+    (5500, 10700, 17200),
+    (6400, 13200, 22000),
+), 1))
 
 BIOME_KEYWORDS = {
     "forest":    ["wolf", "bear", "spider", "goblin", "orc", "boar", "dryad", "treant", "owlbear", "elf", "stag", "bandit", "bugbear", "ettin", "fey", "plant", "beast", "green dragon"],
@@ -63,15 +86,22 @@ def generate_encounter(
     party_size: int = 4,
     difficulty: str = "medium",
     seed: "int | None" = None,
-    ruleset: str = "2014",
+    ruleset: str | None = None,
     campaign=None,
 ) -> dict:
     rng = random.Random(seed)
     lvl = max(1, min(20, int(party_level)))
     size = max(1, int(party_size))
+    ruleset = ruleset or (campaign_ruleset(campaign) if campaign else "2014")
+    rules_2024 = ruleset == "2024"
     diff_i = DIFF_IDX.get(difficulty.lower(), 1)
-    thresholds = tuple(value * size for value in XP_THRESHOLDS[lvl])
-    budget = thresholds[diff_i]
+    per_character = XP_BUDGETS_2024[lvl] if rules_2024 else XP_THRESHOLDS[lvl]
+    thresholds = tuple(value * size for value in per_character)
+    budget = thresholds[min(diff_i, len(thresholds) - 1)]
+    budget_limit = budget if rules_2024 else budget * 1.15
+
+    def multiplier(count):
+        return 1 if rules_2024 else _encounter_multiplier(count, size)
 
     kit = worldkit.load(campaign) if campaign else None
     world_monsters = kit is not None
@@ -100,7 +130,7 @@ def generate_encounter(
     # Filter monsters whose base XP fits within budget (and not trivial 0 XP critters)
     eligible = [
         m for m in monsters
-        if _matches_biome(m) and 10 <= int(m.get("xp", 0) or 0) <= budget * (1.15 if world_monsters else 1)
+        if _matches_biome(m) and 10 <= int(m.get("xp", 0) or 0) <= (budget_limit if world_monsters else budget)
     ]
     if not eligible and not world_monsters:
         eligible = [m for m in monsters if 10 <= int(m.get("xp", 0) or 0) <= budget]
@@ -110,7 +140,7 @@ def generate_encounter(
     if world_monsters:
         def adjusted(roster):
             count = sum(c["count"] for c in roster)
-            return sum(int(c["monster"]["xp"]) * c["count"] for c in roster) * _encounter_multiplier(count, size)
+            return sum(int(c["monster"]["xp"]) * c["count"] for c in roster) * multiplier(count)
 
         candidates = []
         for _ in range(25):
@@ -119,7 +149,7 @@ def generate_encounter(
                 available = [m for m in eligible
                              if (len(roster) < 3 or any(c["monster"] is m for c in roster))
                              and (sum(int(c["monster"]["xp"]) * c["count"] for c in roster)
-                                  + int(m["xp"])) * _encounter_multiplier(count + 1, size) <= budget * 1.15]
+                                  + int(m["xp"])) * multiplier(count + 1) <= budget_limit]
                 if not available:
                     break
                 pick = rng.choice(available)
@@ -141,7 +171,7 @@ def generate_encounter(
                             continue
                         roster = [{"monster": m, "count": n} for m, n in zip(group, counts)]
                         xp = adjusted(roster)
-                        if xp <= budget * 1.15 and abs(xp - budget) < abs(adjusted(chosen) - budget):
+                        if xp <= budget_limit and abs(xp - budget) < abs(adjusted(chosen) - budget):
                             chosen = roster
         total_count = sum(c["count"] for c in chosen)
         raw_xp = sum(int(c["monster"]["xp"]) * c["count"] for c in chosen)
@@ -159,11 +189,11 @@ def generate_encounter(
         total_count = 1
         raw_xp = pxp
         while total_count < 6:
-            next_mult = _encounter_multiplier(total_count + 1, size)
+            next_mult = multiplier(total_count + 1)
             # Try adding another of the same or a companion monster
             candidates = [
                 m for m in pool
-                if (raw_xp + int(m["xp"])) * next_mult <= budget * 1.15
+                if (raw_xp + int(m["xp"])) * next_mult <= budget_limit
             ]
             if not candidates:
                 break
@@ -175,10 +205,10 @@ def generate_encounter(
                 existing["count"] += 1
             else:
                 chosen.append({"monster": pick, "count": 1})
-            if raw_xp * _encounter_multiplier(total_count, size) >= budget * 0.82:
+            if raw_xp * multiplier(total_count) >= budget * 0.82:
                 break
 
-    adj_xp = int(raw_xp * _encounter_multiplier(total_count, size))
+    adj_xp = int(raw_xp * multiplier(total_count))
     roster = []
     for c in chosen:
         m = c["monster"]
@@ -215,7 +245,7 @@ def main() -> None:
     parser.add_argument("--party-size", type=int, default=None)
     parser.add_argument("--difficulty", choices=["easy", "medium", "hard", "deadly"], default="medium")
     parser.add_argument("--seed", type=int, default=None)
-    parser.add_argument("--ruleset", choices=["2014", "2024"], default="2014")
+    parser.add_argument("--ruleset", choices=["2014", "2024"])
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     campaign_dir = find_campaign(args.campaign) if args.campaign else None
@@ -251,7 +281,7 @@ def main() -> None:
         actual = enc['actual_difficulty']
         print(f"Encounter [{enc['biome'].title()} · {actual.upper()}] "
               f"Party: {enc['party_size']}×L{enc['party_level']} (budget {enc['xp_budget']} XP → adj {enc['adjusted_xp']} XP)")
-        if DIFF_IDX.get(actual, -1) < DIFF_IDX[enc['difficulty']]:
+        if enc['adjusted_xp'] < enc['xp_budget']:
             print(f"  under budget: {enc['adjusted_xp']} XP falls below the {enc['difficulty']} threshold ({enc['xp_budget']} XP)")
         for m in enc["monsters"]:
             print(f"  {m['count']}× {m['name']} (CR {worldkit.format_cr(m['cr'])}, AC {m['ac']}, HP {m['hp']}, role={m['tactical_role']})")

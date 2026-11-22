@@ -511,6 +511,10 @@ def do_calc(args: list[str]):
         sys.exit(2)
 
     prof = PROF_BONUS.get(lvl, 2)
+    origin_feat = (world_bg or {}).get("feat") if ruleset == "2024" else None
+    initiative = mod(scores.get("DEX", 10))
+    if norm_key(origin_feat) == "alert":
+        initiative += prof
     hd = HIT_DICE.get(cls, 8)
     con_mod = mod(scores.get("CON", 10))
     hp = hd + con_mod  # level 1 max
@@ -520,6 +524,8 @@ def do_calc(args: list[str]):
     print(f"\n{'='*50}")
     print(f"  {class_label} Level {lvl}  |  Proficiency Bonus: +{prof}")
     print(f"{'='*50}")
+    if origin_feat:
+        print(f"  Origin feat: {origin_feat}")
 
     if bg_bonus or (background and not (racial or background_2014)):
         label = background.strip().title()
@@ -560,7 +566,7 @@ def do_calc(args: list[str]):
     if lvl > 1:
         print(f"  HP (level {lvl}): {hp + (lvl - 1) * max(1, hd // 2 + 1 + con_mod)}")
     print(f"  Hit Dice: {lvl}d{hd}")
-    print(f"  Initiative: {fmt(mod(scores.get('DEX', 10)))}")
+    print(f"  Initiative: {fmt(initiative)}")
     if ac_info:
         ac, breakdown, ac_notes = ac_info
         print(f"  Armor Class: {ac}  ({breakdown})")
@@ -654,6 +660,12 @@ INVOCATIONS_KNOWN = {
 FIGHTING_STYLE_LEVEL = {"fighter": 1, "paladin": 2, "ranger": 2}
 #: Champion's Additional Fighting Style: level 10 in 2014, 7 in 2024.
 CHAMPION_STYLE_LEVEL = {"2014": 10, "2024": 7}
+WEAPON_MASTERY_KNOWN = {
+    "fighter": {1: 3, 4: 4, 10: 5, 16: 6},
+    "barbarian": {1: 2, 4: 3, 10: 4},
+    "paladin": {1: 2},
+    "ranger": {1: 2},
+}
 
 
 def _chassis_data() -> dict:
@@ -673,7 +685,16 @@ def owed_choices(cls: str, from_lvl: int, to_lvl: int, ruleset: str = "2014",
     """The choices reaching `to_lvl` grants, as human-readable lines."""
     cls = cls.lower()
     out: list = []
+    masteries = WEAPON_MASTERY_KNOWN.get(cls, {}) if ruleset == "2024" else {}
+    if any(from_lvl < lvl <= to_lvl for lvl in masteries):
+        import lookup
+        names = ", ".join(r["name"] for r in lookup._get_records("weapon_mastery_properties", "2024"))
     for lvl in range(from_lvl + 1, to_lvl + 1):
+        if lvl in masteries:
+            count = masteries[lvl]
+            choice = str(count) if lvl == 1 else f"1 more ({count} known)"
+            options = f" — {names}" if names else ""
+            out.append(f"Level {lvl}: Weapon Mastery: choose {choice}{options}")
         if lvl in ASI_LEVELS.get(cls, ASI_LEVELS_DEFAULT):
             if ruleset == "2024" and lvl == 19:
                 out.append(f"Level {lvl}: Epic Boon feat")

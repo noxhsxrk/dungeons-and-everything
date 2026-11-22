@@ -333,7 +333,7 @@ def _apply_rest_to_sheet(text: str, rest_type: str, hit_dice_spent: int = 0, hea
         def reset_section(section):
             nonlocal n_slots
             updated, count = re.subn(
-                r"\|\s*(\d+(?:st|nd|rd|th))\s*\|\s*(\d+)\s*\|\s*[1-9]\d*\s*\|",
+                r"\|[ \t]*(\d+(?:st|nd|rd|th)[^|\n]*?)[ \t]*\|\s*(\d+)\s*\|\s*[1-9]\d*\s*\|",
                 _reset_slot_row, section.group())
             n_slots += count
             return updated

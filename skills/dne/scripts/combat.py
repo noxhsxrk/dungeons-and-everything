@@ -232,10 +232,10 @@ def format_attack(r: dict) -> str:
 # Source: D&D 2024 SRD 5.2 Weapon-Mastery-Properties (CC-BY-4.0).
 
 MASTERY_PROPERTIES = {
-    "cleave":  ("On hit, you may make a second attack against a different "
-                "creature within 5 ft of the first using the same roll. "
-                "Bonus damage on second hit only includes Strength/Dexterity "
-                "modifier from the first."),
+    "cleave":  ("On hit, you may make a new melee attack roll against a second "
+                "creature within 5 ft of the first and within your reach. "
+                "On a hit, it takes the weapon's damage. Add your ability "
+                "modifier only if it is negative. Once per turn."),
     "graze":   ("On miss, the target still takes damage equal to the ability "
                 "modifier you used for the attack."),
     "nick":    ("Light-weapon extra attack costs no Bonus Action this turn "
@@ -408,6 +408,18 @@ if __name__ == "__main__":
 
     elif cmd == "attack":
         args = sys.argv[2:]
+        camp = _opt(args, "-c") or _opt(args, "--campaign")
+        mastery_name = None
+        if "--mastery" in args:
+            from paths import campaign_ruleset
+
+            mastery_name = (_opt(args, "--mastery") or "").strip().lower()
+            if mastery_name not in MASTERY_PROPERTIES:
+                print(f"combat.py: Unknown mastery: {mastery_name or '(missing)'}", file=sys.stderr)
+                sys.exit(2)
+            if _opt(args, "--ruleset") == "2014" or (camp and campaign_ruleset(camp) == "2014"):
+                print("combat.py: weapon mastery is a 2024 rule", file=sys.stderr)
+                sys.exit(2)
         atk = int(args[args.index("--atk") + 1])
         ac = int(args[args.index("--ac") + 1])
         dmg = args[args.index("--dmg") + 1]
@@ -415,8 +427,7 @@ if __name__ == "__main__":
         attack_mods = damage_mods = None
         if "--effects" in args:
             who = args[args.index("--effects") + 1]
-            camp = (_opt(args, "-c") or _opt(args, "--campaign")
-                    or os.environ.get("CAMPAIGN"))
+            camp = camp or os.environ.get("CAMPAIGN")
             if not camp:
                 print("combat.py: --effects needs -c <campaign>", file=sys.stderr)
                 sys.exit(2)
@@ -434,8 +445,7 @@ if __name__ == "__main__":
             sys.exit(2)
 
         # Optional 2024 weapon mastery
-        if "--mastery" in args:
-            mastery_name = args[args.index("--mastery") + 1]
+        if mastery_name:
             ability_mod = (int(args[args.index("--ability-mod") + 1])
                            if "--ability-mod" in args else 0)
             save_dc = (int(args[args.index("--topple-dc") + 1])
