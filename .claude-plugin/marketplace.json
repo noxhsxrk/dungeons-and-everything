@@ -1,0 +1,21 @@
+{
+  "name": "dungeons-and-everything",
+  "owner": {
+    "name": "noxhsxrk",
+    "url": "https://github.com/noxhsxrk"
+  },
+  "metadata": {
+    "description": "Dungeons & Everything — AI Game Master for any world, on D&D 5e rules.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "dne",
+      "source": "./",
+      "description": "Game Master for persistent 5e-rules campaigns in any world the players describe — the AI generates origins, classes, powers, gear and monsters to fit. Campaign/character management, combat, NPCs, dice, an optional live display companion, and full session state across sessions.",
+      "version": "1.0.0",
+      "license": "AGPL-3.0-or-later",
+      "keywords": ["ttrpg", "5e", "game-master", "worldbuilding", "game", "dnd"]
+    }
+  ]
+}

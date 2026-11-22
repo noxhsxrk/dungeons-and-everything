@@ -1,0 +1,544 @@
+"""
+test_campaign_graph.py — end-to-end smoke tests for the campaign_graph CLI.
+
+Builds an ephemeral campaign in /tmp, runs the actual `campaign_graph.py`
+subcommands as subprocesses (against `GM_CAMPAIGN_ROOT` so paths.py routes
+correctly), and verifies the on-disk graph.json matches expectations.
+
+Run from repo root:
+    python3 -m unittest tests.test_campaign_graph -v
+"""
+import json
+import os
+import pathlib
+import subprocess
+import sys
+import tempfile
+import textwrap
+import unittest
+
+REPO = pathlib.Path(__file__).resolve().parent.parent
+# Code lives under skills/dne/ in the plugin layout; fall back to the repo root
+# for a legacy standalone checkout.
+SKILL = REPO / "skills" / "dne" if (REPO / "skills" / "dne").is_dir() else REPO
+SCRIPT = SKILL / "scripts" / "campaign_graph.py"
+
+
+def _run(args, env_overrides=None, stdin_text=""):
+    """Run campaign_graph.py with args, return (returncode, stdout, stderr)."""
+    env = os.environ.copy()
+    if env_overrides:
+        env.update(env_overrides)
+    r = subprocess.run(
+        [sys.executable, str(SCRIPT), *args],
+        capture_output=True, encoding="utf-8", text=True, env=env, input=stdin_text,
+    )
+    return r.returncode, r.stdout, r.stderr
+
+
+class GraphSubcommandTests(unittest.TestCase):
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.root = pathlib.Path(self.td.name)
+        # paths.py expects campaigns at $DNE_CAMPAIGN_ROOT/campaigns/<name>/.
+        # Unique campaign name guarantees no collision with the user's real
+        # ~/.dne/campaigns/ legacy fallback path.
+        self.env = {"DNE_CAMPAIGN_ROOT": str(self.root)}
+        self.campaign = f"unittest-graph-{os.getpid()}"
+        self.camp_dir = self.root / "campaigns" / self.campaign
+        self.camp_dir.mkdir(parents=True)
+        (self.camp_dir / "npcs.md").write_text("| Aldric | x |\n| Mira | y |\n", encoding="utf-8")
+
+    def tearDown(self):
+        self.td.cleanup()
+
+    def _graph_json(self) -> dict:
+        gp = self.camp_dir / "graph.json"
+        if not gp.exists():
+            return {"nodes": [], "edges": []}
+        return json.loads(gp.read_text(encoding="utf-8"))
+
+    # ── legacy-GBK / corrupt graph.json handling ────────────────────────────
+
+    def test_legacy_gbk_graph_migrates(self):
+        """A graph.json written in GBK by the pre-sweep plugin (Chinese node
+        names) decodes losslessly and is re-saved as UTF-8 on the next write —
+        a one-time migration, not a flatten."""
+        gp = self.camp_dir / "graph.json"
+        gp.write_bytes(
+            json.dumps({"version": 1, "nodes": [
+                {"id": "npc_aldric", "type": "npc", "name": "阿尔德里克"}
+            ], "edges": []}, ensure_ascii=False).encode("gbk")
+        )
+        rc, out, err = _run(
+            ["add-node", "--campaign", self.campaign,
+             "--type", "npc", "--name", "Mira"], env_overrides=self.env
+        )
+        self.assertEqual(rc, 0, msg=err)
+        data = self._graph_json()  # parses as UTF-8, so the file migrated
+        names = {n["name"] for n in data["nodes"]}
+        self.assertIn("阿尔德里克", names)
+        self.assertIn("Mira", names)
+
+    def test_corrupt_graph_backed_up_before_continue(self):
+        """An undecodable graph.json is copied aside BEFORE the flow continues,
+        so the next save can't silently flatten the original bytes."""
+        gp = self.camp_dir / "graph.json"
+        raw = b"\xff\xfe\x00 not json at all \x80\x81"
+        gp.write_bytes(raw)
+        rc, out, err = _run(
+            ["add-node", "--campaign", self.campaign,
+             "--type", "npc", "--name", "Mira"], env_overrides=self.env
+        )
+        self.assertEqual(rc, 0, msg=err)
+        self.assertIn("backed up", err)
+        backups = sorted(self.camp_dir.glob("graph.json.corrupt-*"))
+        self.assertEqual(len(backups), 1,
+                         msg="corrupt graph should be backed up before continuing")
+        self.assertEqual(backups[0].read_bytes(), raw)
+        data = self._graph_json()
+        self.assertEqual(len(data["nodes"]), 1)
+
+    # ── add-node + add-edge + list ─────────────────────────────────────────
+
+    def test_add_node_creates_graph_json(self):
+        rc, out, err = _run(
+            ["add-node", "--campaign", self.campaign,
+             "--type", "npc", "--name", "Aldric"], env_overrides=self.env
+        )
+        self.assertEqual(rc, 0, msg=err)
+        data = self._graph_json()
+        self.assertEqual(len(data["nodes"]), 1)
+        self.assertEqual(data["nodes"][0]["name"], "Aldric")
+        self.assertEqual(data["nodes"][0]["type"], "npc")
+
+    def test_add_edge_after_two_nodes(self):
+        for name in ("Aldric", "Mira"):
+            _run(["add-node", "--campaign", self.campaign,
+                  "--type", "npc", "--name", name], env_overrides=self.env)
+        rc, out, err = _run(
+            ["add-edge", "--campaign", self.campaign,
+             "--from", "Aldric", "--to", "Mira",
+             "--type", "knows", "--since", "1"], env_overrides=self.env
+        )
+        self.assertEqual(rc, 0, msg=err)
+        data = self._graph_json()
+        self.assertEqual(len(data["edges"]), 1)
+        self.assertEqual(data["edges"][0]["type"], "knows")
+        self.assertEqual(data["edges"][0]["since_session"], 1)
+
+    # ── close-edge + closed_anchor ─────────────────────────────────────────
+
+    def test_close_edge_records_until_session(self):
+        for name in ("Aldric", "Mira"):
+            _run(["add-node", "--campaign", self.campaign,
+                  "--type", "npc", "--name", name], env_overrides=self.env)
+        _run(["add-edge", "--campaign", self.campaign,
+              "--from", "Aldric", "--to", "Mira",
+              "--type", "allied_with", "--since", "1"], env_overrides=self.env)
+        edge_id = self._graph_json()["edges"][0]["id"]
+
+        rc, out, err = _run(
+            ["close-edge", "--campaign", self.campaign,
+             "--id", edge_id, "--at-session", "5"], env_overrides=self.env
+        )
+        self.assertEqual(rc, 0, msg=err)
+
+        edge = self._graph_json()["edges"][0]
+        self.assertEqual(edge["until_session"], 5)
+        self.assertNotIn("closed_anchor", edge)  # not provided
+
+    def test_close_edge_records_anchor_when_provided(self):
+        """v0.7 schema addition: --anchor stores closed_anchor on the edge."""
+        for name in ("Aldric", "Mira"):
+            _run(["add-node", "--campaign", self.campaign,
+                  "--type", "npc", "--name", name], env_overrides=self.env)
+        _run(["add-edge", "--campaign", self.campaign,
+              "--from", "Aldric", "--to", "Mira",
+              "--type", "serves", "--since", "1"], env_overrides=self.env)
+        edge_id = self._graph_json()["edges"][0]["id"]
+
+        anchor = "she walked out of the citadel and never came back"
+        rc, out, err = _run(
+            ["close-edge", "--campaign", self.campaign,
+             "--id", edge_id, "--at-session", "10",
+             "--anchor", anchor], env_overrides=self.env
+        )
+        self.assertEqual(rc, 0, msg=err)
+
+        edge = self._graph_json()["edges"][0]
+        self.assertEqual(edge["until_session"], 10)
+        self.assertEqual(edge["closed_anchor"], anchor)
+
+    # ── scene-context filtering by session ─────────────────────────────────
+
+    def test_scene_context_excludes_closed_edges_at_later_session(self):
+        # Build: Aldric --serves--> Mira (s1, closed s5)
+        for name in ("Aldric", "Mira", "Voss"):
+            _run(["add-node", "--campaign", self.campaign,
+                  "--type", "npc", "--name", name], env_overrides=self.env)
+        _run(["add-node", "--campaign", self.campaign,
+              "--type", "place", "--name", "Hold"], env_overrides=self.env)
+        _run(["add-edge", "--campaign", self.campaign,
+              "--from", "Aldric", "--to", "Hold",
+              "--type", "lives_in", "--since", "1"], env_overrides=self.env)
+        _run(["add-edge", "--campaign", self.campaign,
+              "--from", "Aldric", "--to", "Mira",
+              "--type", "serves", "--since", "1"], env_overrides=self.env)
+        edge_id = self._graph_json()["edges"][1]["id"]
+        _run(["close-edge", "--campaign", self.campaign,
+              "--id", edge_id, "--at-session", "5"], env_overrides=self.env)
+
+        # Query at session 7 — closed edge should NOT appear
+        rc, out, err = _run(
+            ["scene-context", "--campaign", self.campaign,
+             "--place", "Hold", "--at-session", "7"], env_overrides=self.env
+        )
+        self.assertEqual(rc, 0, msg=err)
+        self.assertIn("Aldric", out)
+        # The serves-edge was closed at s5, so at s7 it shouldn't surface
+        self.assertNotIn("serves", out,
+                         msg=f"expected closed serves-edge to be filtered at s7; got: {out}")
+
+        # Query at session 3 — edge was active, SHOULD appear
+        rc, out, err = _run(
+            ["scene-context", "--campaign", self.campaign,
+             "--place", "Hold", "--at-session", "3"], env_overrides=self.env
+        )
+        self.assertEqual(rc, 0)
+        self.assertIn("serves", out,
+                      msg=f"expected serves-edge to be active at s3; got: {out}")
+
+    def test_scene_context_uninitialized_exits_clean(self):
+        """If graph.json doesn't exist, scene-context should exit 0 with a notice."""
+        rc, out, err = _run(
+            ["scene-context", "--campaign", self.campaign,
+             "--place", "anywhere"], env_overrides=self.env
+        )
+        self.assertEqual(rc, 0, msg=err)
+        self.assertIn("not initialized", out)
+
+    # ── extract --deterministic end to end ────────────────────────────────
+
+    def test_extract_deterministic_against_synthetic_log(self):
+        """Run the actual subcommand: extract --deterministic produces JSON."""
+        (self.camp_dir / "session-log.md").write_text(textwrap.dedent("""\
+            # Session Log
+
+            ## Session 1
+
+            Aldric met Mira at the docks. Mira swore an oath to Aldric.
+        """), encoding="utf-8")
+        out_path = self.camp_dir / "proposals.json"
+        rc, out, err = _run(
+            ["extract", "--campaign", self.campaign,
+             "--deterministic", "--write", str(out_path)],
+            env_overrides=self.env
+        )
+        self.assertEqual(rc, 0, msg=err)
+        self.assertTrue(out_path.exists())
+        proposals = json.loads(out_path.read_text(encoding="utf-8"))
+        self.assertGreater(len(proposals), 0,
+                           f"deterministic extract produced no proposals; stderr: {err}")
+        # Every proposal has the required shape
+        for p in proposals:
+            self.assertIn("from", p)
+            self.assertIn("to", p)
+            self.assertIn("type", p)
+            self.assertIn("source", p)
+            self.assertIn("anchor", p["source"])
+
+    # ── extract-apply --pick (existing flow, smoke test) ──────────────────
+
+    def test_extract_apply_pick_subset(self):
+        # Build a proposals file directly and run extract-apply
+        proposals = [
+            {"from": "Aldric", "to": "Mira", "type": "met",
+             "since_session": 1,
+             "source": {"file": "session-log.md", "session": 1, "anchor": "Aldric met Mira."},
+             "confidence": "high"},
+            {"from": "Aldric", "to": "Voss", "type": "attacked",
+             "since_session": 1,
+             "source": {"file": "session-log.md", "session": 1, "anchor": "Aldric attacked Voss."},
+             "confidence": "high"},
+        ]
+        prop_path = self.camp_dir / "props.json"
+        prop_path.write_text(json.dumps(proposals), encoding="utf-8")
+
+        rc, out, err = _run(
+            ["extract-apply", "--campaign", self.campaign,
+             "--proposals", str(prop_path), "--pick", "1"],
+            env_overrides=self.env
+        )
+        self.assertEqual(rc, 0, msg=err)
+        edges = self._graph_json()["edges"]
+        self.assertEqual(len(edges), 1, msg=f"only proposal #1 should apply; got {edges}")
+        self.assertEqual(edges[0]["type"], "met")
+
+
+    # ── extract --deterministic --apply (one-shot, idempotent) ────────────
+
+    def test_extract_deterministic_apply_is_idempotent(self):
+        # A session log with a clean SVO sentence the verb table should catch.
+        (self.camp_dir / "session-log.md").write_text(
+            "## Session 1\n\nAldric betrayed Mira at the gate.\n"
+        , encoding="utf-8")
+        rc, out, err = _run(
+            ["extract", "--campaign", self.campaign,
+             "--deterministic", "--apply", "--min-confidence", "low"],
+            env_overrides=self.env
+        )
+        self.assertEqual(rc, 0, msg=err)
+        edges_first = self._graph_json()["edges"]
+        self.assertGreater(len(edges_first), 0,
+                           f"apply produced no edges; out={out} err={err}")
+
+        # Re-run: dedup must make it a no-op (no duplicate edges).
+        rc2, out2, err2 = _run(
+            ["extract", "--campaign", self.campaign,
+             "--deterministic", "--apply", "--min-confidence", "low"],
+            env_overrides=self.env
+        )
+        self.assertEqual(rc2, 0, msg=err2)
+        edges_second = self._graph_json()["edges"]
+        self.assertEqual(len(edges_first), len(edges_second),
+                         "second apply must be idempotent (no new edges)")
+
+    # ── supersede-edge (Phase 2.5) ──────────────────────────────────────────
+
+    def test_supersede_edge_marks_edge_and_excludes_from_active(self):
+        """Phase 2.5: superseded edges stay in the graph but never surface as active."""
+        for name in ("Aldric", "Mira"):
+            _run(["add-node", "--campaign", self.campaign,
+                  "--type", "npc", "--name", name], env_overrides=self.env)
+        _run(["add-node", "--campaign", self.campaign,
+              "--type", "place", "--name", "Hold"], env_overrides=self.env)
+        _run(["add-edge", "--campaign", self.campaign,
+              "--from", "Aldric", "--to", "Hold",
+              "--type", "lives_in", "--since", "1"], env_overrides=self.env)
+        # Wrong edge first: Aldric --serves--> Mira (later retconned)
+        _run(["add-edge", "--campaign", self.campaign,
+              "--from", "Aldric", "--to", "Mira",
+              "--type", "serves", "--since", "1"], env_overrides=self.env)
+        # Correct edge: Aldric --opposes--> Mira
+        _run(["add-edge", "--campaign", self.campaign,
+              "--from", "Aldric", "--to", "Mira",
+              "--type", "opposes", "--since", "1"], env_overrides=self.env)
+
+        edges = self._graph_json()["edges"]
+        wrong_id = next(e["id"] for e in edges if e["type"] == "serves")
+        correct_id = next(e["id"] for e in edges if e["type"] == "opposes")
+
+        rc, out, err = _run(
+            ["supersede-edge", "--campaign", self.campaign,
+             "--id", wrong_id, "--by", correct_id,
+             "--reason", "session-3 retcon: Aldric never served"],
+            env_overrides=self.env
+        )
+        self.assertEqual(rc, 0, msg=err)
+
+        # Read back graph; the wrong edge should have superseded_by set
+        wrong_edge = next(e for e in self._graph_json()["edges"] if e["id"] == wrong_id)
+        self.assertEqual(wrong_edge["superseded_by"], correct_id)
+        self.assertEqual(wrong_edge["supersede_reason"],
+                         "session-3 retcon: Aldric never served")
+
+        # scene-context shouldn't surface the superseded edge
+        rc, out, err = _run(
+            ["scene-context", "--campaign", self.campaign,
+             "--place", "Hold", "--at-session", "5"],
+            env_overrides=self.env
+        )
+        self.assertEqual(rc, 0)
+        self.assertIn("opposes", out)
+        self.assertNotIn("serves", out,
+                         msg=f"superseded edge leaked into scene-context: {out}")
+
+    def test_supersede_edge_without_replacement(self):
+        """Sometimes a retcon just deletes a relationship without a replacement."""
+        for name in ("Aldric", "Mira"):
+            _run(["add-node", "--campaign", self.campaign,
+                  "--type", "npc", "--name", name], env_overrides=self.env)
+        _run(["add-edge", "--campaign", self.campaign,
+              "--from", "Aldric", "--to", "Mira",
+              "--type", "knows", "--since", "1"], env_overrides=self.env)
+        edge_id = self._graph_json()["edges"][0]["id"]
+
+        rc, out, err = _run(
+            ["supersede-edge", "--campaign", self.campaign, "--id", edge_id],
+            env_overrides=self.env
+        )
+        self.assertEqual(rc, 0, msg=err)
+        edge = self._graph_json()["edges"][0]
+        self.assertEqual(edge["superseded_by"], True)
+
+    # ── category-node edges (Phase 2.5) ─────────────────────────────────────
+
+    def test_extract_deterministic_category_object_creates_category_node(self):
+        """Phase 2.5: state-verbs with category_object_ok extract category-target edges."""
+        (self.camp_dir / "session-log.md").write_text(textwrap.dedent("""\
+            # Session Log
+
+            ## Session 1
+
+            Aldric is possessed by a ghost. Mira fears the dark gods.
+        """), encoding="utf-8")
+        # Run extract --deterministic
+        out_path = self.camp_dir / "props.json"
+        rc, out, err = _run(
+            ["extract", "--campaign", self.campaign,
+             "--deterministic", "--write", str(out_path)],
+            env_overrides=self.env
+        )
+        self.assertEqual(rc, 0, msg=err)
+        proposals = json.loads(out_path.read_text(encoding="utf-8"))
+        # We expect at least one categorical proposal
+        cat_proposals = [p for p in proposals if p.get("category_to") or p.get("category_from")]
+        self.assertGreater(len(cat_proposals), 0,
+                           f"no categorical proposals; all proposals: {proposals}")
+
+        # Apply via extract-apply
+        rc, out, err = _run(
+            ["extract-apply", "--campaign", self.campaign,
+             "--proposals", str(out_path)],
+            env_overrides=self.env
+        )
+        self.assertEqual(rc, 0, msg=err)
+
+        graph = self._graph_json()
+        cat_nodes = [n for n in graph["nodes"] if n.get("category_node")]
+        self.assertGreater(len(cat_nodes), 0,
+                           f"no category nodes auto-created; nodes: {[n['id'] for n in graph['nodes']]}")
+        # Category node ids should start with cat_
+        for n in cat_nodes:
+            self.assertTrue(n["id"].startswith("cat_"),
+                            f"category node has non-cat_ id: {n['id']}")
+            self.assertEqual(n["type"], "category")
+
+    # ── set-disposition (party stance typing) ──────────────────────────────
+
+    def _active_stance(self, graph, to_id):
+        """Return the single active (unclosed, un-superseded) party→to_id edge."""
+        act = [e for e in graph["edges"]
+               if e["from"] == "party" and e["to"] == to_id
+               and e.get("until_session") is None and not e.get("superseded_by")]
+        return act
+
+    def test_set_disposition_creates_party_node_and_edge(self):
+        _run(["add-node", "--campaign", self.campaign,
+              "--type", "npc", "--name", "Aldric"], env_overrides=self.env)
+        rc, out, err = _run(
+            ["set-disposition", "--campaign", self.campaign,
+             "--to", "Aldric", "--level", "friendly", "--since", "2",
+             "--note", "helped in the mine"],
+            env_overrides=self.env,
+        )
+        self.assertEqual(rc, 0, msg=err)
+        graph = self._graph_json()
+        party = [n for n in graph["nodes"] if n["id"] == "party"]
+        self.assertEqual(len(party), 1)
+        self.assertEqual(party[0]["type"], "party")
+        act = self._active_stance(graph, "npc_aldric")
+        self.assertEqual(len(act), 1)
+        self.assertEqual(act[0]["type"], "disposition")
+        self.assertEqual(act[0]["level"], "friendly")
+        self.assertEqual(act[0]["since_session"], 2)
+
+    def test_faction_target_gets_standing_type(self):
+        _run(["add-node", "--campaign", self.campaign,
+              "--type", "faction", "--name", "Pale Court"], env_overrides=self.env)
+        rc, out, err = _run(
+            ["set-disposition", "--campaign", self.campaign,
+             "--to", "Pale Court", "--level", "hostile"],
+            env_overrides=self.env,
+        )
+        self.assertEqual(rc, 0, msg=err)
+        graph = self._graph_json()
+        act = self._active_stance(graph, "faction_pale_court")
+        self.assertEqual(len(act), 1)
+        self.assertEqual(act[0]["type"], "standing")
+        self.assertEqual(act[0]["level"], "hostile")
+
+    def test_changing_disposition_closes_prior(self):
+        _run(["add-node", "--campaign", self.campaign,
+              "--type", "npc", "--name", "Aldric"], env_overrides=self.env)
+        _run(["set-disposition", "--campaign", self.campaign,
+              "--to", "Aldric", "--level", "friendly", "--since", "2"],
+             env_overrides=self.env)
+        _run(["set-disposition", "--campaign", self.campaign,
+              "--to", "Aldric", "--level", "suspicious", "--since", "5"],
+             env_overrides=self.env)
+        graph = self._graph_json()
+        # Exactly one active; the prior is closed at the new since, not deleted.
+        act = self._active_stance(graph, "npc_aldric")
+        self.assertEqual(len(act), 1)
+        self.assertEqual(act[0]["level"], "suspicious")
+        closed = [e for e in graph["edges"]
+                  if e["from"] == "party" and e["to"] == "npc_aldric"
+                  and e.get("until_session") == 5]
+        self.assertEqual(len(closed), 1)
+        self.assertEqual(closed[0]["level"], "friendly")
+
+    def test_invalid_level_rejected(self):
+        _run(["add-node", "--campaign", self.campaign,
+              "--type", "npc", "--name", "Aldric"], env_overrides=self.env)
+        rc, out, err = _run(
+            ["set-disposition", "--campaign", self.campaign,
+             "--to", "Aldric", "--level", "enemy"],
+            env_overrides=self.env,
+        )
+        self.assertEqual(rc, 1)
+        self.assertIn("must be one of", err)
+
+
+class GraphInitTests(unittest.TestCase):
+    """`init` exists, so the documented `/dne graph init` can run.
+
+    SKILL-commands.md calls graph init a hard requirement and says every
+    graph subcommand maps to `campaign_graph.py <subcommand>`, but there was
+    no `init` subcommand -- argparse rejected it with an error, so the first
+    step of the documented flow could not be taken.
+    """
+
+    setUp = GraphSubcommandTests.setUp
+    tearDown = GraphSubcommandTests.tearDown
+
+    def test_init_creates_an_empty_graph(self):
+        rc, out, err = _run(["init", "--campaign", self.campaign], env_overrides=self.env)
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(json.loads((self.camp_dir / "graph.json").read_text(encoding="utf-8")),
+                         {"version": 1, "nodes": [], "edges": []})
+
+    def test_init_is_idempotent(self):
+        _run(["init", "--campaign", self.campaign], env_overrides=self.env)
+        rc, out, err = _run(["init", "--campaign", self.campaign], env_overrides=self.env)
+        self.assertEqual(rc, 0, err)
+        self.assertIn("already initialized", out)
+
+    def test_init_never_overwrites_a_populated_graph(self):
+        _run(["add-node", "--campaign", self.campaign, "--type", "npc", "--name", "Aldric"],
+             env_overrides=self.env)
+        before = (self.camp_dir / "graph.json").read_text(encoding="utf-8")
+        rc, out, err = _run(["init", "--campaign", self.campaign], env_overrides=self.env)
+        self.assertEqual(rc, 1)
+        self.assertIn("not overwriting", err)
+        self.assertEqual((self.camp_dir / "graph.json").read_text(encoding="utf-8"), before)
+
+    def test_init_refuses_a_campaign_that_does_not_exist(self):
+        rc, out, err = _run(["init", "--campaign", self.campaign + "-typo"],
+                            env_overrides=self.env)
+        self.assertEqual(rc, 1)
+        self.assertFalse((self.root / "campaigns" / (self.campaign + "-typo")).exists())
+
+    def test_scene_context_after_init_still_reports_uninitialized(self):
+        # An empty graph is not a seeded one; the load flow keys off nodes.
+        _run(["init", "--campaign", self.campaign], env_overrides=self.env)
+        rc, out, err = _run(["scene-context", "--campaign", self.campaign, "--place", "x"],
+                            env_overrides=self.env)
+        self.assertEqual(rc, 0)
+        self.assertIn("graph not initialized", out)
+
+
+if __name__ == "__main__":
+    unittest.main()

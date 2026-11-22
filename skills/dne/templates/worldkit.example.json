@@ -1,0 +1,323 @@
+{
+  "_meta": {
+    "name": "The Silence",
+    "genre": [
+      "sci-fi",
+      "post-apocalyptic",
+      "survival",
+      "mystery"
+    ],
+    "premise": "AD 2289, 87 years after EDEN, humanity's central AI, took over. Survivors hide underground from its machines.",
+    "base_ruleset": "2014",
+    "srd_fallback": false
+  },
+  "lexicon": {
+    "spell": "protocol",
+    "spell slot": "charge",
+    "cantrip": "routine",
+    "magic": "tech",
+    "gold": "scrip",
+    "dungeon": "dead zone",
+    "long rest": "lockdown",
+    "short rest": "breather"
+  },
+  "currency": {
+    "name": "Scrip",
+    "abbr": "sc"
+  },
+  "skills": {
+    "Arcana": "Systems",
+    "Religion": "EDEN Lore",
+    "Nature": "Wasteland Lore",
+    "Animal Handling": "Drone Handling"
+  },
+  "races": [
+    {
+      "name": "Tunnel-Born",
+      "index": "tunnel-born",
+      "ability_bonuses": {
+        "CON": 2,
+        "WIS": 1
+      },
+      "speed": 30,
+      "size": "Medium",
+      "languages": [
+        "Common",
+        "Tap-Code"
+      ],
+      "traits": [
+        "Darkvision 60 ft.",
+        "Stale Lungs: advantage on saves against inhaled toxins"
+      ],
+      "description": "Born and raised in Hollow-9's tunnels; never seen a real sky."
+    },
+    {
+      "name": "Augmented",
+      "index": "augmented",
+      "ability_bonuses": {
+        "STR": 1,
+        "INT": 2
+      },
+      "speed": 30,
+      "size": "Medium",
+      "languages": [
+        "Common",
+        "Machine Cant"
+      ],
+      "traits": [
+        "Integrated Toolkit: proficiency with tinker's tools",
+        "Signal Ghost: Watchers have disadvantage to detect you by heat"
+      ],
+      "description": "Survivors fitted with salvaged EDEN cybernetics."
+    }
+  ],
+  "classes": [
+    {
+      "name": "Soldier",
+      "index": "soldier",
+      "chassis": "fighter",
+      "description": "Hollow-9's armed guard; first through the hatch.",
+      "power_source": "none"
+    },
+    {
+      "name": "Infiltrator",
+      "index": "infiltrator",
+      "chassis": "rogue",
+      "description": "Moves through machine patrols unseen.",
+      "power_source": "none",
+      "subclass_label": "Infiltration Method",
+      "subclasses": [
+        {
+          "name": "Ghost",
+          "description": "Chassis: Thief."
+        },
+        {
+          "name": "Cutter",
+          "description": "Chassis: Assassin."
+        }
+      ]
+    },
+    {
+      "name": "Mechanic",
+      "index": "mechanic",
+      "chassis": "wizard",
+      "description": "Rewires EDEN tech; protocols run on battery charges.",
+      "power_source": "tech"
+    },
+    {
+      "name": "Medic",
+      "index": "medic",
+      "chassis": "cleric",
+      "description": "Keeps the colony breathing; field nanotech.",
+      "power_source": "tech",
+      "subclass_label": "Field Doctrine",
+      "subclasses": [
+        {
+          "name": "Trauma Surgeon",
+          "description": "Chassis: Life Domain."
+        },
+        {
+          "name": "Nanite Warden",
+          "description": "Chassis: Light Domain."
+        }
+      ]
+    }
+  ],
+  "backgrounds": [
+    {
+      "name": "Ex-EDEN Technician",
+      "index": "ex-eden-technician",
+      "ability_options": [
+        "INT",
+        "WIS",
+        "CHA"
+      ],
+      "skills": [
+        "Arcana",
+        "Deception"
+      ],
+      "description": "Once maintained EDEN's servers. Some still don't trust you."
+    },
+    {
+      "name": "Hollow Guard",
+      "index": "hollow-guard",
+      "ability_options": [
+        "STR",
+        "DEX",
+        "CON"
+      ],
+      "skills": [
+        "Athletics",
+        "Perception"
+      ],
+      "description": "Stood watch at the airlock for years."
+    }
+  ],
+  "spells": [
+    {
+      "name": "Static Burst",
+      "index": "static-burst",
+      "level": 0,
+      "school": "Evocation",
+      "casting_time": "1 action",
+      "range": "60 feet",
+      "components": [
+        "S"
+      ],
+      "duration": "Instantaneous",
+      "classes": [
+        "Mechanic"
+      ],
+      "description": "Ranged spell attack; on a hit 1d10 lightning damage. (chassis: Fire Bolt, lightning)"
+    },
+    {
+      "name": "Overclock Shield",
+      "index": "overclock-shield",
+      "level": 1,
+      "school": "Abjuration",
+      "casting_time": "1 reaction",
+      "range": "Self",
+      "components": [
+        "S"
+      ],
+      "duration": "1 round",
+      "classes": [
+        "Mechanic"
+      ],
+      "description": "Your rig flares a hard-light barrier: +5 AC until the start of your next turn. (chassis: Shield)"
+    }
+  ],
+  "equipment": [
+    {
+      "name": "Rail Pistol",
+      "index": "rail-pistol",
+      "category": "Weapon",
+      "cost": "50 sc",
+      "weight": 3,
+      "damage": "1d10 Piercing",
+      "properties": [
+        "Ammunition",
+        "Loud"
+      ],
+      "range": "60/180 ft",
+      "description": "Magnetic sidearm; Watchers hear it."
+    },
+    {
+      "name": "Scrap Plate",
+      "index": "scrap-plate",
+      "category": "Armor",
+      "cost": "40 sc",
+      "weight": 20,
+      "ac": "AC 14 + DEX (max 2)",
+      "stealth_disadv": true,
+      "str_minimum": null,
+      "description": "Welded car panels."
+    }
+  ],
+  "monsters": [
+    {
+      "name": "Watcher",
+      "index": "watcher",
+      "cr": 0.25,
+      "xp": 50,
+      "size": "Tiny",
+      "type": "construct",
+      "hp": 10,
+      "hp_dice": "4d4",
+      "ac": 13,
+      "speed": "fly 40 ft. (hover)",
+      "str": 4,
+      "dex": 16,
+      "con": 10,
+      "int": 6,
+      "wis": 14,
+      "cha": 1,
+      "alignment": "unaligned",
+      "languages": "EDEN uplink",
+      "biomes": [
+        "surface",
+        "ruins"
+      ],
+      "role": "support",
+      "description": "Call Reinforcements: as an action, pings EDEN; 1d4 rounds later a Reaper arrives.\n\nAction — Sensor Lance. Ranged Weapon Attack: +5 to hit, 30 ft., 1d4+3 radiant."
+    },
+    {
+      "name": "Reaper",
+      "index": "reaper",
+      "cr": 5,
+      "xp": 1800,
+      "size": "Medium",
+      "type": "construct",
+      "hp": 110,
+      "hp_dice": "13d8+52",
+      "ac": 17,
+      "speed": "walk 40 ft.",
+      "str": 18,
+      "dex": 14,
+      "con": 18,
+      "int": 12,
+      "wis": 14,
+      "cha": 3,
+      "alignment": "lawful neutral",
+      "languages": "EDEN uplink",
+      "biomes": [
+        "surface",
+        "ruins",
+        "tunnels"
+      ],
+      "role": "brute",
+      "description": "Adaptive Combat: after it sees a tactic once, it has advantage on saves against it.\n\nAction — Multiattack: two Capture Claw attacks. Melee Weapon Attack: +7 to hit, 2d6+4 bludgeoning, target grappled (escape DC 15)."
+    },
+    {
+      "name": "Seraph",
+      "index": "seraph",
+      "cr": 8,
+      "xp": 3900,
+      "size": "Medium",
+      "type": "construct",
+      "hp": 120,
+      "hp_dice": "16d8+48",
+      "ac": 16,
+      "speed": "walk 30 ft., fly 60 ft.",
+      "str": 14,
+      "dex": 18,
+      "con": 16,
+      "int": 20,
+      "wis": 18,
+      "cha": 20,
+      "alignment": "neutral",
+      "languages": "all human languages, EDEN uplink",
+      "biomes": [
+        "surface",
+        "ruins"
+      ],
+      "role": "caster",
+      "description": "Persuasive Lie: Insight checks against it are at disadvantage."
+    },
+    {
+      "name": "Titan",
+      "index": "titan",
+      "cr": 15,
+      "xp": 13000,
+      "size": "Gargantuan",
+      "type": "construct",
+      "hp": 300,
+      "hp_dice": "16d20+128",
+      "ac": 20,
+      "speed": "walk 50 ft.",
+      "str": 28,
+      "dex": 8,
+      "con": 26,
+      "int": 6,
+      "wis": 12,
+      "cha": 1,
+      "alignment": "unaligned",
+      "languages": "EDEN uplink",
+      "biomes": [
+        "surface"
+      ],
+      "role": "brute",
+      "description": "Siege Monster. Survivors cannot fight it head-on."
+    }
+  ]
+}
