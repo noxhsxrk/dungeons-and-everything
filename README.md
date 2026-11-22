@@ -85,6 +85,14 @@ Pick agents explicitly with `python3 install.py codex gemini`; remove with `pyth
 
 **What differs between agents:** only conveniences. Agents without a structured-question tool get numbered options in chat; agents without background tasks can't run the phone **autorun** loop (play in chat, or keep the display for viewing); agents without subagents play companions as the Game Master. The per-turn autosave hook is Claude Code only — every agent still autosaves at scene boundaries.
 
+### Updating
+
+```bash
+cd ~/dungeons-and-everything && git pull     # every agent linked by install.py picks it up
+```
+
+Or from inside a game: **`/dne update --check`** shows how far behind you are, **`/dne update`** pulls (fast-forward only; it refuses if you have local edits). Then start a new agent session so the new instructions load. Claude Code plugin users: `/plugin update dne`. Re-run `python3 install.py` only after adding a new agent to your machine, or on Windows if it made copies instead of links. Your campaigns in `~/.dne/` are never touched by an update.
+
 ### Where your games live
 
 Everything is plain markdown and JSON in **`~/.dne/`** — one folder per campaign plus a roster of every character you've played. Move it anywhere (Dropbox, iCloud, a NAS) with `/dne path <new-location>` or the `DNE_CAMPAIGN_ROOT` environment variable.
@@ -179,6 +187,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md).
 - สร้างตัวละคร: `/dne character new`
 - เล่นต่อ: `/dne load <ชื่อแคมเปญ>` แล้วพิมพ์สิ่งที่ตัวละครทำได้เลย
 - ข้อมูลเกมทั้งหมดเก็บอยู่ที่ `~/.dne/`
+- อัปเดต: `git pull` ในโฟลเดอร์ repo (ทุก agent อัปเดตพร้อมกัน) หรือพิมพ์ `/dne update` ในเกม — ข้อมูลแคมเปญไม่ถูกแตะ
 - รองรับภาษาไทยเต็มรูปแบบ ทั้งชื่อในโลก การเล่าเรื่อง และหน้าจอแสดงผลบนทีวีและมือถือ
 
 ## License
