@@ -1283,6 +1283,13 @@ def srd_lookup():
     # the frontend renders no link at all in that case: a guessed URL reads as
     # an answer and dead-ends, which is worse than saying nothing.
     ref = _lookup.reference_url(name, category=category)
+    try:  # a World Kit campaign without srd_fallback has no SRD to link to
+        import worldkit
+        kit = worldkit.load(camp) if camp else None
+        if kit is not None and not kit.get("_meta", {}).get("srd_fallback", False):
+            ref = {}
+    except Exception:
+        pass
     suggestions = []
     try:
         for sg_name, sg_cat in _lookup.suggest(name, category=category, n=3, campaign=camp):
@@ -2411,7 +2418,9 @@ def get_character_sheet(character):
     if not _token_ok():
         return "Forbidden", 403
 
-    safe = re.sub(r"[^A-Za-z0-9 _-]", "", character).strip()[:50]
+    # Letters/marks/digits in any script (Thai names), space, _ and - only — no path characters.
+    safe = "".join(ch for ch in character
+                   if unicodedata.category(ch)[0] in "LMN" or ch in " _-").strip()[:50]
     if not safe:
         return "Bad character name", 400
 
@@ -2792,8 +2801,9 @@ def codex():
     if not npcs:
         npcs = _parse_codex_sections(npcs_path)
 
-    # Parse locations from world.md
-    locations = _parse_codex_sections(os.path.join(cdir, "world.md"))[:20]
+    # world.md is the DM's prep (Three Truths, the mystery's answer, the threat arc) — never shown
+    # to players. Locations come from non-secret graph nodes below.
+    locations = []
 
     # Parse active quests / current situation from state.md
     state_path = os.path.join(cdir, "state.md")
@@ -2801,8 +2811,7 @@ def codex():
         title_l = sec["name"].lower()
         if any(k in title_l for k in ("quest", "situation", "hook", "thread", "objective")):
             quests.append(sec)
-        elif "faction" in title_l:
-            factions.append(sec)
+        # Factions come from graph nodes only: "Faction Moves" is the DM's off-screen log.
 
     # Supplement with non-secret graph.json nodes if present
     gpath = os.path.join(cdir, "graph.json")
@@ -2812,12 +2821,18 @@ def codex():
             nodes = g.get("nodes", {})
             nlist = list(nodes.values()) if isinstance(nodes, dict) else (nodes if isinstance(nodes, list) else [])
             seen_f = {f["name"].lower() for f in factions}
+            seen_l = {l["name"].lower() for l in locations}
             for n in nlist:
                 if not isinstance(n, dict):
                     continue
                 tags = {str(t).lower() for t in (n.get("tags") or [])}
                 if "dm_only" in tags or "secret" in tags:
                     continue
+                if str(n.get("type", "")).lower() in ("location", "place"):
+                    nm = str(n.get("name", "")).strip()
+                    if nm and nm.lower() not in seen_l:
+                        locations.append({"name": nm, "summary": _strip_dm_secrets(str(n.get("summary", "")))})
+                        seen_l.add(nm.lower())
                 if str(n.get("type", "")).lower() == "faction":
                     nm = str(n.get("name", "")).strip()
                     if nm and nm.lower() not in seen_f:
