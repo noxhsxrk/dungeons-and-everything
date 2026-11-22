@@ -860,8 +860,8 @@ def do_levelup(args: list[str]):
                 if r.get("class") == cls and r.get("level_req") == to_lvl and not r.get("parent")
                 and r.get("subclass") in (None, sub_idx) and r.get("index") not in replaced_options]
     if world and world.get("subclasses"):
-        subclass_label = world.get("subclass_label", "specialisation")
-        features = [subclass_label if name == SUBCLASS_NAME.get(cls) else name for name in features]
+        shown = subclass or world.get("subclass_label", "specialisation")
+        features = [shown if name == SUBCLASS_NAME.get(cls) else name for name in features]
     if features:
         print(f"  New features: {', '.join(dict.fromkeys(features))}")
 
