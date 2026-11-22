@@ -357,14 +357,14 @@ def parse_scores(args: list[str]) -> dict[str, int]:
     return scores
 
 
-def parse_proficient(args: list[str]) -> list[str]:
+def parse_proficient(args: list[str], flag="--proficient") -> list[str]:
     """Everything after --proficient until next -- flag."""
-    if "--proficient" not in args:
+    if flag not in args:
         return []
-    idx = args.index("--proficient")
+    idx = args.index(flag)
     profs = []
     for a in args[idx + 1:]:
-        if a.startswith("--") or a == "-c":
+        if a.startswith("--") or a == "-c" or "=" in a:
             break
         profs.append(a)
     return profs
@@ -394,6 +394,13 @@ def do_calc(args: list[str]):
     if "--help" in args or "-h" in args:
         print(__doc__)
         return
+    allowed = {"--class", "--level", "--proficient", "--expertise", "--race", "--subrace",
+               "--background", "--background-asi", "--armor", "--shield", "--fighting-style",
+               "--ruleset", "--campaign", "-c", "--subclass"}
+    for arg in args:
+        if arg.startswith("--") and arg not in allowed:
+            print(f"character.py: unknown flag {arg}", file=sys.stderr)
+            sys.exit(2)
     try:
         kit, cls, class_label = _world_class(args)
     except ValueError as exc:
@@ -543,14 +550,29 @@ def do_calc(args: list[str]):
 
     print(f"\n  Skills (* = proficient):")
     renamed = worldkit.skill_names(kit)
+    expertise = {_race_key(p) for p in parse_proficient(args, "--expertise")}
+    passive = 10
     for skill, ability in sorted(SKILLS.items()):
         score = scores.get(ability, 10)
         display = f"{renamed[skill]} [{skill}]" if skill in renamed else skill
         prof_keys = {_race_key(p) for p in proficient}
         is_prof = _race_key(skill) in prof_keys or _race_key(renamed.get(skill, skill)) in prof_keys
-        bonus = mod(score) + (prof if is_prof else 0)
+        expert = bool({_race_key(skill), _race_key(renamed.get(skill, skill))} & expertise)
+        bonus = mod(score) + (2 * prof if expert else prof if is_prof else 0)
+        if skill == "Perception":
+            passive += bonus
         marker = "*" if is_prof else " "
         print(f"  {marker} {display:<22} ({ability})  {fmt(bonus)}")
+
+    print(f"  Passive Perception: {passive}")
+    subclass = args[args.index("--subclass") + 1] if "--subclass" in args else ""
+    if subclass:
+        print(f"  Subclass: {subclass}")
+    elif lvl >= (3 if _ruleset_from(args) == "2024" else SUBCLASS_LEVEL_2014.get(cls, 3)):
+        world = worldkit.find(kit, "classes", args[args.index("--class") + 1]) if kit and "--class" in args else {}
+        label = (world or {}).get("subclass_label", SUBCLASS_NAME.get(cls, "subclass"))
+        options = ", ".join(r["name"] for r in (world or {}).get("subclasses", []))
+        print(f"  Choose a subclass — {label}" + (f": {options}" if options else ""))
 
     print(f"\n  XP to next level: {XP_THRESHOLDS.get(lvl+1, 'MAX')} total")
     print()
@@ -623,7 +645,7 @@ def owed_choices(cls: str, from_lvl: int, to_lvl: int, ruleset: str = "2014",
                 out.append(f"Level {lvl}: Ability Score Improvement — +2 to one score or "
                            f"+1 to two (or a feat, if the table uses feats)")
         sub_lvl = 3 if ruleset == "2024" else SUBCLASS_LEVEL_2014.get(cls)
-        if lvl == sub_lvl:
+        if lvl == sub_lvl and not subclass:
             out.append(f"Level {lvl}: choose a subclass ({SUBCLASS_NAME.get(cls, 'subclass')})")
         if lvl == FIGHTING_STYLE_LEVEL.get(cls):
             out.append(f"Level {lvl}: choose a Fighting Style")
@@ -638,6 +660,42 @@ def owed_choices(cls: str, from_lvl: int, to_lvl: int, ruleset: str = "2014",
                            f"{'s' if gained > 1 else ''} (now {table[lvl]} known)")
             if ruleset != "2024" and lvl == 3:
                 out.append("Level 3: choose a Pact Boon (Chain, Blade or Tome)")
+    return out
+
+
+# PHB spell progression, indexed by character level (0 is no spellcasting).
+FULL_SLOTS = [tuple(map(int, row)) for row in (
+    "000000000", "200000000", "300000000", "420000000", "430000000",
+    "432000000", "433000000", "433100000", "433200000", "433310000",
+    "433320000", "433321000", "433321000", "433321100", "433321100",
+    "433321110", "433321110", "433321111", "433331111", "433332111", "433332211")]
+CANTRIPS_START = {"bard": 2, "cleric": 3, "druid": 2, "sorcerer": 4, "warlock": 2, "wizard": 3}
+SPELLS_KNOWN = {name: [0] + list(map(int, values.split())) for name, values in {
+    "bard": "4 5 6 7 8 9 10 11 12 14 15 15 16 18 19 19 20 22 22 22",
+    "ranger": "0 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10 11 11",
+    "sorcerer": "2 3 4 5 6 7 8 9 10 11 12 12 13 13 14 14 15 15 15 15",
+    "warlock": "2 3 4 5 6 7 8 9 10 10 11 11 12 12 13 13 14 14 15 15",
+}.items()}
+
+
+def spell_progression(cls: str, level: int) -> dict:
+    if not 0 <= level <= 20:
+        raise ValueError("Spell progression requires level 0–20")
+    out = {}
+    if cls in CANTRIPS_START:
+        out["Cantrips known"] = CANTRIPS_START[cls] + (level >= 4) + (level >= 10) if level else 0
+    if cls in SPELLS_KNOWN:
+        out["Spells known"] = SPELLS_KNOWN[cls][level]
+    if cls == "warlock":
+        out["Pact slots"] = (1 if level == 1 else 2 if level < 11 else 3 if level < 17 else 4) if level else 0
+        out["Pact slot level"] = min(5, (level + 1) // 2)
+    elif cls in ("bard", "cleric", "druid", "sorcerer", "wizard", "paladin", "ranger"):
+        caster_level = (level + 1) // 2 if cls in ("paladin", "ranger") and level >= 2 else level
+        if cls in ("paladin", "ranger") and level < 2:
+            caster_level = 0
+        for index, slots in enumerate(FULL_SLOTS[caster_level], 1):
+            ordinal = {1: "1st", 2: "2nd", 3: "3rd"}.get(index, f"{index}th")
+            out[f"{ordinal}-level slots"] = slots
     return out
 
 
@@ -701,12 +759,21 @@ def do_levelup(args: list[str]):
 
     print(f"  XP threshold for level {to_lvl}: {XP_THRESHOLDS.get(to_lvl, 'MAX')}")
 
+    before, after = spell_progression(cls, from_lvl), spell_progression(cls, to_lvl)
+    for name, value in after.items():
+        if value != before.get(name, 0):
+            print(f"  {name}: {before.get(name, 0)} → {value}")
+    if subclass:
+        print(f"  Subclass: {subclass}")
+    pact_boons = [r["name"] for r in (kit or {}).get("class_options", []) if r.get("kind") == "pact_boon"]
     owed_list = owed_choices(cls, from_lvl, to_lvl, ruleset, subclass)
     if owed_list:
         print(f"\n  Choices owed ({ruleset} rules):")
         world = worldkit.find(kit, "classes", args[args.index("--class") + 1]) if kit and "--class" in args else None
         world_subs = [s.get("name", "") for s in (world or {}).get("subclasses", [])]
         for line in owed_list:
+            if "Pact Boon" in line and pact_boons:
+                line = "Level 3: choose a Pact Boon (" + ", ".join(pact_boons) + ")"
             if world and "choose a subclass" in line:
                 # A world class picks from its own subclasses, never the chassis's SRD ones.
                 line = (f"{line.split(':')[0]}: choose a subclass — {world.get('subclass_label', 'specialisation')}"
@@ -727,7 +794,7 @@ def do_levelup(args: list[str]):
             if names:
                 heading = label if world_options else (f"SRD {label} (re-skin names with the world lexicon)" if kit else f"SRD {label} available")
                 print(f"      {heading}: {', '.join(names)}")
-        if any("Pact Boon" in x for x in owed_list):
+        if not pact_boons and any("Pact Boon" in x for x in owed_list):
             print("      (lookup.py pact-boon <name> for Chain, Blade and Tome)")
     print()
 
@@ -823,7 +890,13 @@ def do_rest(args: list[str]):
     print(f"    Hit Dice: +{r['hd_regained']} → {r['hd_remaining']} / {_int_arg(args, '--level')}")
     if _int_arg(args, "--exhaustion", 0):
         print(f"    Exhaustion: {_int_arg(args, '--exhaustion', 0)} → {r['exhaustion']}")
-    print("    Spell slots and long-rest features: restored. Concentration: ends.")
+    casting = True
+    if "--class" in args:
+        _, cls, _ = _world_class(args)
+        casting = cls in ("bard", "cleric", "druid", "sorcerer", "warlock", "wizard") or (
+            cls in ("paladin", "ranger") and _int_arg(args, "--level") >= 2)
+    print("    " + ("Spell slots and long-rest features" if casting else "Long-rest features")
+          + ": restored. Concentration: ends.")
 
 
 def do_xp(args: list[str]):

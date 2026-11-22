@@ -1616,6 +1616,63 @@ def _norm_subrace(r: dict) -> dict:
     }
 
 
+def _norm_bits_feature(record: dict, trait: bool = False) -> dict:
+    return {
+        "name": re.sub(r" \(\d+ uses?\)$", "", record.get("name", "")),
+        "index": record.get("index", _slugify(record.get("name", ""))),
+        "description": _join_desc(record.get("desc", [])),
+        "class": None if trait else (record.get("class") or {}).get("index"),
+        "level_req": None if trait else record.get("level"),
+        "type": "race" if trait else "class",
+    }
+
+
+def _build_features_2014() -> list:
+    features = []
+    for filename, trait in (("5e-SRD-Features.json", False), ("5e-SRD-Traits.json", True)):
+        records = _fetch_json(f"{_bits_url(RULESET_2014)}/{filename}")
+        if not isinstance(records, list) or not records:
+            raise ValueError(f"Cannot refresh 2014 features: failed to fetch {filename}")
+        features.extend(_norm_bits_feature(r, trait) for r in records if r.get("name"))
+    return features
+
+
+def cmd_refresh_features() -> None:
+    """Refresh features and their counts; preserve other category bytes."""
+    from pathlib import Path
+    path = Path(_out_file(RULESET_2014))
+    original = path.read_text(encoding="utf-8")
+    data = json.loads(original)
+    if "features" not in data:
+        raise ValueError("Existing dataset has no features list")
+    features = _build_features_2014()
+    meta = data.get("_meta", {})
+    counts = {k: len(v) for k, v in data.items() if k != "_meta"}
+    counts["features"] = len(features)
+    meta.update(record_counts=counts, total_records=sum(counts.values()))
+    values = {"features": features, "_meta": meta}
+    decoder = json.JSONDecoder()
+    replacements = []
+    pos = original.index("{") + 1
+    while pos < len(original):
+        while original[pos].isspace() or original[pos] == ",":
+            pos += 1
+        if original[pos] == "}":
+            break
+        key, pos = decoder.raw_decode(original, pos)
+        while original[pos].isspace() or original[pos] == ":":
+            pos += 1
+        start = pos
+        _, pos = decoder.raw_decode(original, pos)
+        if key in values:
+            replacements.append((start, pos, json.dumps(values[key], separators=(",", ":"))))
+    updated = original
+    for start, end, replacement in reversed(replacements):
+        updated = updated[:start] + replacement + updated[end:]
+    path.write_text(updated, encoding="utf-8")
+    print(f"Refreshed {len(features)} SRD 2014 features and metadata counts; other categories unchanged")
+
+
 # ─── FoundryVTT normaliser ────────────────────────────────────────────────────
 
 def _parse_scale_tables(class_doc: dict) -> dict:
@@ -1985,15 +2042,18 @@ def cmd_build(skip_fvtt: bool = False,
         else:
             categories["spells"] = _build_fvtt_spells_2024()
 
-    print()
-    print("── foundryvtt/dnd5e (class features) ───────────────────────────")
-    fvtt_sha = _latest_sha(FVTT_COMMITS)
-    if skip_fvtt:
-        print("  skipped (--no-fvtt)")
-        features = []
+    fvtt_sha = ""
+    if ruleset == RULESET_2014:
+        categories["features"] = _build_features_2014()
     else:
-        features, _ = _build_fvtt()
-    categories["features"] = features
+        print()
+        print("── foundryvtt/dnd5e (class features) ───────────────────────────")
+        fvtt_sha = _latest_sha(FVTT_COMMITS)
+        if skip_fvtt:
+            print("  skipped (--no-fvtt)")
+            categories["features"] = []
+        else:
+            categories["features"], _ = _build_fvtt()
 
     counts = {k: len(v) for k, v in categories.items()}
     total  = sum(counts.values())
@@ -2061,6 +2121,17 @@ def main() -> None:
                 print(f"Unknown ruleset: {ruleset}. "
                       f"Valid: {RULESET_2014}, {RULESET_2024}.", file=sys.stderr)
                 sys.exit(2)
+    if "--refresh" in args:
+        i = args.index("--refresh")
+        if i + 1 >= len(args) or args[i + 1] != "features" or ruleset != RULESET_2014:
+            print("--refresh supports only features for ruleset 2014", file=sys.stderr)
+            sys.exit(2)
+        try:
+            cmd_refresh_features()
+        except (OSError, ValueError) as exc:
+            print(f"Refresh failed: {exc}", file=sys.stderr)
+            sys.exit(1)
+        return
     if "--status" in args:
         cmd_status(ruleset)
     else:

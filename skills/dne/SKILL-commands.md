@@ -751,7 +751,7 @@ DNDEND
 ---
 
 ## `/dne rest <short|long>`
-Three scripts, one job each: **`economy.py rest`** writes the rest to the character sheets, **`character.py`** only computes (hit-die rolls, previews), **`calendar.py rest`** moves the clock and the tracker's timed effects. **Do not run `tracker.py clear` for a rest**; it is for the end of an encounter.
+Three scripts, one job each: **`economy.py rest`** writes the rest to the character sheets, **`character.py`** only computes (hit-die rolls, previews), **`calendar.py rest`** moves the clock and the tracker's timed effects. Neither wipes effects — do not run `tracker.py clear` for a rest; it is for the end of an encounter.
 
 **Short (1 hour):**
 1. Ask how many Hit Dice each player spends. The player rolls them (`dice.py <K>d<N>+<K×CON> --player <pc> --label "Hit Dice"`), or use `character.py hitdie --die d<N> --con-mod <M> --hp <cur> --max-hp <max> --remaining <R> --count <K> -c <campaign>` (refuses at 0 HP or with no dice left).
@@ -760,10 +760,11 @@ Three scripts, one job each: **`economy.py rest`** writes the rest to the charac
 4. Advance time: `calendar.py -c <campaign> rest short`.
 
 **Long (8 hours):**
-1. `economy.py -c <campaign> rest --type long --char all` — full HP, Temp HP 0, Hit Dice regained per ruleset (2014: half the total, rounded down, min 1; 2024: all), spell slots restored, death saves reset. A character at **0 HP gains nothing** (the script leaves them untouched and says so): resolve how they regain consciousness first (a stable creature regains 1 HP after 1d4 hours). Exhaustion drops one level (2014 also requires food and drink) — `character.py rest long … -c <campaign>` previews these numbers if needed.
-2. Push: `push_stats.py --player NAME --hp <max> <max>`, `--hit-dice-restore <n>`, and `--second-wind true`.
-3. Advance time: `calendar.py -c <campaign> rest long` — ends every concentration, lowers tracked exhaustion by one for anyone above 0 HP, runs effects down by eight hours. Reset a dying character's death saves with `tracker.py saves <name> reset` only once they have regained HP.
-4. Update `state.md` in-world date to match calendar output.
+1. **Life-state gate first.** A character at 0 HP — dying, stable or dead — gains **nothing** from a long rest; RAW it needs at least 1 HP. `economy.py` leaves such a sheet untouched and says so; resolve how they regain consciousness first (a stable creature regains 1 HP after 1d4 hours).
+2. `economy.py -c <campaign> rest --type long --char all` — for everyone else: full HP, Temp HP 0, Hit Dice regained equal to **half the character's total, rounded down, minimum 1** (2014) or **all spent dice** (2024), spell slots restored, death saves reset. Exhaustion is **one level lower** (2014 also requires food and drink). `character.py rest long … -c <campaign>` previews these numbers if needed.
+3. Push: `push_stats.py --player NAME --hp <max> <max>`, `--hit-dice-restore <n>`, and `--second-wind true`.
+4. Advance time: `calendar.py -c <campaign> rest long` — ends every concentration, lowers tracked exhaustion by one for anyone above 0 HP, runs effects down by eight hours. Reset a dying character's death saves with `tracker.py saves <name> reset` only once they have regained HP.
+5. Update `state.md` in-world date to match calendar output.
 
 ---
 

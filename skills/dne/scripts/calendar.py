@@ -50,6 +50,10 @@ import os
 import sys
 import subprocess
 import argparse
+from datetime import date, datetime, timedelta
+
+GREGORIAN_MONTHS = "January February March April May June July August September October November December".split()
+WEEKDAYS = "Monday Tuesday Wednesday Thursday Friday Saturday Sunday".split()
 from paths import find_campaign as _find_campaign, display_dir as _display_dir
 
 SEND_PY = str(_display_dir() / "send.py")
@@ -119,7 +123,8 @@ def _format_date(cal: dict) -> str:
     month_str = months[month - 1] if months and 1 <= month <= len(months) else f"Month {month}"
     day_str   = f"Day {day}"
     if days:
-        day_of_week = (day - 1) % len(days)
+        ordinal = ((year - 1) * (len(months) or 12) + month - 1) * _month_length(cal) + day - 1
+        day_of_week = date(year, month, day).weekday() if cal.get("gregorian") else ordinal % len(days)
         day_str = days[day_of_week]
 
     # Map hour to time-of-day label
@@ -139,6 +144,10 @@ def _advance_hours(cal: dict, hours: int) -> None:
     cal.setdefault("month", 1)
     cal.setdefault("year", 1)
 
+    if cal.get("gregorian"):
+        value = datetime(cal["year"], cal["month"], cal["day"], cal["hour"]) + timedelta(hours=hours)
+        cal.update(year=value.year, month=value.month, day=value.day, hour=value.hour)
+        return
     cal["hour"] += hours
     month_len = _month_length(cal)
 
@@ -171,42 +180,46 @@ def _send_date(cal: dict) -> None:
 
 # ─── Commands ────────────────────────────────────────────────────────────────
 
-def cmd_init(campaign: str, args) -> None:
-    cal: dict = {}
-
-    # Parse the starting date string: "15 Harvestmoon 1247"
-    date_str = args.date
+def _set_date(cal: dict, date_str: str) -> None:
+    parts = date_str.split()
+    if len(parts) not in (2, 3):
+        raise ValueError(f"Invalid date {date_str!r}; expected D Month YYYY")
     try:
-        parts = date_str.split()
-        if len(parts) >= 3:
-            month_name = parts[1]
-            cal["day"]  = int(parts[0])
-            cal["year"] = int(parts[2])
-        elif len(parts) == 2:
-            month_name = parts[1]
-            cal["day"]  = int(parts[0])
-            cal["year"] = 1
-        else:
-            cal["day"]  = 1
-            month_name  = date_str
-            cal["year"] = 1
-
-        # Figure out month index
-        months = [m.strip() for m in args.months.split(",") if m.strip()] if args.months else []
+        day, year = int(parts[0]), int(parts[2]) if len(parts) == 3 else 1
+    except ValueError:
+        raise ValueError(f"Invalid date {date_str!r}; expected D Month YYYY") from None
+    months = cal.get("months", [])
+    if not months:
+        months = GREGORIAN_MONTHS[:] if parts[1].lower() in [m.lower() for m in GREGORIAN_MONTHS] else [parts[1]]
         cal["months"] = months
-        cal["month"] = 1
-        for i, m in enumerate(months):
-            if m.lower() == month_name.lower():
-                cal["month"] = i + 1
-                break
-    except (ValueError, IndexError):
-        cal.update({"day": 1, "month": 1, "year": 1, "months": []})
+    try:
+        month = [m.lower() for m in months].index(parts[1].lower()) + 1
+    except ValueError:
+        raise ValueError(f"Unknown month: {parts[1]}") from None
+    if cal.get("gregorian"):
+        date(year, month, day)
+    elif year < 1 or not 1 <= day <= _month_length(cal):
+        raise ValueError(f"Invalid date: {date_str}")
+    cal.update(day=day, month=month, year=year)
 
-    cal["hour"]        = HOURS_PER_TIME.get(args.time or "morning", 8)
-    cal["month_length"] = int(args.month_length) if args.month_length else 30
-    cal["day_names"]   = [d.strip() for d in args.day_names.split(",") if d.strip()] if args.day_names else []
-    cal["events"]      = []
 
+def _time_hour(label: str) -> int:
+    if label.lower() not in HOURS_PER_TIME:
+        raise ValueError(f"Unknown time label: {label}")
+    return HOURS_PER_TIME[label.lower()]
+
+
+def cmd_init(campaign: str, args) -> None:
+    gregorian = getattr(args, "gregorian", False)
+    cal = {"months": GREGORIAN_MONTHS[:] if gregorian else [m.strip() for m in args.months.split(",") if m.strip()],
+           "month_length": int(args.month_length or 30),
+           "day_names": WEEKDAYS[:] if gregorian else [d.strip() for d in args.day_names.split(",") if d.strip()] or WEEKDAYS[:],
+           "hour": _time_hour(args.time or "morning"), "events": []}
+    if cal["month_length"] < 1:
+        raise ValueError("Month length must be positive")
+    if gregorian:
+        cal["gregorian"] = True
+    _set_date(cal, args.date)
     _save(campaign, cal)
     print(f"Calendar initialised: {_format_date(cal)}")
 
@@ -263,31 +276,17 @@ def cmd_now(campaign: str) -> None:
         print(_format_date(cal))
 
 
-def cmd_set(campaign: str, date_str: str, time_str: str) -> None:
-    cal = _load(campaign)
-    if not cal:
-        cal = {"months": [], "day_names": [], "month_length": 30, "events": []}
-
-    months = cal.get("months", [])
-    try:
-        parts = date_str.split()
-        if len(parts) >= 3:
-            month_name = parts[1]
-            cal["day"]  = int(parts[0])
-            cal["year"] = int(parts[2])
-            cal["month"] = 1
-            for i, m in enumerate(months):
-                if m.lower() == month_name.lower():
-                    cal["month"] = i + 1
-                    break
-        elif len(parts) == 1:
-            cal["day"] = int(parts[0])
-    except (ValueError, IndexError):
-        pass
-
+def cmd_set(campaign: str, date_str: str, time_str: str, hour=None) -> None:
+    cal = _load(campaign) or {"months": [], "day_names": WEEKDAYS[:], "month_length": 30, "events": []}
+    if len(date_str.split()) == 1:
+        date_str = f"{date_str} {cal['months'][cal.get('month', 1) - 1]} {cal.get('year', 1)}"
+    _set_date(cal, date_str)
     if time_str:
-        cal["hour"] = HOURS_PER_TIME.get(time_str.lower(), cal.get("hour", 8))
-
+        cal["hour"] = _time_hour(time_str)
+    if hour is not None:
+        if not 0 <= hour <= 23:
+            raise ValueError("Hour must be between 0 and 23")
+        cal["hour"] = hour
     _save(campaign, cal)
     print(f"  Date set: {_format_date(cal)}")
     _send_date(cal)
@@ -325,6 +324,7 @@ def main() -> None:
     sub = p.add_subparsers(dest="cmd")
 
     ini = sub.add_parser("init", help="Initialise campaign calendar (run once)")
+    ini.add_argument("--gregorian", action="store_true")
     ini.add_argument("--date",         default="1 Month 1",
                      help="Starting date, e.g. '15 Harvestmoon 1247'")
     ini.add_argument("--time",         default="morning",
@@ -347,6 +347,7 @@ def main() -> None:
     sub.add_parser("now", help="Print current date/time")
 
     st = sub.add_parser("set", help="Set the current date/time directly")
+    st.add_argument("--hour", type=int, choices=range(24))
     st.add_argument("date",      help="Date string, e.g. '22 Harvestmoon 1247'")
     st.add_argument("time", nargs="?", default="",
                     help="Time of day (optional)")
@@ -364,11 +365,15 @@ def main() -> None:
     elif args.cmd == "advance": cmd_advance(args.campaign, args.amount, args.unit)
     elif args.cmd == "rest":    cmd_rest(args.campaign, args.type)
     elif args.cmd == "now":     cmd_now(args.campaign)
-    elif args.cmd == "set":     cmd_set(args.campaign, args.date, args.time)
+    elif args.cmd == "set":     cmd_set(args.campaign, args.date, args.time, args.hour)
     elif args.cmd == "time":    cmd_time(args.campaign, args.tod)
     elif args.cmd == "events":  cmd_events(args.campaign)
     else:                       p.print_help()
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(2)

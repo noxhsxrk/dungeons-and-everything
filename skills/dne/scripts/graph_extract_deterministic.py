@@ -23,9 +23,7 @@ from typing import Optional
 try:
     import yaml
 except ImportError:
-    print("error: PyYAML required for deterministic extraction. Install: pip3 install pyyaml",
-          file=sys.stderr)
-    sys.exit(2)
+    yaml = None
 
 
 _SKILL_ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -46,9 +44,12 @@ def load_verb_table(path: Optional[pathlib.Path] = None) -> dict:
     else:
         candidates = _VERB_TABLE_CANDIDATES
     for p in candidates:
-        if p.exists():
+        if yaml is not None and p.suffix != ".json" and p.exists():
             with open(p, encoding="utf-8") as f:
                 return yaml.safe_load(f)
+        json_path = p.with_suffix(".json")
+        if json_path.exists():
+            return json.loads(json_path.read_text(encoding="utf-8"))
     tried = "\n  ".join(str(p) for p in candidates)
     raise FileNotFoundError(f"verb table not found. tried:\n  {tried}")
 

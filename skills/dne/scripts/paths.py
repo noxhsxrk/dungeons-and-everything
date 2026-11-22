@@ -125,6 +125,23 @@ def find_campaign(name: str) -> pathlib.Path:
     return campaign_dir(name)
 
 
+def find_character_file(campaign: str, name: str) -> pathlib.Path:
+    """Resolve a sheet by filename, display name, or hyphen/underscore slug."""
+    cdir = find_campaign(campaign) / "characters"
+    target = norm_key(name)
+    files = sorted(cdir.glob("*.md"))
+    for path in files:
+        if path.stem == name:
+            return path
+    for path in files:
+        if norm_key(path.stem) == target:
+            return path
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+        if any(line.startswith("# ") and norm_key(line[2:]) == target for line in lines):
+            return path
+    raise FileNotFoundError(f"Character sheet not found for '{name}' in {cdir}")
+
+
 # ── Name keys ─────────────────────────────────────────────────────────────
 import unicodedata as _ud
 

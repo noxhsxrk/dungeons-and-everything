@@ -65,6 +65,7 @@ def validate(kit):
     skills = set(SKILLS) | set(kit.get('skills', {}).values())
     spells = [r for r in kit.get('spells', []) if isinstance(r, dict)] if isinstance(kit.get('spells', []), list) else []
     srd_spells = None
+    srd_options = None
     categories = set(CATEGORIES) | {k for k, v in kit.items() if isinstance(v, list)}
     for category in sorted(categories):
         if category not in kit:
@@ -171,6 +172,21 @@ def validate(kit):
                             srd_spells = set()
                     if norm_key(chassis) not in srd_spells:
                         errors.append(f'{label}: unknown SRD spell chassis {chassis.strip()}')
+            elif category == 'class_options':
+                if record.get('kind') not in ('invocation', 'fighting_style', 'pact_boon', 'metamagic', 'other'):
+                    errors.append(f'{label}: invalid kind {record.get("kind")!r}')
+                if 'level' in record and type(record['level']) is not int:
+                    errors.append(f'{label}: level must be an integer')
+                for chassis in re.findall(r'\(chassis:\s*([^),]+)', str(record.get('description', '')), re.I):
+                    if srd_options is None:
+                        try:
+                            records = json.loads(srd_path('2014').read_text(encoding='utf-8')).get('class_options', [])
+                            srd_options = {norm_key(r[k]) for r in records for k in ('name', 'index') if r.get(k)}
+                        except (OSError, ValueError) as exc:
+                            errors.append(f'{label}: cannot validate class_options chassis: {exc}')
+                            srd_options = set()
+                    if norm_key(chassis) not in srd_options:
+                        errors.append(f'{label}: unknown SRD class_options chassis {chassis.strip()}')
             elif category == 'equipment':
                 if 'damage' in record and (not isinstance(record['damage'], str) or not re.fullmatch(r'\d+d\d+( ?[+-] ?\d+)?( [A-Za-z]+)?', record['damage'])):
                     errors.append(f'{label}: invalid damage {record["damage"]!r}')
@@ -197,6 +213,24 @@ def warnings(kit):
     for cls in kit.get('classes', []):
         if not cls.get('subclasses'):
             out.append(f'{cls["name"]}: missing subclasses')
+    from character import CANTRIPS_START
+    for cls in kit.get('classes', []):
+        chassis = cls.get('chassis', '').lower()
+        if chassis not in (*CANTRIPS_START, 'paladin', 'ranger'):
+            continue
+        keys = {norm_key(cls.get(k)) for k in ('name', 'index') if cls.get(k)}
+        powers = [s for s in kit.get('spells', []) if keys.intersection(norm_key(c) for c in s.get('classes', []))]
+        for level, minimum in ((0, CANTRIPS_START.get(chassis, 0)), (1, 6 if chassis == 'wizard' else 4), (2, 3), (3, 3)):
+            count = sum(s.get('level') == level for s in powers)
+            if count < minimum:
+                label = 'cantrips' if level == 0 else f'level-{level} powers'
+                out.append(f'{cls["name"]}: {label} shortfall {minimum - count} (has {count}, needs {minimum})')
+        if chassis == 'warlock' and not any(r.get('kind') == 'invocation' for r in kit.get('class_options', [])):
+            out.append(f'{cls["name"]}: missing invocation class_options')
+    biomes = {b for r in kit.get('monsters', []) for b in r.get('biomes', [])}
+    for biome in sorted(biomes):
+        if not any(biome in r.get('biomes', []) and Fraction(str(r.get('cr', 0))) <= 1 for r in kit.get('monsters', [])):
+            out.append(f'{biome}: no monster of CR ≤ 1')
     if not kit.get('currency'):
         out.append('missing currency')
     for field in ('name', 'genre', 'premise'):
@@ -230,6 +264,8 @@ def show(kit):
         print(f"  {r['name']}: abilities {', '.join(r['ability_options'])}; skills {', '.join(r['skills'])}")
     print('Powers:')
     for cls in kit.get('classes', []):
+        if cls.get('chassis', '').lower() not in ('bard', 'cleric', 'druid', 'sorcerer', 'warlock', 'wizard', 'paladin', 'ranger'):
+            continue
         counts = {}
         keys = {norm_key(cls.get(k)) for k in ('name', 'index') if cls.get(k)}
         for spell in kit.get('spells', []):
@@ -237,7 +273,12 @@ def show(kit):
                 level = spell['level']
                 counts[level] = counts.get(level, 0) + 1
         print(f"  {cls['name']}: " + (', '.join(f'level {lv}: {n}' for lv, n in sorted(counts.items())) or '0'))
-    print('Gear:', ', '.join(r['name'] for r in kit.get('equipment', [])))
+    print('Gear:')
+    for r in kit.get('equipment', []):
+        stats = [str(r[k]) for k in ('damage', 'properties') if r.get(k)]
+        if r.get('ac'):
+            stats.append(f"AC {r['ac']}")
+        print(f"  {r['name']}" + (": " + '; '.join(stats) if stats else ''))
     print('Threats:')
     for r in sorted(kit.get('monsters', []), key=lambda r: Fraction(str(r['cr']))):
         print(f"  {r['name']}: CR {format_cr(r['cr'])}; {r['role']}; {', '.join(r['biomes'])}")

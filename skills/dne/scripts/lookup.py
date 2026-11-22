@@ -393,7 +393,37 @@ def _fmt_class_option(r: dict) -> str:
     return "\n".join(lines)
 
 
+def _fmt_class(r: dict) -> str:
+    lines = [f"## {r.get('name', '?')}"]
+    for key, label in (("chassis", "Chassis"), ("power_source", "Power source")):
+        if r.get(key):
+            lines.append(f"{label}: {r[key]}")
+    if r.get("subclasses"):
+        lines.append(f"{r.get('subclass_label', 'Subclasses')}: " + ", ".join(x["name"] for x in r["subclasses"]))
+    return "\n".join(lines + ["", r.get("description", "")])
+
+
+def _fmt_origin(r: dict) -> str:
+    lines = [f"## {r.get('name', '?')}"]
+    for key, label in (("ability_options", "Abilities"), ("ability_scores", "Abilities"),
+                       ("ability_bonuses", "Ability bonuses"), ("skills", "Skills"),
+                       ("traits", "Traits"), ("speed", "Speed"), ("size", "Size")):
+        value = r.get(key)
+        if isinstance(value, dict):
+            value = ", ".join(f"{k} {v:+}" if isinstance(v, int) else f"{k}: {v}" for k, v in value.items())
+        elif isinstance(value, list):
+            value = ", ".join(x.get("name", "") if isinstance(x, dict) else str(x) for x in value)
+        if value:
+            lines.append(f"{label}: {value}")
+    return "\n".join(lines + ["", r.get("description", "")])
+
+
 FORMATTERS = {
+    "classes": _fmt_class,
+    "backgrounds": _fmt_origin,
+    "races": _fmt_origin,
+    "subraces": _fmt_origin,
+    "species": _fmt_origin,
     "spells":      _fmt_spell,
     "equipment":   _fmt_equipment,
     "magic_items": _fmt_magic_item,
@@ -484,11 +514,18 @@ def _fallback_categories(ruleset: str) -> set:
     return set()
 
 
-def _find_in_ruleset(query: str, cat_key, ruleset: str, top_n: int = 1):
+OPTION_KINDS = {"invocation": "invocation", "invocations": "invocation",
+                "fighting-style": "fighting_style", "fighting_style": "fighting_style",
+                "pact-boon": "pact_boon"}
+
+
+def _find_in_ruleset(query: str, cat_key, ruleset: str, top_n: int = 1, kind=None):
     """Scan the dataset for `ruleset` for matches; if cat_key is given and the
     primary search misses, also scan 2014 when that category is in the
     ruleset's fallback list."""
     records = _get_records(cat_key, ruleset=ruleset)
+    if kind:
+        records = [r for r in records if r.get("kind") == kind]
     results = _find(query, records, top_n=top_n)
     if results:
         return results, ruleset, False
@@ -496,6 +533,8 @@ def _find_in_ruleset(query: str, cat_key, ruleset: str, top_n: int = 1):
     # Resolve fallback for category-specific lookups
     if cat_key is not None and ruleset.split("@", 1)[0] == "2024" and cat_key in _fallback_categories(ruleset):
         fb_records = _get_records(cat_key, ruleset="2014")
+        if kind:
+            fb_records = [r for r in fb_records if r.get("kind") == kind]
         fb_results = _find(query, fb_records, top_n=top_n)
         if fb_results:
             return fb_results, "2014", True
@@ -514,7 +553,7 @@ def lookup_record(query: str, category=None, ruleset=None, campaign=None):
     if not _data_by_rs.get(rs):
         return None
     cat_key = CATEGORY_MAP.get((category or "").lower()) if category else None
-    results, hit_rs, fb = _find_in_ruleset(query, cat_key, rs, top_n=1)
+    results, hit_rs, fb = _find_in_ruleset(query, cat_key, rs, top_n=1, kind=OPTION_KINDS.get((category or "").lower()))
 
     resolved_cat = cat_key
     if not results and not category:
@@ -646,6 +685,9 @@ def suggest(query: str, category=None, ruleset=None, n: int = 3, cutoff: float =
     candidates: dict = {}
     for ck in _suggest_categories(category):
         for r in data.get(ck, []):
+            kind = OPTION_KINDS.get((category or "").lower())
+            if kind and r.get("kind") != kind:
+                continue
             nm = r.get("name", "")
             if nm:
                 candidates.setdefault(_norm(nm), (nm, ck))
@@ -771,7 +813,7 @@ def main() -> None:
     # in the active ruleset's _meta.fallback_2014 when the category is given.
     fallback_used = False
     if cat_specified:
-        results, hit_rs, fb = _find_in_ruleset(query, cat_key, ruleset, top_n=top_n)
+        results, hit_rs, fb = _find_in_ruleset(query, cat_key, ruleset, top_n=top_n, kind=OPTION_KINDS.get(category))
         fallback_used = fb
     else:
         records = []

@@ -17,13 +17,15 @@ from fractions import Fraction
 import json
 import os
 import random
+import re
 import sys
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
-from paths import srd_path
+from paths import srd_path, find_campaign
+from xp import _monster_multiplier as _encounter_multiplier
 import worldkit
 
 # 5e DMG XP thresholds per character by level (1..20)
@@ -68,15 +70,6 @@ def _infer_role(m: dict) -> str:
     if int(m.get("dex", 10) or 10) >= 14 and int(m.get("hp", 20) or 20) <= 45:
         return "skirmisher"
     return "brute"
-
-
-def _encounter_multiplier(count: int) -> float:
-    if count <= 1: return 1.0
-    if count == 2: return 1.5
-    if count <= 6: return 2.0
-    if count <= 10: return 2.5
-    if count <= 14: return 3.0
-    return 4.0
 
 
 def generate_encounter(
@@ -131,7 +124,7 @@ def generate_encounter(
     if world_monsters:
         def adjusted(roster):
             count = sum(c["count"] for c in roster)
-            return sum(int(c["monster"]["xp"]) * c["count"] for c in roster) * _encounter_multiplier(count)
+            return sum(int(c["monster"]["xp"]) * c["count"] for c in roster) * _encounter_multiplier(count, size)
 
         candidates = []
         for _ in range(25):
@@ -140,7 +133,7 @@ def generate_encounter(
                 available = [m for m in eligible
                              if (len(roster) < 3 or any(c["monster"] is m for c in roster))
                              and (sum(int(c["monster"]["xp"]) * c["count"] for c in roster)
-                                  + int(m["xp"])) * _encounter_multiplier(count + 1) <= budget * 1.15]
+                                  + int(m["xp"])) * _encounter_multiplier(count + 1, size) <= budget * 1.15]
                 if not available:
                     break
                 pick = rng.choice(available)
@@ -150,6 +143,8 @@ def generate_encounter(
                 else:
                     roster.append({"monster": pick, "count": 1})
                 candidates.append([dict(c) for c in roster])
+        if not candidates:
+            raise RuntimeError(f"No monsters fit adjusted XP budget {budget} for biome '{biome}'.")
         chosen = min(candidates, key=lambda r: abs(adjusted(r) - budget))
         # If random draws underfill, check all allowed mixes before accepting it.
         if adjusted(chosen) < budget * 0.82:
@@ -178,7 +173,7 @@ def generate_encounter(
         total_count = 1
         raw_xp = pxp
         while total_count < 6:
-            next_mult = _encounter_multiplier(total_count + 1)
+            next_mult = _encounter_multiplier(total_count + 1, size)
             # Try adding another of the same or a companion monster
             candidates = [
                 m for m in pool
@@ -194,10 +189,10 @@ def generate_encounter(
                 existing["count"] += 1
             else:
                 chosen.append({"monster": pick, "count": 1})
-            if raw_xp * _encounter_multiplier(total_count) >= budget * 0.82:
+            if raw_xp * _encounter_multiplier(total_count, size) >= budget * 0.82:
                 break
 
-    adj_xp = int(raw_xp * _encounter_multiplier(total_count))
+    adj_xp = int(raw_xp * _encounter_multiplier(total_count, size))
     roster = []
     for c in chosen:
         m = c["monster"]
@@ -229,13 +224,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Biome-aware 5e CR encounter generator.")
     parser.add_argument("--biome", default="forest")
     parser.add_argument("-c", "--campaign")
-    parser.add_argument("--party-level", type=int, default=3)
-    parser.add_argument("--party-size", type=int, default=4)
+    parser.add_argument("--party-level", type=int, default=None)
+    parser.add_argument("--party-size", type=int, default=None)
     parser.add_argument("--difficulty", choices=["easy", "medium", "hard", "deadly"], default="medium")
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--ruleset", choices=["2014", "2024"], default="2014")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
+    state = find_campaign(args.campaign) / "state.md" if args.campaign else None
+    header = state.read_text(encoding="utf-8") if state and state.exists() else ""
+    for attr, label, default in (("party_size", "Party size", 4), ("party_level", "Starting level", 3)):
+        if getattr(args, attr) is None:
+            match = re.search(r"\*\*" + label + r":\*\*\s*(\d+)", header, re.I)
+            setattr(args, attr, int(match.group(1)) if match else default)
 
     try:
         kit = worldkit.load(args.campaign) if args.campaign else None

@@ -588,7 +588,8 @@ def cmd_status(campaign: str, filter_name: str = "") -> None:
             parts.append(f"Death saves: {s}✓ {f}✗{stable}")
 
         if parts:
-            print(f"  {name}:")
+            status = " unconscious" if "unconscious" in conds else ""
+            print(f"  {name}:{status}")
             for p in parts:
                 print(f"    {p}")
         else:
@@ -707,8 +708,9 @@ def cmd_enemy(
                     rechs[ab.strip()] = {"min": min_roll, "ready": True}
             prof["recharges"] = rechs
         _save(campaign, state)
+        slot_note = f"slots={len(prof['slots'])} tier(s), " if prof["slots"] else ""
         print(f"  Enemy profile set: {ent['name']} [role={prof['role']}, morale<={prof['morale_pct']}%, "
-              f"slots={len(prof['slots'])} tier(s), recharges={list(prof['recharges'].keys())}]")
+              f"{slot_note}recharges={list(prof['recharges'].keys())}]")
         return
 
     if action == "spend":
@@ -815,13 +817,16 @@ def cmd_clear(campaign: str, clear_all: bool = False) -> None:
         if k.startswith("_") or not isinstance(ent, dict):
             continue
         _entity(state, ent["name"])
-        ent["conditions"] = [c for c in ent["conditions"] if c in LASTING_CONDITIONS]
+        saves = ent.get("death_saves", {})
+        dying = any(saves.get(k) for k in ("successes", "failures", "stable"))
+        ent["conditions"] = [c for c in ent["conditions"]
+                             if c in LASTING_CONDITIONS or (c == "unconscious" and dying)]
         ent["effects"] = [e for e in ent["effects"] if e.get("duration_type") != "rounds"]
         held = {e["name"].lower() for e in ent["effects"] if e.get("concentration")}
         if (ent.get("concentration") or "").lower() not in held:
             ent["concentration"] = None
         _push_conditions(ent["name"], ent["conditions"])
-        if clear_all and not _is_dead(ent):
+        if clear_all and not (dying and "unconscious" in ent["conditions"]) and not _is_dead(ent):
             # A dead character's three failures are not encounter state.
             ent["death_saves"] = {"successes": 0, "failures": 0, "stable": False}
         ent_count += 1

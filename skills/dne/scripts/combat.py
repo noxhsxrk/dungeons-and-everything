@@ -45,6 +45,7 @@ import os
 import secrets
 import sys
 import re
+import unicodedata
 
 
 def d(sides: int) -> int:
@@ -56,24 +57,31 @@ def roll(n, sides):
     return [d(sides) for _ in range(n)]
 
 
-def dice(notation: str) -> tuple[int, list[int]]:
-    """Parse NdS+M notation, return (total, individual_rolls)."""
-    m = re.match(r'^(\d*)d(\d+)([+-]\d+)?$', notation.strip().lower())
-    if not m:
+def dice(notation: str, critical: bool = False) -> tuple[int, list[int]]:
+    """Roll compound damage, doubling every dice term on a critical hit."""
+    notation = notation.strip().lower()
+    if not re.fullmatch(r"[+-]?(?:\d*d[1-9]\d*|\d+)(?:[+-](?:\d*d[1-9]\d*|\d+))*", notation):
         raise ValueError(f"Bad dice notation: {notation}")
-    n = int(m.group(1)) if m.group(1) else 1
-    s = int(m.group(2))
-    mod = int(m.group(3)) if m.group(3) else 0
-    rolls = roll(n, s)
-    return sum(rolls) + mod, rolls
+    total, rolls = 0, []
+    for term in re.findall(r"[+-]?(?:\d*d\d+|\d+)", notation):
+        value, rolled = _roll_mod(term, double_dice=critical)
+        total += value
+        rolls.extend(rolled)
+    return total, rolls
+
+
+def _pad(text: str, width: int) -> str:
+    display_width = sum(0 if unicodedata.category(c).startswith("M") else
+                        2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in text)
+    return text + " " * max(0, width - display_width)
 
 
 def initiative_order(combatants: list[dict]) -> list[dict]:
     """Roll d20+dex_mod for each combatant, sort descending."""
     for c in combatants:
-        raw = d(20)
+        raw = c["roll"] if "roll" in c else d(20)
         c["initiative_roll"] = raw
-        c["initiative"] = raw + c.get("dex_mod", 0)
+        c["initiative"] = raw + c.get("dex_mod", 0) + c.get("init_bonus", 0)
         c["conditions"] = []
         c["temp_hp"] = 0
     return sorted(combatants, key=lambda x: (x["initiative"], x.get("dex_mod", 0)), reverse=True)
@@ -89,7 +97,7 @@ def print_tracker(combatants: list[dict], round_num: int = 1):
         hp_str = f"{c['hp']}/{c.get('max_hp', c['hp'])}"
         cond = ", ".join(c.get("conditions", [])) or "—"
         marker = "► " if i == 1 else "  "
-        print(f"  {marker}{i:<2} {c['name']:<18} {c['initiative']:>5} {hp_str:>8} {c['ac']:>4}  {cond}")
+        print(f"  {marker}{i:<2} {_pad(c['name'], 18)} {c['initiative']:>5} {hp_str:>8} {c['ac']:>4}  {cond}")
     print(f"{'='*68}\n")
 
 
@@ -107,7 +115,8 @@ def _roll_mod(value: str, double_dice: bool = False) -> tuple[int, list[int]]:
 
 
 def resolve_attack(atk_bonus: int, target_ac: int, dmg_notation: str, is_crit: bool = False,
-                   attack_mods: list | None = None, damage_mods: list | None = None) -> dict:
+                   attack_mods: list | None = None, damage_mods: list | None = None,
+                   supplied_roll=None, adv=False, dis=False, crit_range=20) -> dict:
     """Roll one attack.
 
     `is_crit` is the auto-crit case: an attack that hits a paralyzed or
@@ -116,7 +125,15 @@ def resolve_attack(atk_bonus: int, target_ac: int, dmg_notation: str, is_crit: b
     natural 1 still misses. `attack_mods` / `damage_mods` are
     [(label, '+1d4'), ...] from tracker.active_modifiers.
     """
-    raw = d(20)
+    if supplied_roll is None:
+        raw_rolls = [d(20) for _ in range(2 if adv or dis else 1)]
+    else:
+        raw_rolls = [int(n) for n in str(supplied_roll).split(",")]
+        if len(raw_rolls) != (2 if adv != dis else 1) or any(not 1 <= n <= 20 for n in raw_rolls):
+            raise ValueError("--roll requires natural d20 rolls (1–20), two with --adv/--dis")
+    raw = max(raw_rolls) if adv and not dis else min(raw_rolls) if dis and not adv else raw_rolls[0]
+    if not 2 <= crit_range <= 20:
+        raise ValueError("--crit-range must be between 2 and 20")
     mod_rolls = []
     mod_total = 0
     for label, value in attack_mods or []:
@@ -124,8 +141,8 @@ def resolve_attack(atk_bonus: int, target_ac: int, dmg_notation: str, is_crit: b
         mod_total += v
         mod_rolls.append({"label": label, "value": value, "rolls": rs, "total": v})
     total_atk = raw + atk_bonus + mod_total
-    hit = raw == 20 or (raw != 1 and total_atk >= target_ac)
-    crit = raw == 20 or (is_crit and hit)
+    hit = raw >= crit_range or (raw != 1 and total_atk >= target_ac)
+    crit = raw >= crit_range or (is_crit and hit)
 
     result = {
         "d20": raw,
@@ -134,7 +151,7 @@ def resolve_attack(atk_bonus: int, target_ac: int, dmg_notation: str, is_crit: b
         "target_ac": target_ac,
         "hit": hit,
         "crit": crit,
-        "auto_crit": bool(is_crit and hit and raw != 20),
+        "auto_crit": bool(is_crit and hit and raw < crit_range),
         "fumble": raw == 1,
         "attack_mods": mod_rolls,
     }
@@ -143,12 +160,7 @@ def resolve_attack(atk_bonus: int, target_ac: int, dmg_notation: str, is_crit: b
         # A damage type may follow the dice ("1d10 Piercing", as weapon records write it).
         dmg_notation, _, dmg_type = dmg_notation.strip().partition(" ")
         dmg_type = dmg_type.strip()
-        dmg, rolls = dice(dmg_notation)
-        if crit:
-            # Double the dice rolls on crit
-            extra, extra_rolls = dice(dmg_notation.split("+")[0].split("-")[0])
-            dmg += extra
-            rolls += extra_rolls
+        dmg, rolls = dice(dmg_notation, critical=crit)
         for label, value in damage_mods or []:
             # Extra damage dice are doubled on a crit like the weapon's own.
             v, rs = _roll_mod(value, double_dice=crit)
@@ -347,6 +359,9 @@ def _int_opt(args: list, flag: str):
 
 
 if __name__ == "__main__":
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print(__doc__)
+        sys.exit(0)
     if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(1)
@@ -357,14 +372,14 @@ if __name__ == "__main__":
         combatants = json.loads(sys.argv[2])
         # Store max_hp
         for c in combatants:
-            c["max_hp"] = c["hp"]
+            c.setdefault("max_hp", c["hp"])
         ordered = initiative_order(combatants)
         print_tracker(ordered)
         print("Initiative rolls:")
         for c in ordered:
-            print(f"  {c['name']}: d20({c['initiative_roll']}) + {c.get('dex_mod',0)} = {c['initiative']}")
+            print(f"  {c['name']}: d20({c['initiative_roll']}) + {c.get('dex_mod',0) + c.get('init_bonus',0)} = {c['initiative']}")
         print()
-        print("STATE_JSON:", json.dumps(ordered))
+        print("STATE_JSON:", json.dumps(ordered, ensure_ascii=False))
 
     elif cmd == "tracker":
         state = json.loads(sys.argv[2])
@@ -389,8 +404,14 @@ if __name__ == "__main__":
             import tracker
             attack_mods = tracker.active_modifiers(camp, who, "attack")
             damage_mods = tracker.active_modifiers(camp, who, "damage")
-        result = resolve_attack(atk, ac, dmg, crit,
-                                attack_mods=attack_mods, damage_mods=damage_mods)
+        try:
+            result = resolve_attack(atk, ac, dmg, crit,
+                                    attack_mods=attack_mods, damage_mods=damage_mods,
+                                    supplied_roll=_opt(args, "--roll"), adv="--adv" in args,
+                                    dis="--dis" in args, crit_range=_int_opt(args, "--crit-range") or 20)
+        except ValueError as exc:
+            print(f"combat.py: {exc}", file=sys.stderr)
+            sys.exit(2)
 
         # Optional 2024 weapon mastery
         if "--mastery" in args:

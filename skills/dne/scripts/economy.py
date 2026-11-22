@@ -37,7 +37,7 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
-from paths import find_campaign
+from paths import find_campaign, find_character_file, campaign_ruleset
 
 # Standard D&D 5e coin conversion to copper pieces (cp)
 COIN_TO_CP = {"pp": 1000, "gp": 100, "ep": 50, "sp": 10, "cp": 1}
@@ -69,29 +69,7 @@ def _units_pattern() -> str:
 
 def _find_char_file(campaign: str, char_name: str) -> pathlib.Path:
     _use_world_currency(campaign)
-    cdir = find_campaign(campaign) / "characters"
-    if not cdir.exists():
-        raise FileNotFoundError(f"Characters directory not found: {cdir}")
-    # Exact filename match first
-    for candidate in (
-        cdir / f"{char_name}.md",
-        cdir / f"{char_name.lower()}.md",
-        cdir / f"{char_name.lower().replace(' ', '-')}.md",
-    ):
-        if candidate.exists():
-            return candidate
-    # Case-insensitive stem or H1 heading match
-    target = char_name.strip().lower()
-    for p in sorted(cdir.glob("*.md")):
-        if p.stem.lower() == target:
-            return p
-        try:
-            first_line = p.read_text(encoding="utf-8", errors="replace").splitlines()[0]
-            if first_line.lstrip("#").strip().lower() == target:
-                return p
-        except Exception:
-            pass
-    raise FileNotFoundError(f"Character sheet not found for '{char_name}' in {cdir}")
+    return find_character_file(campaign, char_name)
 
 
 def parse_coin_amount(spec: str) -> int:
@@ -158,30 +136,50 @@ def _write_currency_cp(text: str, new_cp: int) -> str:
     return text.rstrip() + f"\n\n**Currency:** {formatted}\n"
 
 
+def _inventory_span(text: str):
+    return re.search(r"^## Equipment & Inventory[^\n]*\n(?:(?!^## ).)*", text, re.M | re.S)
+
+
+def _item_lines(text: str, item: str):
+    span = _inventory_span(text)
+    if not span:
+        return []
+    pattern = r"^[ \t]*[-*][ \t]+" + re.escape(item.strip()) + r"(?:[ \t]*[×x][ \t]*(\d+))?[ \t]*(?:\n|$)"
+    return list(re.finditer(pattern, text[span.start():span.end()], re.M | re.I))
+
+
 def _add_inventory_item(text: str, item: str) -> str:
-    marker = "**Adventuring Gear:**"
-    idx = text.find(marker)
-    if idx != -1:
-        insert_pos = idx + len(marker)
-        return text[:insert_pos] + f"\n- {item}" + text[insert_pos:]
-    if "## Equipment & Inventory" in text:
-        return text.replace(
-            "## Equipment & Inventory",
-            f"## Equipment & Inventory\n**Adventuring Gear:**\n- {item}",
-            1,
-        )
+    span = _inventory_span(text)
+    matches = _item_lines(text, item)
+    if matches:
+        body = text[span.start():span.end()]
+        count = 1 + sum(int(m.group(1) or 1) for m in matches)
+        for m in reversed(matches[1:]):
+            body = body[:m.start()] + body[m.end():]
+        m = matches[0]
+        body = body[:m.start()] + f"- {item} ×{count}\n" + body[m.end():]
+        return text[:span.start()] + body + text[span.end():]
+    if span:
+        body = text[span.start():span.end()]
+        marker = "**Adventuring Gear:**"
+        idx = body.find(marker)
+        if idx >= 0:
+            pos = span.start() + idx + len(marker)
+            return text[:pos] + f"\n- {item}" + text[pos:]
+        pos = span.end()
+        return text[:pos].rstrip() + f"\n- {item}\n\n" + text[pos:]
     return text.rstrip() + f"\n\n## Equipment & Inventory\n**Adventuring Gear:**\n- {item}\n"
 
 
 def _remove_inventory_item(text: str, item: str) -> tuple[str, bool]:
-    lines = text.splitlines(keepends=True)
-    target = item.strip().lower()
-    for i, line in enumerate(lines):
-        stripped = line.strip()
-        if stripped.startswith(("-", "*")) and target in stripped.lower():
-            del lines[i]
-            return "".join(lines), True
-    return text, False
+    span = _inventory_span(text)
+    matches = _item_lines(text, item)
+    if not matches:
+        return text, False
+    m = matches[0]
+    count = int(m.group(1) or 1)
+    replacement = f"- {item} ×{count - 1}\n" if count > 1 else ""
+    return text[:span.start() + m.start()] + replacement + text[span.start() + m.end():], True
 
 
 def _ledger_path(campaign: str) -> pathlib.Path:
@@ -276,7 +274,7 @@ def sell_item(campaign: str, char_name: str, item: str, value_spec: str) -> dict
     return rec
 
 
-def _apply_rest_to_sheet(text: str, rest_type: str, hit_dice_spent: int = 0, heal: int = 0) -> tuple[str, dict]:
+def _apply_rest_to_sheet(text: str, rest_type: str, hit_dice_spent: int = 0, heal: int = 0, ruleset: str = "2014") -> tuple[str, dict]:
     """Deterministically apply 5e Short or Long Rest to a character sheet markdown."""
     changes = {}
 
@@ -285,6 +283,8 @@ def _apply_rest_to_sheet(text: str, rest_type: str, hit_dice_spent: int = 0, hea
     hp_m = hp_pat.search(text)
     if hp_m:
         cur_hp, max_hp = int(hp_m.group(2)), int(hp_m.group(3))
+        if rest_type == "long" and cur_hp == 0:
+            return text, {"benefit": "no benefit at 0 HP"}
         if rest_type == "long":
             new_hp = max_hp
         else:
@@ -300,7 +300,7 @@ def _apply_rest_to_sheet(text: str, rest_type: str, hit_dice_spent: int = 0, hea
         total_hd, die_s, rem_hd = int(hd_m.group(2)), hd_m.group(3), int(hd_m.group(4))
         if rest_type == "long":
             # 5e rule: regain up to half total hit dice (minimum 1)
-            regain = max(1, total_hd // 2)
+            regain = total_hd if ruleset == "2024" else max(1, total_hd // 2)
             new_rem = min(total_hd, rem_hd + regain)
         else:
             spend = max(0, min(rem_hd, hit_dice_spent))
@@ -310,19 +310,26 @@ def _apply_rest_to_sheet(text: str, rest_type: str, hit_dice_spent: int = 0, hea
             changes["hit_dice"] = f"{rem_hd}->{new_rem}/{total_hd}"
 
     # Long rest restores all spell slots (Used -> 0) and resets death saves
-    if rest_type == "long":
+    pact = bool(re.search(r"\*\*Class:\*\*[^\n|]*warlock|^##[^\n]*Pact", text, re.I | re.M))
+    if rest_type == "long" or pact:
         def _reset_slot_row(m):
             return f"| {m.group(1)} | {m.group(2)} | 0 |"
 
-        new_text, n_slots = re.subn(
-            r"\|\s*(\d+(?:st|nd|rd|th))\s*\|\s*(\d+)\s*\|\s*[1-9]\d*\s*\|",
-            _reset_slot_row,
-            text,
-        )
+        slot_sections = re.compile(r"^##[^\n]*(?:Spell Slots|Pact)[^\n]*\n(?:(?!^## ).)*", re.M | re.S | re.I)
+        n_slots = 0
+        def reset_section(section):
+            nonlocal n_slots
+            updated, count = re.subn(
+                r"\|\s*(\d+(?:st|nd|rd|th))\s*\|\s*(\d+)\s*\|\s*[1-9]\d*\s*\|",
+                _reset_slot_row, section.group())
+            n_slots += count
+            return updated
+        text = slot_sections.sub(reset_section, text)
         if n_slots:
-            text = new_text
             changes["spell_slots_restored"] = n_slots
 
+    if rest_type == "long":
+        text = re.sub(r"(\*\*Temp HP:\*\*\s*)\d+", r"\g<1>0", text)
         ds_pat = re.compile(r"(\*\*Death Saves:\*\*\s*)Successes:\s*\d+\s*\|\s*Failures:\s*\d+")
         if ds_pat.search(text):
             text = ds_pat.sub(r"\g<1>Successes: 0 | Failures: 0", text, count=1)
@@ -348,7 +355,7 @@ def apply_rest(
     results = []
     for cf in files:
         text = cf.read_text(encoding="utf-8")
-        new_text, changes = _apply_rest_to_sheet(text, rest_type, hit_dice_spent=hit_dice, heal=heal)
+        new_text, changes = _apply_rest_to_sheet(text, rest_type, hit_dice_spent=hit_dice, heal=heal, ruleset=campaign_ruleset(campaign))
         if new_text != text:
             cf.write_text(new_text, encoding="utf-8")
         cname = cf.stem
@@ -391,6 +398,10 @@ def main() -> None:
     p_led.add_argument("--limit", type=int, default=15)
 
     args = parser.parse_args()
+    if args.cmd == "rest" and args.char.lower() == "all" and any(
+        a.split("=", 1)[0] in ("--heal", "--hit-dice") for a in sys.argv[1:]
+    ):
+        parser.error("--heal and --hit-dice are per character; cannot use --char all")
     try:
         if args.cmd == "gold":
             rec = adjust_gold(args.campaign, args.char, args.delta, args.reason)

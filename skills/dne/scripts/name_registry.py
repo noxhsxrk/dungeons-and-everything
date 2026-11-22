@@ -66,7 +66,7 @@ def _today() -> str:
 
 #: Thai titles written attached to the name ("นางจันทร์เพ็ญ"). Only titles that are unlikely to
 #: be the start of an ordinary name: short ones like ตา, อา, พระ, พัน would turn อานนท์ into นนท์.
-THAI_HONORIFICS = sorted("หลวงพี่ หลวงพ่อ หลวงตา นางสาว พระยา หลวง ขุน หมื่น นาย นาง เจ๊ เฮีย คุณ ด.ช. ด.ญ.".split(),
+THAI_HONORIFICS = sorted("แม่หญิง หลวงพี่ หลวงพ่อ หลวงตา นางสาว พระยา หลวง ขุน หมื่น นาย นาง เจ๊ เฮีย คุณ ด.ช. ด.ญ.".split(),
                          key=len, reverse=True)
 
 
@@ -102,7 +102,33 @@ def _load() -> dict:
         # Lossless read: a GBK registry from the pre-sweep plugin decodes
         # cleanly and migrates on the next save; anything undecodable falls
         # back to the loud "starting fresh" path below.
-        return json.loads(read_text(p))
+        data = json.loads(read_text(p))
+        entries = {}
+        changed = False
+        for key, entry in data.get("entries", {}).items():
+            canonical = slug(entry["name"])
+            changed |= key != canonical
+            if canonical not in entries:
+                entries[canonical] = dict(entry)
+                if "slug" in entry:
+                    entries[canonical]["slug"] = canonical
+                continue
+            changed = True
+            merged = entries[canonical]
+            for field in ("campaigns", "currently_active_in", "sessions", "retired_from"):
+                if field in entry:
+                    values = merged.setdefault(field, [])
+                    for value in entry[field]:
+                        if value not in values:
+                            values.append(value)
+            if entry.get("first_used", "9999") < merged.get("first_used", "9999"):
+                for field in ("first_used", "first_campaign", "first_session"):
+                    if field in entry:
+                        merged[field] = entry[field]
+        if changed:
+            data["entries"] = entries
+            _save(data)
+        return data
     except (TextDecodeError, json.JSONDecodeError):
         sys.stderr.write(f"name_registry: {p} is corrupt; starting fresh\n")
         return {"version": 1, "updated": _today(), "entries": {}}

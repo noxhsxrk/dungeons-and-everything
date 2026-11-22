@@ -482,6 +482,8 @@ def cmd_init(args) -> int:
 
 
 def cmd_scene_context(args) -> int:
+    if args.at_session is not None:
+        args.at_session = max(1, args.at_session)
     data = _load(args.campaign)
     if not data["nodes"]:
         # Graph not yet initialized for this campaign. Print a brief notice and
@@ -490,11 +492,17 @@ def cmd_scene_context(args) -> int:
         return 0
     seeds: list = []
     if args.place:
-        seeds.append(_resolve_or_die(data, args.place, "place"))
+        place = _resolve_node(data, args.place)
+        if place:
+            seeds.append(place)
+        else:
+            print(f"warning: place {args.place!r} is not in the graph; continuing")
     if args.present:
         seeds.extend(_resolve_csv(data, args.present, "present"))
     if args.threads:
         seeds.extend(_resolve_csv(data, args.threads, "thread"))
+    if not seeds and args.place:
+        return 0
     if not seeds:
         print("error: scene-context needs at least --place, --present, or --threads.",
               file=sys.stderr)

@@ -118,11 +118,12 @@ def _normalise_cr(cr_str: str) -> str:
     return s  # already "1/4", "1/2", etc.
 
 
-def _monster_multiplier(count: int) -> float:
-    for threshold, mult in MONSTER_MULTIPLIERS:
-        if count <= threshold:
-            return mult
-    return 4.0
+def _monster_multiplier(count: int, players: int = 4) -> float:
+    steps = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0]
+    index = next((i + 1 for i, (threshold, _) in enumerate(MONSTER_MULTIPLIERS)
+                  if count <= threshold), 6)
+    index += 1 if players < 3 else -1 if players >= 6 else 0
+    return steps[index]
 
 
 def _parse_monsters(monsters_str: str) -> list[tuple[str, str, int]]:
@@ -145,11 +146,11 @@ def _parse_monsters(monsters_str: str) -> list[tuple[str, str, int]]:
     return result
 
 
-def _calc_monster_xp(monsters: list[tuple[str, str, int]]) -> tuple[int, float, int]:
+def _calc_monster_xp(monsters: list[tuple[str, str, int]], players: int = 4) -> tuple[int, float, int]:
     """Returns (raw_xp, multiplier, adjusted_xp)."""
     raw = sum(CR_XP[cr] * cnt for _, cr, cnt in monsters)
     total_count = sum(cnt for _, _, cnt in monsters)
-    mult = _monster_multiplier(total_count)
+    mult = _monster_multiplier(total_count, players)
     return raw, mult, int(raw * mult)
 
 
@@ -175,21 +176,7 @@ def _next_level_xp(current_level: int) -> int:
 
 # ── Character file I/O ────────────────────────────────────────────────────────
 
-def _find_char_path(campaign: str, char_name: str) -> pathlib.Path:
-    char_dir = CAMPAIGNS_DIR / campaign / "characters"
-    # Try exact match first
-    exact = char_dir / f"{char_name.lower()}.md"
-    if exact.exists():
-        return exact
-    # Case-insensitive search
-    if char_dir.exists():
-        for p in char_dir.glob("*.md"):
-            if p.stem.lower() == char_name.lower():
-                return p
-    raise FileNotFoundError(
-        f"Character file not found for '{char_name}' in campaign '{campaign}'.\n"
-        f"  Expected: {char_dir / (char_name.lower() + '.md')}"
-    )
+from paths import find_character_file as _find_char_path
 
 
 def _read_char_state(path: pathlib.Path) -> tuple[int, int]:
@@ -261,10 +248,10 @@ def cmd_calc(args: argparse.Namespace) -> None:
         if not monsters:
             print("No valid monsters parsed.", file=sys.stderr)
             sys.exit(1)
-        raw_xp, mult, adj_xp = _calc_monster_xp(monsters)
+        raw_xp, mult, adj_xp = _calc_monster_xp(monsters, players)
         total_count = sum(c for _, _, c in monsters)
-        per_player  = adj_xp // players
-        diff        = _classify_difficulty(per_player, level)
+        per_player  = raw_xp // players
+        diff        = _classify_difficulty(adj_xp // players, level)
 
         print(f"\n  Combat encounter — CR-based calculation")
         for name, cr, count in monsters:
@@ -419,10 +406,10 @@ def cmd_award(args: argparse.Namespace) -> None:
         if not monsters:
             print("No valid monsters parsed.", file=sys.stderr)
             sys.exit(1)
-        raw_xp, mult, adj_xp = _calc_monster_xp(monsters)
+        raw_xp, mult, adj_xp = _calc_monster_xp(monsters, players)
         total_count = sum(c for _, _, c in monsters)
-        per_player  = adj_xp // players
-        diff        = _classify_difficulty(per_player, avg_level)
+        per_player  = raw_xp // players
+        diff        = _classify_difficulty(adj_xp // players, avg_level)
 
         print(f"\n  Combat — CR-based  [{total_count} monsters, ×{mult} multiplier]")
         for name, cr, count in monsters:
@@ -468,7 +455,7 @@ def cmd_award(args: argparse.Namespace) -> None:
     _record_award(campaign, _ledger_entries, note=f"{diff} {enc_type}")
 
     if any_levelup:
-        print("\n  Level-up pending — run /dne character level-up")
+        print("\n  Level-up pending — run /dne level up")
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
