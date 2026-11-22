@@ -15,7 +15,7 @@
 
 ---
 
-**Dungeons & Everything** is a Game Master skill for **Google Antigravity** and **Claude Code**. You tell it what world you want to play in — a survivor colony hiding from a rogue AI, a derelict starship, a noir megacity, a classic dungeon — and it builds that world's whole rulebook: who the people are, what jobs they can have, what powers exist, what the gear costs, and what hunts them in the dark. Underneath, every roll is plain **D&D 5e**, so combat, levelling and balance just work.
+**Dungeons & Everything** is a Game Master skill for **any AI coding agent** — Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot, Cursor and more. You tell it what world you want to play in — a survivor colony hiding from a rogue AI, a derelict starship, a noir megacity, a classic dungeon — and it builds that world's whole rulebook: who the people are, what jobs they can have, what powers exist, what the gear costs, and what hunts them in the dark. Underneath, every roll is plain **D&D 5e**, so combat, levelling and balance just work.
 
 Campaigns persist for as long as you keep playing. Your TV becomes the story screen; every player's phone becomes their controller.
 
@@ -60,25 +60,30 @@ The full EDEN kit is at [`skills/dne/templates/worldkit.example.json`](skills/dn
 
 ## Install
 
-**Requirements:** Python 3.10+ · Google Antigravity or Claude Code · for the table display: `pip3 install flask flask-cors numpy cryptography` · for importing PDFs: `pip3 install pymupdf`
+Works with **any AI agent that can read files and run shell commands** — Claude Code, Codex, Gemini CLI, Google Antigravity, opencode, GitHub Copilot, Cursor, Crush, Droid, Amp, Qwen Code, Goose, Kiro, Kimi, Cline, Continue, Kilo Code, Aider and more. The Game Master is plain markdown instructions plus Python scripts; nothing is tied to one model.
 
-### Google Antigravity
+**Requirements:** Python 3.10+ · for the table display: `pip3 install flask flask-cors numpy cryptography` · for importing PDFs: `pip3 install pymupdf`
 
 ```bash
-git clone https://github.com/noxhsxrk/dungeons-and-everything.git ~/.gemini/config/skills/dne
-pip3 install --user flask flask-cors numpy cryptography pymupdf
+git clone https://github.com/noxhsxrk/dungeons-and-everything.git ~/dungeons-and-everything
+cd ~/dungeons-and-everything
+python3 install.py            # sets up every agent it finds on this machine
+python3 install.py --list     # what's supported, detected and installed
 ```
 
-Type **`/dne`** in Antigravity, or just say *"let's start a campaign"*.
+| Agent | What `install.py` does |
+|---|---|
+| Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot CLI, Crush, Droid | links `skills/dne` into the agent's skills folder — type **`/dne`** or ask for it by name |
+| Cursor, Kiro, Cline, Continue, Kilo Code | writes a small rules file that points the agent at the skill |
+| Amp, Qwen Code, Goose, Kimi | adds one marked block to the agent's rules file (removed cleanly by `--uninstall`) |
+| Aider | run `aider --read ~/dungeons-and-everything/skills/dne/SKILL.md` |
+| Anything else | tell your agent: *"Read `<repo>/skills/dne/SKILL.md` and follow it"* |
 
-### Claude Code
+Pick agents explicitly with `python3 install.py codex gemini`; remove with `python3 install.py --uninstall`. The skill is linked, not copied, so `git pull` updates every agent at once.
 
-```
-/plugin marketplace add noxhsxrk/dungeons-and-everything
-/plugin install dne@dungeons-and-everything
-```
+**Claude Code plugin** (alternative): `/plugin marketplace add noxhsxrk/dungeons-and-everything` then `/plugin install dne@dungeons-and-everything` — invoke as **`/dne:dne`**.
 
-Invoke it as **`/dne:dne`** (this README writes `/dne` for short). Update with `/plugin update dne`.
+**What differs between agents:** only conveniences. Agents without a structured-question tool get numbered options in chat; agents without background tasks can't run the phone **autorun** loop (play in chat, or keep the display for viewing); agents without subagents play companions as the Game Master. The per-turn autosave hook is Claude Code only — every agent still autosaves at scene boundaries.
 
 ### Where your games live
 
@@ -167,8 +172,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## ภาษาไทย
 
-**Dungeons & Everything** คือ AI Game Master สำหรับ Google Antigravity และ Claude Code ที่ไม่จำกัดอยู่แค่โลกแฟนตาซี — เล่าโลกที่อยากเล่นได้เลย จะเป็นไซไฟ หลังวันสิ้นโลก สยองขวัญ หรือสืบสวน แล้ว AI จะสร้างโครงสร้างของโลกใบนั้นให้ครบ ทั้งเผ่า อาชีพ สายย่อย พลังพิเศษ อุปกรณ์ สกุลเงิน และสัตว์ประหลาด โดยทุกอย่างยังอิงกฎ D&D 5e จึงต่อสู้ เลเวลอัป และบาลานซ์ได้ถูกต้อง
+**Dungeons & Everything** คือ AI Game Master ที่ใช้ได้กับ AI agent ทุกตัว (Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot, Cursor ฯลฯ) และไม่จำกัดอยู่แค่โลกแฟนตาซี — เล่าโลกที่อยากเล่นได้เลย จะเป็นไซไฟ หลังวันสิ้นโลก สยองขวัญ หรือสืบสวน แล้ว AI จะสร้างโครงสร้างของโลกใบนั้นให้ครบ ทั้งเผ่า อาชีพ สายย่อย พลังพิเศษ อุปกรณ์ สกุลเงิน และสัตว์ประหลาด โดยทุกอย่างยังอิงกฎ D&D 5e จึงต่อสู้ เลเวลอัป และบาลานซ์ได้ถูกต้อง
 
+- ติดตั้ง: `git clone` repo แล้วรัน `python3 install.py` — ตั้งค่าให้ทุก agent ที่เจอในเครื่องในครั้งเดียว
 - เริ่มเกม: `/dne new <ชื่อแคมเปญ>` แล้วเล่าโลกของคุณ
 - สร้างตัวละคร: `/dne character new`
 - เล่นต่อ: `/dne load <ชื่อแคมเปญ>` แล้วพิมพ์สิ่งที่ตัวละครทำได้เลย

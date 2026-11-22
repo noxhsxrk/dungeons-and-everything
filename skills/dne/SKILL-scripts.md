@@ -594,7 +594,8 @@ Open the browser tab and Chromecast it *before* running `/dne load` so the brows
 Behind-the-scenes continuity checkpoint for long sessions, so a context compaction never loses the player's place. Two layers; see the *Continuity micro-save* rule in SKILL.md and the `/dne autosave` command.
 
 ```bash
-# Opt-in: register the Stop hook (writes ~/.claude/settings.json, idempotent)
+# Opt-in, Claude Code only: register the Stop hook (writes ~/.claude/settings.json, idempotent).
+# Other hosts: autosave still runs at scene boundaries per SKILL.md; there is no per-turn hook.
 python3 ${CLAUDE_SKILL_DIR}/scripts/install_autosave_hook.py
 python3 ${CLAUDE_SKILL_DIR}/scripts/install_autosave_hook.py --uninstall
 python3 ${CLAUDE_SKILL_DIR}/scripts/install_autosave_hook.py --status

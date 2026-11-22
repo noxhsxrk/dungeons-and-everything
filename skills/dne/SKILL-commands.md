@@ -539,7 +539,7 @@ Pull the latest skill changes from `origin/main`.
 - No args → `python3 ${CLAUDE_SKILL_DIR}/scripts/update_skill.py` and stream output (script prompts before pulling).
 - `--check` → `python3 ${CLAUDE_SKILL_DIR}/scripts/update_skill.py --check` — report status without pulling.
 - The script refuses to update if the working tree is dirty and uses `--ff-only` so it never silently merges divergent history.
-- After a successful pull, remind the user to restart Claude Code so the new `SKILL.md` and `SKILL-commands.md` are reloaded.
+- After a successful pull, remind the user to restart their agent session so the new `SKILL.md` and `SKILL-commands.md` are reloaded.
 
 ---
 

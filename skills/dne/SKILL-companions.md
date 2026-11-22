@@ -42,8 +42,8 @@ Mention active companions in the load recap by name and one visible detail.
 
 ## Spawning and continuing
 
-The first time a companion is needed in a session, call the `Agent` tool with `subagent_type: "dne:companion"`
-(or `"companion"`, whichever the agent list shows), a short `description` naming the companion, and a prompt
+The first time a companion is needed in a session, call your host's subagent tool with the companion agent defined in `agents/companion.md` (Claude Code: the `Agent` tool with `subagent_type: "dne:companion"`; other hosts: spawn a subagent whose instructions are that file's body). **No subagent tool on this host → companions are DM-played** (`companion mode <name> dm`); everything else in this file still applies. Pass the agent name (`"dne:companion"`
+ or `"companion"`, whichever the agent list shows), a short `description` naming the companion, and a prompt
 containing, in this order: the full companion sheet, a one-paragraph *"what you know of the last days"*
 bridge built from `## Current Situation` filtered to what the companion witnessed or was told, then the first
 briefing. Remember the returned agent id/name for the rest of the session and continue that same agent with

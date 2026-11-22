@@ -8,6 +8,13 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Added
+- **Works with any AI agent**, not just Claude: `python3 install.py` links the skill into every agent it finds
+  (Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot, Crush, Droid, dsh) or writes a pointer
+  into rules-file agents (Cursor, Kiro, Cline, Continue, Kilo Code, Amp, Qwen, Goose, Kimi); `--list`,
+  `--uninstall`. SKILL.md maps the host-specific bits (skill dir placeholder, question tool, background
+  tasks, subagents) to whatever the host has, with plain fallbacks.
+
 ## [1.1.0] — 2026-11-23 — Played, fixed, 2024-ready
 
 ### Added
