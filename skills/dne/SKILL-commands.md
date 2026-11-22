@@ -91,7 +91,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
 ---
 
 ## `/dne load <campaign-name>`
-0. **Pick the campaign if none was named.** If `<campaign-name>` was supplied (or the player clearly named one), use it. Otherwise `ls` the campaigns dir (`~/.dne/campaigns/` or `$DNE_CAMPAIGN_ROOT/campaigns/`) and **call `AskUserQuestion`**: *"Which campaign?"* with the existing campaign names as options (most-recently-played first — sort by `state.md` mtime). The player can pick "Other" to type a name. If there are no campaigns, tell them and offer `/dne new`.
+0. **Pick the campaign if none was named.** If `<campaign-name>` was supplied (or the player clearly named one), use it. Otherwise `ls` the campaigns dir (`${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/` or `$DNE_CAMPAIGN_ROOT/campaigns/`) and **call `AskUserQuestion`**: *"Which campaign?"* with the existing campaign names as options (most-recently-played first — sort by `state.md` mtime). The player can pick "Other" to type a name. If there are no campaigns, tell them and offer `/dne new`.
 1. **Session setup — call `AskUserQuestion`** with **two questions** (not typed y/n prompts):
 
    **Q1 *"Display & input mode?"***
@@ -107,7 +107,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
    - `DM rolls everything openly` → write `roll_mode: auto`. Resolve PC rolls yourself with full math shown.
 
    - (Defaults if the player dismisses: no display, no autorun, `roll_mode: players` — or the existing saved value.)
-   - **Session tail replay:** before clearing the display, check if the campaign's `session_tail.json` exists. The campaign-side path is the authoritative one — `~/.dne/campaigns/<name>/session_tail.json`. **Do NOT read** the legacy/fallback at `${CLAUDE_SKILL_DIR}/display/session_tail.json`; that file may exist from older sessions or other campaigns and will mislead the replay. If the campaign-side file does not exist, skip replay (display starts blank). If it does, read it. After `--clear` and full stats push (step 4 below), replay the tail by sending each entry via the appropriate `send.py` flag. Entry type → flag mapping:
+   - **Session tail replay:** before clearing the display, check if the campaign's `session_tail.json` exists. The campaign-side path is the authoritative one — `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/session_tail.json`. **Do NOT read** the legacy/fallback at `${CLAUDE_SKILL_DIR}/display/session_tail.json`; that file may exist from older sessions or other campaigns and will mislead the replay. If the campaign-side file does not exist, skip replay (display starts blank). If it does, read it. After `--clear` and full stats push (step 4 below), replay the tail by sending each entry via the appropriate `send.py` flag. Entry type → flag mapping:
      - `player` key present → `send.py --player <name>` with text via stdin
      - `npc` key present → `send.py --npc <name>` with text via stdin
      - `dice` key present → `send.py --dice` with text via stdin
@@ -313,7 +313,7 @@ NPCs:     N named  |  Factions: N
 Locations: N distinct
 
 Campaign name: <name>
-Campaign dir:  ~/.dne/campaigns/<name>/
+Campaign dir:  ${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/
 
 Proceed? [y/n]
 ```
@@ -321,7 +321,7 @@ Proceed? [y/n]
 ### Step 5 — Create campaign files
 On confirmation:
 
-1. `mkdir -p ~/.dne/campaigns/<name>/characters`
+1. `mkdir -p ${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/characters`
 2. Copy templates from `${CLAUDE_SKILL_DIR}/templates/`
 3. Write **world.md** (load-time core — kept small so it can be read in full every load):
    - `## World Foundations` — setting, geography, tone, magic level, calendar if present
@@ -354,7 +354,7 @@ On confirmation:
    - Leave `## Active Quests`, `## Session Flags` (autosave defaults on), `## DM Style Notes` as template defaults
 
 6b. Write the **lazy corpus** — the full source text, kept available but out of the hot path:
-   - `mkdir -p ~/.dne/campaigns/<name>/source`
+   - `mkdir -p ${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/source`
    - For each chapter in arc.md, write `source/<chapter-id>.md` (e.g. `source/1.1.md`) containing that chapter's source text from the extracted chunks. Use the same chapter ids as arc.md.
    - Write `source-index.md` — a table mapping `chapter-id → source/<id>.md → one-line scope`, plus source title and import date.
    - Validate the layout: `python3 ${CLAUDE_SKILL_DIR}/scripts/corpus_check.py --campaign <name>` (expects "lazy-corpus layout OK"). Fix any orphan/missing-file problems before finishing. If it prints an **oversized-chapter WARNING**, split that chapter into sub-chapters (e.g. `1.1a` / `1.1b` at natural scene breaks) across `arc.md`, `source-index.md`, and `source/`, then re-run — a single giant chapter is the one thing that still bloats a load, so keep each `source/<id>.md` comfortably under the limit.
@@ -401,7 +401,7 @@ If nothing changed in a category this session, leave it as-is. If a fact was wro
 
 Then update `## Faction Moves` in state.md: for each active faction, answer *"what did they do while the party was occupied?"* One line per faction — even if nothing visible yet. Confirm what was written.
 
-**Session tail archive:** `dne-display-app.py` continuously writes `~/.dne/campaigns/<name>/session_tail.json` — campaign-specific path, atomic-write, skip-on-empty guarded (since 2026-05-01). At save time:
+**Session tail archive:** `dne-display-app.py` continuously writes `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/session_tail.json` — campaign-specific path, atomic-write, skip-on-empty guarded (since 2026-05-01). At save time:
 
 1. Verify the campaign-side file exists and is non-empty (with `display: none` there is no live tail — skip straight to writing the canonical one with `write_canonical_tail.py`):
    ```bash
@@ -552,7 +552,7 @@ Pull the latest skill changes from `origin/main`.
 ---
 
 ## `/dne list`
-Read `~/.dne/campaigns/*/state.md`, print summary table: campaign name | last session date | session count.
+Read `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/*/state.md`, print summary table: campaign name | last session date | session count.
 
 ---
 
@@ -604,10 +604,10 @@ Default to `Step by step` if the question is dismissed. Either path lands in the
 6. Assign starting equipment per class + background — in a World Kit campaign pick kit gear of the same kind and give starting money equal to the chassis's 5e starting gold (1 world coin = 1 gp), written in the world currency
 7. Write to `characters/<file>.md` using `templates/character-sheet.md` — `<file>` is the name in lowercase with spaces as hyphens (`walt-brennan.md`; Thai names as written, `ทองดี.md`); scripts accept the display name or the file name. Set `## Campaign History → Origin campaign`
 8. Add to `state.md` party line
-9. Mirror to global roster: `cp characters/<name>.md ~/.dne/characters/<name>.md`
+9. Mirror to global roster: `cp characters/<name>.md ${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/characters/<name>.md`
 10. **Classic campaigns only** (no `worldkit.json` — the script skips World Kit campaigns on its own): run the supplemental builder to fetch any non-SRD spells/features the character uses:
     ```bash
-    python3 ${CLAUDE_SKILL_DIR}/scripts/build_supplemental.py --character ~/.dne/campaigns/<name>/characters/<charname>.md
+    python3 ${CLAUDE_SKILL_DIR}/scripts/build_supplemental.py --character ${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/characters/<charname>.md
     ```
     This scans the character file for spells and features not in the SRD and fetches descriptions from dnd5e.wikidot.com into `dnd5e_supplemental.json`. Skips any entries already present. Safe to re-run.
 
@@ -619,7 +619,7 @@ Read `characters/<name>.md`, display cleanly. If name omitted and one character 
 ---
 
 ## `/dne character import <name> [from:<campaign>]`
-1. Find character sheet: `from:<campaign>` specified → that campaign's characters/; otherwise check global roster `~/.dne/characters/<name>.md`; if neither → search all campaigns, list matches, ask.
+1. Find character sheet: `from:<campaign>` specified → that campaign's characters/; otherwise check global roster `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/characters/<name>.md`; if neither → search all campaigns, list matches, ask.
 2. Show summary (level, XP, HP, key inventory) and ask: *"Import at current level [X], or level up before starting?"*
    - As-is → copy directly; Level up first → run `/dne level up` on source sheet
 3. Copy to current campaign's `characters/<name>.md`. Update: Campaign, Last Updated, Previous campaigns, Death Saves (reset).
@@ -627,7 +627,7 @@ Read `characters/<name>.md`, display cleanly. If name omitted and one character 
 5. Add to `state.md` party line. Update global roster.
 6. Run supplemental builder for any non-SRD entries:
     ```bash
-    python3 ${CLAUDE_SKILL_DIR}/scripts/build_supplemental.py --character ~/.dne/campaigns/<name>/characters/<charname>.md
+    python3 ${CLAUDE_SKILL_DIR}/scripts/build_supplemental.py --character ${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/characters/<charname>.md
     ```
 7. Deliver one-paragraph in-character aside — how does it feel to step into a new world?
 
@@ -680,7 +680,7 @@ Rename a character across an entire campaign — `npcs.md`, `npcs-full.md`, `sta
 Maps to: `python3 ${CLAUDE_SKILL_DIR}/scripts/npc_rename.py --campaign <current> --old "..." --new "..." [flags]`. Use the currently loaded campaign by default; for explicit-campaign use, pass `--campaign <name>` directly.
 
 Flags:
-- `--random` — pick a name from the bundled fantasy-name corpus (~4800 unique combinations) that isn't already in `~/.dne/.name_registry.json`. Mutually exclusive with explicit "New Name".
+- `--random` — pick a name from the bundled fantasy-name corpus (~4800 unique combinations) that isn't already in `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/.name_registry.json`. Mutually exclusive with explicit "New Name".
 - `--type npc | pc` (default `npc`) — `pc` also moves the character file and updates the global roster.
 - `--dry-run` — show all hits across files without writing. Always run first for sanity.
 - `--yes` — skip the confirmation prompt.
@@ -708,12 +708,12 @@ Maps to: `python3 ${CLAUDE_SKILL_DIR}/scripts/name_registry.py <subcommand> [arg
 
 The registry by default captures **canonical** characters (those in `npcs.md` / `npcs-full.md` / `characters/` / graph.json node names). Names that appear only in session-log prose (one-off mentions, throwaway NPCs, skill-check labels) are NOT registered by default — that's deliberate, to avoid banning common names because of incidental use. The `--include-prose` flag is opt-in for users who want the broader (noisier) view.
 
-**Severity config:** create `~/.dne/.name_registry_config.json` with `{"severity": "strict"}` to make all duplicate detections refuse-by-default rather than warn-and-allow. Set to `"none"` to disable checks entirely (registry rebuild and rename still work).
+**Severity config:** create `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/.name_registry_config.json` with `{"severity": "strict"}` to make all duplicate detections refuse-by-default rather than warn-and-allow. Set to `"none"` to disable checks entirely (registry rebuild and rename still work).
 
 ---
 
 ## `/dne characters`
-List all characters in global roster (`~/.dne/characters/`). Display: name, race/class/level, origin campaign, previous campaigns, last updated.
+List all characters in global roster (`${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/characters/`). Display: name, race/class/level, origin campaign, previous campaigns, last updated.
 
 ---
 
@@ -839,7 +839,7 @@ Manage the dynamic campaign arc. The `advance`/`revise`/`new` subcommands are ac
 
 ## `/dne graph <subcommand>` — campaign relationship graph
 
-Local-only typed-edge relationship graph supplementing markdown. Stored at `~/.dne/campaigns/<name>/graph.json`. Supplements `npcs-full.md` / `session-log.md` — does not replace them. Edges are time-stamped (`since_session` / `until_session`), so historical state is recoverable.
+Local-only typed-edge relationship graph supplementing markdown. Stored at `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/graph.json`. Supplements `npcs-full.md` / `session-log.md` — does not replace them. Edges are time-stamped (`since_session` / `until_session`), so historical state is recoverable.
 
 **Auto-pulled at `/dne load` step 7** (scene-context) and **swept at `/dne save`** (relationship-shift extraction). The DM also uses `/dne graph scene-context` on demand mid-session, especially before heavy social or political scenes.
 
@@ -880,7 +880,7 @@ Print one node with all incoming and outgoing edges.
 Lower-level traversal — same as `scene-context` but with arbitrary seed nodes. Use when the scene framing doesn't fit (e.g. tracing faction politics independent of any specific place).
 
 ### `/dne graph extract [campaign-name] [--last-session-only]`
-Run a Haiku pass over the campaign's session-log to propose new edges with verbatim source-anchors. Outputs a proposal JSON to `~/.dne/campaigns/<name>/graph-proposals-<date>.json` for human review. Does **not** write to graph.json — that's the apply step.
+Run a Haiku pass over the campaign's session-log to propose new edges with verbatim source-anchors. Outputs a proposal JSON to `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/graph-proposals-<date>.json` for human review. Does **not** write to graph.json — that's the apply step.
 
 ### `/dne graph extract --deterministic [--last-session-only] [--write FILE]`
 **Zero-LLM alternative.** Pattern-matches session-log sentences against the bundled verb-table seed (`data/graph/verb_table_seed.yaml`) and emits the same proposal shape as the Haiku pass — no Claude API call, no cost, fully portable. Trades recall (~50%, clean subject-verb-object only) for precision (~95%) and determinism. Prints proposals to stdout, or writes them with `--write`.
@@ -926,10 +926,10 @@ Two-word **scene-meaning** generator (action verb + subject noun, One Page Solo 
 
 ## `/dne recap` — precomputed party state-diff
 
-Deterministic state-diff between two character snapshots — `python3 ${CLAUDE_SKILL_DIR}/scripts/session_recap.py`. Recaps are the #1 thing an LLM hallucinates (wrong HP, dropped facts); this computes the change set from data so narration never has to. Reads the character sheets at `~/.dne/campaigns/<name>/characters/*.md` and merges live `tracker.json` conditions/concentration. Zero LLM calls.
+Deterministic state-diff between two character snapshots — `python3 ${CLAUDE_SKILL_DIR}/scripts/session_recap.py`. Recaps are the #1 thing an LLM hallucinates (wrong HP, dropped facts); this computes the change set from data so narration never has to. Reads the character sheets at `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/characters/*.md` and merges live `tracker.json` conditions/concentration. Zero LLM calls.
 
 ### `/dne recap snapshot --campaign N`
-Snapshot the party's current state (HP/temp/level/hit dice/death saves/conditions/concentration/exhaustion/inspiration/spell slots) to `~/.dne/campaigns/<name>/.recap/`. Rolls the previous `last.json` to `prev.json` so the next diff has a baseline. **Take a snapshot at `/dne end`** so the next session's load can diff against it.
+Snapshot the party's current state (HP/temp/level/hit dice/death saves/conditions/concentration/exhaustion/inspiration/spell slots) to `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/.recap/`. Rolls the previous `last.json` to `prev.json` so the next diff has a baseline. **Take a snapshot at `/dne end`** so the next session's load can diff against it.
 
 ### `/dne recap diff --campaign N [--before FILE] [--after FILE]`
 Diff the prior snapshot against the current state and print a one-paragraph plain-English summary (e.g. *"Aldric: took 18 damage (30→12 HP); gained Poisoned; spent 2 level 1 slots."*). With no `--before`, uses the stored `prev`/`last` snapshot; with no `--after`, snapshots live state on the fly. **Inject this line at `/dne load`** as the mechanical half of the recap. `--json` emits the structured change list.

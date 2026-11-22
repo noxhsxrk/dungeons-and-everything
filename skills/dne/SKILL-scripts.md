@@ -335,7 +335,7 @@ If `check_input.py` returns output, prepend it to the player's terminal input wh
 ---
 
 ## Tracker Script — `scripts/tracker.py`
-Tracks conditions, concentration, timed effects, and death saves. State persists at `~/.dne/campaigns/<name>/tracker.json`.
+Tracks conditions, concentration, timed effects, and death saves. State persists at `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/tracker.json`.
 
 ```bash
 CAMP=my-campaign

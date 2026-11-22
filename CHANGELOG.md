@@ -26,6 +26,9 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
   death saves; `scene-context` shows the party's stance toward factions it lists; `graph show` prints levels.
 - Thai titles อาจารย์, แม่หมอ, พ่อหมอ, หมอ are stripped for duplicate checks; origin ability bonuses are labelled
   as 2014-only.
+- Any-agent docs: procedures write the data root as `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}` instead of a literal
+  `~/.dne/`, and SKILL.md tells agents where campaign files live and to read rules data only via the scripts
+  (found by an Antigravity CLI play-through, which otherwise ran with zero errors).
 - `redo` refuses once play has continued after an undo (it used to roll the whole later session back);
   its message now says what it re-applied. Encounters label mixed-level parties by level (L4+L3).
 - Display: Thai character names open their sheet on phone/TV; the player codex no longer shows DM prep
