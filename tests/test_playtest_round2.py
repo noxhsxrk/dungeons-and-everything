@@ -141,3 +141,14 @@ class TailRootTests(_Camp):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Lookup2024DataTests(unittest.TestCase):
+    def look(self, *a):
+        return subprocess.run([sys.executable, str(SCRIPTS / "lookup.py"), *a, "--ruleset", "2024"],
+                              capture_output=True, encoding="utf-8")
+
+    def test_feats_mastery_species(self):
+        self.assertIn("Alert", self.look("feat", "alert").stdout)
+        self.assertIn("Disadvantage", self.look("mastery", "sap").stdout)
+        self.assertIn("Elf", self.look("race", "elf").stdout)

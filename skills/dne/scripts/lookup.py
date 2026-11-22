@@ -79,7 +79,14 @@ CATEGORY_MAP = {
     "monsters":    "monsters",
     "feature":     "features",
     "features":    "features",
-    "feat":        "features",
+    "feat":        "feats",          # 2024 origin/general feats; 2014 falls back to features
+    "feats":       "feats",
+    "mastery":            "weapon_mastery_properties",
+    "weapon-mastery":     "weapon_mastery_properties",
+    "weapon_mastery":     "weapon_mastery_properties",
+    "weapon_mastery_properties": "weapon_mastery_properties",
+    "species":     "species",
+    "subspecies":  "subspecies",
     "invocation":     "class_options",
     "invocations":    "class_options",
     "fighting-style": "class_options",
@@ -91,7 +98,11 @@ CATEGORY_MAP = {
 }
 
 ALL_CATEGORIES = ["spells", "equipment", "magic_items", "conditions", "monsters",
-                  "races", "subraces", "class_options", "features", "classes", "backgrounds"]
+                  "races", "subraces", "class_options", "features", "classes", "backgrounds",
+                  "feats", "weapon_mastery_properties", "species", "subspecies"]
+
+#: The 2024 dataset names some categories differently; an empty primary falls back here.
+_CATEGORY_FALLBACK = {"races": "species", "subraces": "subspecies", "feats": "features"}
 
 # ─── Data loading / index ─────────────────────────────────────────────────────
 
@@ -165,7 +176,7 @@ def _load_ruleset(ruleset: str) -> None:
     _meta_by_rs[ruleset] = meta
 
 
-_ALWAYS_MERGE = {"conditions", "features", "class_options"}
+_ALWAYS_MERGE = {"conditions", "features", "class_options", "feats", "weapon_mastery_properties"}
 
 
 def _dataset_key(ruleset=None, campaign=None):
@@ -264,6 +275,8 @@ def _get_records(cat_key, ruleset: str = None):
     data = _data_by_rs.get(rs, {})
     if cat_key is None:
         return data.get("equipment", []) + data.get("magic_items", [])
+    if cat_key not in data and cat_key in _CATEGORY_FALLBACK:
+        return data.get(_CATEGORY_FALLBACK[cat_key], [])
     return data.get(cat_key, [])
 
 
@@ -379,7 +392,8 @@ def _fmt_feature(r: dict) -> str:
     cls_s   = r.get("class", "")
     lvl_s   = f"  (level {r['level_req']})" if r.get("level_req") else ""
     src_s   = f"{cls_s}{lvl_s}".strip() or r.get("type", "")
-    lines   = [f"## {r.get('name','?')}  [{src_s}]", "", r.get("description", "")]
+    head    = f"## {r.get('name','?')}" + (f"  [{src_s}]" if src_s else "")
+    lines   = [head, "", r.get("description", "")]
     return "\n".join(lines)
 
 
@@ -430,6 +444,8 @@ FORMATTERS = {
     "conditions":  _fmt_condition,
     "monsters":    _fmt_monster,
     "features":    _fmt_feature,
+    "feats":       _fmt_feature,
+    "weapon_mastery_properties": _fmt_feature,
     "class_options": _fmt_class_option,
 }
 
