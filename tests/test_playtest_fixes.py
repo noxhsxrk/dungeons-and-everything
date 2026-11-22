@@ -109,7 +109,10 @@ class ThaiRegistryTests(_Root):
     def test_slug_keeps_combining_marks(self):
         self.assertNotEqual(name_registry.slug("ขุนรามเดชะ"), name_registry.slug("ขนรามเดชะ"))
         self.assertNotEqual(name_registry.slug("หลวงพี่นนท์"), name_registry.slug("หลวงพี่นันท์"))
-        self.assertIn("ุ", name_registry.slug("ขุนรามเดชะ"))
+        self.assertIn("ุ", name_registry.slug("สุดารัตน์"))
+        # short words that also begin ordinary names are not treated as titles
+        self.assertEqual(name_registry.slug("อานนท์"), "อานนท์")
+        self.assertEqual(name_registry.slug("พันธุ์ทิพย์"), "พันธุ์ทิพย์")
 
     def test_ascii_slug_unchanged(self):
         self.assertEqual(name_registry.slug("Vedra Ceth (V.C.)"), "vedra_ceth")

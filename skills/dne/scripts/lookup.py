@@ -123,6 +123,10 @@ def _load_ruleset(ruleset: str) -> None:
     meta: dict = {}
     srd_file = _srd_path_for(ruleset)
 
+    if ruleset.split("@", 1)[0] == "2024" and not os.path.exists(srd_file) and os.path.exists(DATA_FILE_2014):
+        print("# lookup.py: 2024 dataset not built — using 2014 SRD (build with build_srd.py --ruleset 2024)", file=sys.stderr)
+        srd_file = DATA_FILE_2014
+
     if os.path.exists(srd_file):
         with open(srd_file, encoding="utf-8") as f:
             raw = json.load(f)
@@ -177,6 +181,10 @@ def _dataset_key(ruleset=None, campaign=None):
         _load_ruleset(rs)
         data = {cat: [dict(r) for r in records]
                 for cat, records in _data_by_rs[rs].items()}
+        if not kit.get("_meta", {}).get("srd_fallback", False):
+            for cat in ALL_CATEGORIES:
+                if cat not in _ALWAYS_MERGE:
+                    data[cat] = []
         defined = set()
         for cat, records in kit.items():
             if not isinstance(records, list):
@@ -194,7 +202,7 @@ def _dataset_key(ruleset=None, campaign=None):
                   for alias in (_norm(r.get("name", "")), _norm(r.get("index", ""))) if alias}
             for cat, records in data.items()}
         _meta_by_rs[key] = {**_meta_by_rs[rs], **kit.get("_meta", {})}
-        _meta_by_rs[key]["fallback_2014"] = list(_fallback_categories(rs) - defined)
+        _meta_by_rs[key]["fallback_2014"] = list((_fallback_categories(rs) - defined) & _ALWAYS_MERGE) if not kit.get("_meta", {}).get("srd_fallback", False) else list(_fallback_categories(rs) - defined)
     return key
 
 
@@ -733,6 +741,8 @@ def main() -> None:
 
     ruleset = _dataset_key(ruleset, campaign_arg)
     srd_file = _srd_path_for(ruleset)
+    if ruleset.split("@", 1)[0] == "2024" and not os.path.exists(srd_file) and os.path.exists(DATA_FILE_2014):
+        srd_file = DATA_FILE_2014
     if not os.path.exists(srd_file):
         print(f"Dataset not found: {srd_file}")
         _build = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_srd.py")
@@ -797,17 +807,17 @@ def main() -> None:
                 f"{nm} ({ck.rstrip('s').replace('_', ' ')})" for nm, ck in hints
             )
             print(f"Did you mean: {pretty}?")
-        sys.exit(0)
+        sys.exit(1)
 
     for r in results:
         if dump_json:
             out = dict(r)
             out["_ruleset"] = hit_rs.split("@", 1)[0]
             out["_fallback"] = fallback_used
-            print(json.dumps(out, indent=2))
+            print(json.dumps(out, ensure_ascii=False, indent=2))
         else:
             rcat = _resolve_cat(r, hit_rs)
-            fmt  = FORMATTERS.get(rcat, lambda x: json.dumps(x, indent=2))
+            fmt  = FORMATTERS.get(rcat, lambda x: json.dumps(x, ensure_ascii=False, indent=2))
             text = fmt(r)
             if fallback_used:
                 text += "  [2014 fallback]"

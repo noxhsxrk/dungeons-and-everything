@@ -12,6 +12,8 @@ Usage:
 """
 
 import argparse
+from itertools import combinations, product
+from fractions import Fraction
 import json
 import os
 import random
@@ -93,9 +95,9 @@ def generate_encounter(
     budget = XP_THRESHOLDS[lvl][diff_i] * size
 
     kit = worldkit.load(campaign) if campaign else None
-    world_monsters = kit is not None and "monsters" in kit
+    world_monsters = kit is not None
     if world_monsters:
-        monsters = kit["monsters"]
+        monsters = kit.get("monsters", [])
     else:
         spath = srd_path(ruleset)
         if not spath.exists():
@@ -112,47 +114,88 @@ def generate_encounter(
             return b_key in [b.lower() for b in m.get("biomes", [])] or b_key in hay
         return any(kw in hay for kw in kws)
 
+    if world_monsters and not any(_matches_biome(m) for m in monsters):
+        biomes = sorted({b for m in monsters for b in m.get("biomes", [])})
+        raise ValueError(f"Unknown biome {biome!r}. Known biomes: {', '.join(biomes)}")
+
     # Filter monsters whose base XP fits within budget (and not trivial 0 XP critters)
     eligible = [
         m for m in monsters
-        if _matches_biome(m) and 10 <= int(m.get("xp", 0) or 0) <= budget
+        if _matches_biome(m) and 10 <= int(m.get("xp", 0) or 0) <= budget * (1.15 if world_monsters else 1)
     ]
-    if not eligible:
+    if not eligible and not world_monsters:
         eligible = [m for m in monsters if 10 <= int(m.get("xp", 0) or 0) <= budget]
     if not eligible:
         raise RuntimeError(f"No monsters fit XP budget {budget} for biome '{biome}'.")
 
-    # Prefer monsters with XP between 12% and 85% of budget for engaging multi-enemy fights
-    sweet = [m for m in eligible if budget * 0.10 <= int(m.get("xp", 0)) <= budget * 0.85]
-    pool = sweet if sweet else eligible
+    if world_monsters:
+        def adjusted(roster):
+            count = sum(c["count"] for c in roster)
+            return sum(int(c["monster"]["xp"]) * c["count"] for c in roster) * _encounter_multiplier(count)
 
-    # Pick 1 leader/primary type + optional support/minion type
-    primary = rng.choice(pool)
-    pxp = int(primary["xp"])
-    chosen = [{"monster": primary, "count": 1}]
+        candidates = []
+        for _ in range(25):
+            roster = []
+            for count in range(8):
+                available = [m for m in eligible
+                             if (len(roster) < 3 or any(c["monster"] is m for c in roster))
+                             and (sum(int(c["monster"]["xp"]) * c["count"] for c in roster)
+                                  + int(m["xp"])) * _encounter_multiplier(count + 1) <= budget * 1.15]
+                if not available:
+                    break
+                pick = rng.choice(available)
+                existing = next((c for c in roster if c["monster"] is pick), None)
+                if existing:
+                    existing["count"] += 1
+                else:
+                    roster.append({"monster": pick, "count": 1})
+                candidates.append([dict(c) for c in roster])
+        chosen = min(candidates, key=lambda r: abs(adjusted(r) - budget))
+        # If random draws underfill, check all allowed mixes before accepting it.
+        if adjusted(chosen) < budget * 0.82:
+            for types in range(1, min(3, len(eligible)) + 1):
+                for group in combinations(eligible, types):
+                    for counts in product(range(1, 9), repeat=types):
+                        if sum(counts) > 8:
+                            continue
+                        roster = [{"monster": m, "count": n} for m, n in zip(group, counts)]
+                        xp = adjusted(roster)
+                        if xp <= budget * 1.15 and abs(xp - budget) < abs(adjusted(chosen) - budget):
+                            chosen = roster
+        total_count = sum(c["count"] for c in chosen)
+        raw_xp = sum(int(c["monster"]["xp"]) * c["count"] for c in chosen)
+    else:
+        # Prefer monsters with XP between 12% and 85% of budget for engaging multi-enemy fights
+        sweet = [m for m in eligible if budget * 0.10 <= int(m.get("xp", 0)) <= budget * 0.85]
+        pool = sweet if sweet else eligible
 
-    # Fill remaining budget up to 6 total monsters
-    total_count = 1
-    raw_xp = pxp
-    while total_count < 6:
-        next_mult = _encounter_multiplier(total_count + 1)
-        # Try adding another of the same or a companion monster
-        candidates = [
-            m for m in pool
-            if (raw_xp + int(m["xp"])) * next_mult <= budget * 1.15
-        ]
-        if not candidates:
-            break
-        pick = primary if (primary in candidates and rng.random() < 0.6) else rng.choice(candidates)
-        raw_xp += int(pick["xp"])
-        total_count += 1
-        existing = next((c for c in chosen if c["monster"]["name"] == pick["name"]), None)
-        if existing:
-            existing["count"] += 1
-        else:
-            chosen.append({"monster": pick, "count": 1})
-        if raw_xp * _encounter_multiplier(total_count) >= budget * 0.82:
-            break
+        # Pick 1 leader/primary type + optional support/minion type
+        primary = rng.choice(pool)
+        pxp = int(primary["xp"])
+        chosen = [{"monster": primary, "count": 1}]
+
+        # Fill remaining budget up to 6 total monsters
+        total_count = 1
+        raw_xp = pxp
+        while total_count < 6:
+            next_mult = _encounter_multiplier(total_count + 1)
+            # Try adding another of the same or a companion monster
+            candidates = [
+                m for m in pool
+                if (raw_xp + int(m["xp"])) * next_mult <= budget * 1.15
+            ]
+            if not candidates:
+                break
+            pick = primary if (primary in candidates and rng.random() < 0.6) else rng.choice(candidates)
+            raw_xp += int(pick["xp"])
+            total_count += 1
+            existing = next((c for c in chosen if c["monster"]["name"] == pick["name"]), None)
+            if existing:
+                existing["count"] += 1
+            else:
+                chosen.append({"monster": pick, "count": 1})
+            if raw_xp * _encounter_multiplier(total_count) >= budget * 0.82:
+                break
 
     adj_xp = int(raw_xp * _encounter_multiplier(total_count))
     roster = []
@@ -161,7 +204,7 @@ def generate_encounter(
         roster.append({
             "name": m["name"],
             "count": c["count"],
-            "cr": m.get("cr", 0),
+            "cr": float(Fraction(str(m.get("cr", 0)))),
             "xp_each": int(m.get("xp", 0)),
             "hp": m.get("hp", "?"),
             "ac": m.get("ac", "?"),
@@ -208,7 +251,9 @@ def main() -> None:
         print(f"Encounter [{enc['biome'].title()} · {enc['difficulty'].upper()}] "
               f"Party: {enc['party_size']}×L{enc['party_level']} (budget {enc['xp_budget']} XP → adj {enc['adjusted_xp']} XP)")
         for m in enc["monsters"]:
-            print(f"  {m['count']}× {m['name']} (CR {m['cr']}, AC {m['ac']}, HP {m['hp']}, role={m['tactical_role']})")
+            print(f"  {m['count']}× {m['name']} (CR {worldkit.format_cr(m['cr'])}, AC {m['ac']}, HP {m['hp']}, role={m['tactical_role']})")
+    except ValueError as e:
+        parser.error(str(e))
     except Exception as e:
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)

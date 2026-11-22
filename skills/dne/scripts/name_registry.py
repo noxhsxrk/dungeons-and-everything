@@ -64,15 +64,32 @@ def _today() -> str:
     return datetime.date.today().isoformat()
 
 
+#: Thai titles written attached to the name ("นางจันทร์เพ็ญ"). Only titles that are unlikely to
+#: be the start of an ordinary name: short ones like ตา, อา, พระ, พัน would turn อานนท์ into นนท์.
+THAI_HONORIFICS = sorted("หลวงพี่ หลวงพ่อ หลวงตา นางสาว พระยา หลวง ขุน หมื่น นาย นาง เจ๊ เฮีย คุณ ด.ช. ด.ญ.".split(),
+                         key=len, reverse=True)
+
+
+def _strip_thai_title(name):
+    import unicodedata
+    for title in THAI_HONORIFICS:
+        rest = name[len(title):].strip() if name.startswith(title) else ""
+        # The remainder must be a plausible name: 2+ chars, not starting with a combining mark.
+        if len(rest) >= 2 and unicodedata.category(rest[0]) != "Mn":
+            return rest
+    return name
+
+
 def slug(name: str) -> str:
     """Lowercase, snake_case slug. Drop punctuation; collapse whitespace.
 
     Strips parenthetical content first so 'Vedra Ceth (V.C.)' and
     'Vedra Ceth' produce the same slug. Strips trailing/leading whitespace.
     """
-    s = name.strip().lower()
+    import unicodedata
+    s = _strip_thai_title(name.strip().lower())
     s = re.sub(r"\s*\([^)]*\)\s*", " ", s)  # drop parenthetical asides
-    s = re.sub(r"[^\w\s]", "", s)            # drop remaining punctuation
+    s = "".join(c for c in s if c.isspace() or unicodedata.category(c)[0] in "LMN")            # drop remaining punctuation
     s = re.sub(r"\s+", "_", s).strip("_")    # collapse whitespace to _
     return s
 
@@ -131,10 +148,15 @@ def _scan_campaign_npcs(camp_dir: pathlib.Path) -> list[str]:
             names.append(cell)
     full = camp_dir / "npcs-full.md"
     if full.exists():
-        for h in _NPCS_FULL_HEADER.finditer(full.read_text(encoding="utf-8", errors="replace")):
-            names.append(h.group(1).strip())
-        for h in _NPC_HEADER.finditer(full.read_text(encoding="utf-8", errors="replace")):
-            names.append(h.group(1).strip())
+        text = full.read_text(encoding="utf-8", errors="replace")
+        headers = list(_NPC_HEADER.finditer(text))
+        sections = {"personality", "personality axes", "relationships", "notes", "stats",
+                    "secret", "schedule", "motivation", "demeanor", "speech quirk",
+                    "current goal", "faction", "role"}
+        for h in headers or _NPCS_FULL_HEADER.finditer(text):
+            name = h.group(1).strip()
+            if headers or name.casefold() not in sections:
+                names.append(name)
     return names
 
 
@@ -308,13 +330,15 @@ def first_name(name: str) -> str | None:
     compared rather than compared wrongly.
     """
     n = re.sub(r"\s*\([^)]*\)\s*", " ", name or "").strip()
+    n = _strip_thai_title(n)
     words = [w.strip(".,;:") for w in n.split()]
     words = [w for w in words if w]
     while len(words) > 1 and words[0].casefold() in HONORIFICS:
         words = words[1:]
     if not words:
         return None
-    if len(words) == 1 and NO_DELIMITER_SCRIPT.search(words[0]) and len(words[0]) > 1:
+    if (len(words) == 1 and NO_DELIMITER_SCRIPT.search(words[0])
+            and not re.search(r"[฀-๿]", words[0]) and len(words[0]) > 1):
         return None
     return words[0].casefold()
 

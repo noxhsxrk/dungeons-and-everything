@@ -255,9 +255,12 @@ def armor_class(scores: dict, cls: str, armor: str = "none", shield: bool = Fals
         wearing = False
     else:
         rec = records.get(worn)
-        if not rec or worn == "shield":
-            known = ", ".join(sorted(k for k in records if k != "shield"))
-            raise ValueError(f"Unknown armor {armor!r}. SRD armor: {known}")
+        if rec and (re.match(r"AC\s*\+", rec.get("ac", ""), re.I)
+                    or "shield" in (rec.get("category", "") + rec.get("name", "")).lower()):
+            raise ValueError(f"{armor!r} is a shield; use --shield")
+        if not rec:
+            known = ", ".join(sorted({r.get("index", _race_key(r["name"])) for r in records.values()}))
+            raise ValueError(f"Unknown armor {armor!r}. Known armor: {known}")
         m = _AC_PAT.match(rec["ac"])
         base, adds_dex, cap = int(m.group(2)), bool(m.group(3)), m.group(4)
         bonus = 0
@@ -272,8 +275,10 @@ def armor_class(scores: dict, cls: str, armor: str = "none", shield: bool = Fals
             notes.append(f"{rec['name']}: Disadvantage on Stealth")
         wearing = True
     if shield:
-        ac += 2
-        parts.append("Shield +2")
+        bonus = next((int(m.group(1)) for r in records.values()
+                      if (m := re.fullmatch(r"AC\s*\+(\d+)", r.get("ac", ""), re.I))), 2)
+        ac += bonus
+        parts.append(f"Shield +{bonus}")
     if _race_key(fighting_style) == "defense":
         if wearing:
             ac += 1
@@ -378,11 +383,17 @@ def _world_class(args):
     name = args[args.index("--class") + 1] if "--class" in args else "fighter"
     cls = worldkit.class_chassis(name, campaign)
     record = worldkit.find(kit, "classes", name) if kit else None
+    if kit is not None and "classes" in kit and record is None:
+        raise ValueError(f"Unknown class {name!r}. This world's classes: "
+                         + ", ".join(r["name"] for r in kit["classes"]))
     label = f"{record['name']} ({cls} chassis)" if record else cls.title()
     return kit, cls, label
 
 
 def do_calc(args: list[str]):
+    if "--help" in args or "-h" in args:
+        print(__doc__)
+        return
     try:
         kit, cls, class_label = _world_class(args)
     except ValueError as exc:
@@ -402,7 +413,8 @@ def do_calc(args: list[str]):
     # them here is what makes the step verifiable: an unknown race raises
     # rather than applying nothing.
     try:
-        if background and (race or subrace):
+        origin_traits_only = kit is not None and (_ruleset_from(args) == "2024" or kit.get("_meta", {}).get("base_ruleset") == "2024")
+        if background and (race or subrace) and not origin_traits_only:
             raise ValueError(
                 "--race (2014) and --background (2024) both grant ability "
                 "increases; a character takes one or the other")
@@ -420,6 +432,9 @@ def do_calc(args: list[str]):
             race_notes = []
         else:
             scores, racial, race_notes = apply_racial_bonuses(base_scores, race, subrace)
+        if origin_traits_only and (race or subrace):
+            scores, racial = dict(base_scores), {}
+            print("2024: origin grants traits only")
         bg_bonus: dict = {}
         if background:
             key = _race_key(background)
@@ -428,6 +443,7 @@ def do_calc(args: list[str]):
                 if not record:
                     raise ValueError(f"Unknown world background {background!r}")
                 allowed = tuple(record["ability_options"])
+                proficient.extend(record.get("skills", []))
             else:
                 if key not in BACKGROUND_ABILITIES:
                     parse_background_asi("", background)   # raises: unknown background
@@ -448,11 +464,14 @@ def do_calc(args: list[str]):
         if armor is not None or "--shield" in args:
             records = None
             if kit is not None and "equipment" in kit:
-                records = _armor_records() if kit.get("_meta", {}).get("srd_fallback", False) else {}
+                records = {}
                 for record in kit["equipment"]:
                     if record.get("ac"):
                         for name in (record["name"], record.get("index", record["name"])):
                             records[_race_key(name)] = record
+                if kit.get("_meta", {}).get("srd_fallback", False):
+                    for key, record in _armor_records().items():
+                        records.setdefault(key, record)
             ac_info = armor_class(scores, cls, armor or "none", "--shield" in args, style, records)
     except ValueError as exc:
         print(f"character.py: {exc}", file=sys.stderr)
@@ -504,6 +523,8 @@ def do_calc(args: list[str]):
 
     print(f"\n  Combat Stats:")
     print(f"  HP (level 1): {hp}  ({hd} + CON {fmt(con_mod)})")
+    if lvl > 1:
+        print(f"  HP (level {lvl}): {hp + (lvl - 1) * max(1, hd // 2 + 1 + con_mod)}")
     print(f"  Hit Dice: {lvl}d{hd}")
     print(f"  Initiative: {fmt(mod(scores.get('DEX', 10)))}")
     if ac_info:
@@ -641,6 +662,9 @@ def _ruleset_from(args: list) -> str:
 
 
 def do_levelup(args: list[str]):
+    if "--help" in args or "-h" in args:
+        print(__doc__)
+        return
     try:
         kit, cls, class_label = _world_class(args)
     except ValueError as exc:
@@ -688,19 +712,21 @@ def do_levelup(args: list[str]):
                 line = (f"{line.split(':')[0]}: choose a subclass — {world.get('subclass_label', 'specialisation')}"
                         + (f": {', '.join(world_subs)}" if world_subs else ""))
             print(f"    - {line}")
-        if cls == "warlock" and any("Invocation" in x for x in owed_list):
-            names = [r["name"] for r in _class_options("invocation")
-                     if (r.get("level") or 0) <= to_lvl]
-            if names and ruleset == "2014":
-                print(f"      SRD invocations available: {', '.join(sorted(names))}")
-            print("      (lookup.py invocation <name> for each one's text)")
-        if any("Fighting Style" in x for x in owed_list) and ruleset == "2014":
-            styles = sorted({r["name"] for r in _class_options("fighting_style")
-                             if r.get("class", "").lower() == cls})
-            if styles:
-                print(f"      SRD fighting styles for a {cls}: {', '.join(styles)}")
-        if any("Fighting Style" in x for x in owed_list) and ruleset == "2024":
-            print("      (2024: a Fighting Style feat — see the SRD 5.2 feat list)")
+        for kind, needed, label in (
+                ("invocation", cls == "warlock" and any("Invocation" in x for x in owed_list), "invocations"),
+                ("fighting_style", any("Fighting Style" in x for x in owed_list), "fighting styles")):
+            if not needed:
+                continue
+            options = [r for r in (kit or {}).get("class_options", []) if r.get("kind") == kind]
+            world_options = bool(options)
+            if not options:
+                options = _class_options(kind)
+                if kind == "fighting_style":
+                    options = [r for r in options if r.get("class", "").lower() == cls]
+            names = sorted(r["name"] for r in options if (r.get("level") or 0) <= to_lvl)
+            if names:
+                heading = label if world_options else (f"SRD {label} (re-skin names with the world lexicon)" if kit else f"SRD {label} available")
+                print(f"      {heading}: {', '.join(names)}")
         if any("Pact Boon" in x for x in owed_list):
             print("      (lookup.py pact-boon <name> for Chain, Blade and Tome)")
     print()

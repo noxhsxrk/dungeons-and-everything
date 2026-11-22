@@ -387,6 +387,9 @@ def _print_physical(res: dict, num_dice: int, die_size: int, modifier: int,
 
 if __name__ == "__main__":
     argv = sys.argv[1:]
+    if "--help" in argv or "-h" in argv:
+        print(__doc__)
+        sys.exit(0)
     silent = "--silent" in argv
     auto = "--auto" in argv
     label = ""
