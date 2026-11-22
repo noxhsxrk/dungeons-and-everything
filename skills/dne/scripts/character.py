@@ -665,6 +665,7 @@ WEAPON_MASTERY_KNOWN = {
     "barbarian": {1: 2, 4: 3, 10: 4},
     "paladin": {1: 2},
     "ranger": {1: 2},
+    "rogue": {1: 2},
 }
 
 
@@ -674,6 +675,33 @@ def _chassis_data() -> dict:
         return json.loads(srd_path("2014").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
+
+
+def _ruleset_data(ruleset: str) -> dict:
+    """The bundled dataset for a ruleset (2014 when the 2024 one is missing)."""
+    try:
+        return json.loads(srd_path(ruleset).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return _chassis_data()
+
+
+def _srd_subclass_index(subclass: str, world: dict | None, ruleset: str) -> str | None:
+    """SRD subclass index a chosen subclass maps to, so only its features are listed.
+
+    A World Kit subclass names its SRD chassis in its description ("Chassis: Champion");
+    a re-skin of a non-SRD subclass maps to nothing and lists no SRD subclass features.
+    """
+    if not subclass:
+        return None
+    text = subclass
+    for s in (world or {}).get("subclasses", []):
+        if _race_key(s.get("name", "")) == _race_key(subclass):
+            m = re.search(r"chassis:\s*([^.;(—–]+)", s.get("description", ""), re.I)
+            text = m.group(1) if m else ""
+            break
+    key = _race_key(text)
+    known = {r["subclass"] for r in _ruleset_data(ruleset).get("features", []) if r.get("subclass")}
+    return next((i for i in sorted(known, key=len, reverse=True) if i in key), None)
 
 
 def _class_options(kind: str) -> list:
@@ -827,8 +855,10 @@ def do_levelup(args: list[str]):
     world_options = (kit or {}).get("class_options", [])
     replaced_kinds = {r["kind"] for r in world_options}
     replaced_options = {r["index"] for r in chassis.get("class_options", []) if r.get("kind") in replaced_kinds}
-    features = [r["name"] for r in chassis.get("features", [])
-                if r.get("class") == cls and r.get("level_req") == to_lvl and r.get("index") not in replaced_options]
+    sub_idx = _srd_subclass_index(subclass, world, ruleset)
+    features = [r["name"] for r in _ruleset_data(ruleset).get("features", [])
+                if r.get("class") == cls and r.get("level_req") == to_lvl and not r.get("parent")
+                and r.get("subclass") in (None, sub_idx) and r.get("index") not in replaced_options]
     if world and world.get("subclasses"):
         subclass_label = world.get("subclass_label", "specialisation")
         features = [subclass_label if name == SUBCLASS_NAME.get(cls) else name for name in features]

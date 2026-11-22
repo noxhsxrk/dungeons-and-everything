@@ -68,7 +68,7 @@ def _today() -> str:
 #: Thai titles written attached to the name ("นางจันทร์เพ็ญ"). Only titles that are unlikely to
 #: be the start of an ordinary name: short ones like ตา, อา, พระ, พัน would turn อานนท์ into นนท์.
 THAI_HONORIFICS = sorted(("แม่หญิง หลวงพี่ หลวงพ่อ หลวงตา นางสาว พระยา หลวง ขุน หมื่น นาย นาง เจ๊ เฮีย คุณ ด.ช. ด.ญ. "
-                         "คุณหญิง ออกญา ออกหลวง ออกพระ เจ้าพระยา พระครู หม่อม ผู้กอง").split(),
+                         "คุณหญิง ออกญา ออกหลวง ออกพระ เจ้าพระยา พระครู หม่อม ผู้กอง อาจารย์ แม่หมอ พ่อหมอ หมอ").split(),
                          key=len, reverse=True)
 
 

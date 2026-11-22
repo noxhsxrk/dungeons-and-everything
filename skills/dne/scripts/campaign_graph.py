@@ -436,7 +436,8 @@ def _print_edge(e: dict, data: dict, direction: str = "out") -> None:
         sess.append(f"until s{e['until_session']}")
     sess_str = " (" + ", ".join(sess) + ")" if sess else ""
     note = f"  — {e['note']}" if e.get("note") else ""
-    print(f"  [{e.get('id', '?')}] {arrow} {e['type']}: {other_name}{sess_str}{note}")
+    etype = f"{e['type']}:{e['level']}" if e.get("level") else e["type"]
+    print(f"  [{e.get('id', '?')}] {arrow} {etype}: {other_name}{sess_str}{note}")
 
 
 def cmd_subgraph(args) -> int:
@@ -541,6 +542,11 @@ def _expand(data: dict, seeds: list[str], hops: int,
         frontier = next_frontier
         if not frontier:
             break
+    # Edges between two nodes already shown (e.g. the party's stance toward a visible
+    # faction found at the last hop) belong in the picture too.
+    for e in {id(x): x for es in edges_by_node.values() for x in es}.values():
+        if e["from"] in visited_nodes and e["to"] in visited_nodes and e not in visited_edges:
+            visited_edges.append(e)
     nodes = [n for n in data["nodes"] if n["id"] in visited_nodes]
     return {"nodes": nodes, "edges": visited_edges}
 

@@ -433,7 +433,7 @@ def _fmt_class(r: dict) -> str:
 def _fmt_origin(r: dict) -> str:
     lines = [f"## {r.get('name', '?')}"]
     for key, label in (("ability_options", "Abilities"), ("ability_scores", "Abilities"),
-                       ("ability_bonuses", "Ability bonuses"), ("skills", "Skills"),
+                       ("ability_bonuses", "Ability bonuses (2014 rules; 2024 origins grant traits only)"), ("skills", "Skills"),
                        ("traits", "Traits"), ("speed", "Speed"), ("size", "Size")):
         value = r.get(key)
         if isinstance(value, dict):
@@ -539,8 +539,9 @@ def _fallback_categories(ruleset: str) -> set:
     meta = _meta_by_rs.get(ruleset, {}) or {}
     fb = meta.get("fallback_2014") or []
     categories = set(fb) if isinstance(fb, list) else set()
-    if ruleset == "2024":
-        categories.update({"classes", "class_options"} - _data_by_rs.get(ruleset, {}).keys())
+    if ruleset.split("@", 1)[0] == "2024":   # plain "2024" or a World Kit overlay "2024@<kit>"
+        base = _data_by_rs.get("2024", {})
+        categories.update({"classes", "class_options"} - {k for k, v in base.items() if v})
     return categories
 
 

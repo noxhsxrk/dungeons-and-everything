@@ -611,7 +611,7 @@ def cmd_status(campaign: str, filter_name: str = "") -> None:
             parts.append(f"Death saves: {s}✓ {f}✗{stable}")
 
         if parts:
-            status = " unconscious" if "unconscious" in conds else ""
+            status = " DEAD" if _is_dead(ent) else (" unconscious" if "unconscious" in conds else "")
             print(f"  {name}:{status}")
             for p in parts:
                 print(f"    {p}")

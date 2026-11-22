@@ -15,6 +15,20 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
   `--uninstall`. SKILL.md maps the host-specific bits (skill dir placeholder, question tool, background
   tasks, subagents) to whatever the host has, with plain fallbacks.
 
+### Fixed
+- 2024 campaigns: XP awards and `xp.py calc` use 2024 budgets with no group multiplier (`calc -c/--ruleset`);
+  mixed-level parties sum each character's encounter budget; level-up lists 2024 features (Tactical Mind,
+  Magical Cunning …); rogue weapon mastery; fighting styles and invocations look up inside a 2024 World Kit
+  campaign.
+- Level-up lists only the chosen subclass's features (a world subclass that re-skins a non-SRD subclass
+  leaks none) and never option sub-features like Pact of the Chain.
+- A character at 0 HP can't spend Hit Dice on a short rest; `tracker status` shows DEAD after three failed
+  death saves; `scene-context` shows the party's stance toward factions it lists; `graph show` prints levels.
+- Thai titles อาจารย์, แม่หมอ, พ่อหมอ, หมอ are stripped for duplicate checks; origin ability bonuses are labelled
+  as 2014-only.
+- Docs: tick effects at the start of a creature's turn; `--since 1` for pre-campaign graph facts; fixed step
+  references; level-up updates the sheet's next-XP threshold; World Kit starting money.
+
 ## [1.1.0] — 2026-11-23 — Played, fixed, 2024-ready
 
 ### Added

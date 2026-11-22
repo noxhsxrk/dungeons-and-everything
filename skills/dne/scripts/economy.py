@@ -296,7 +296,8 @@ def _apply_rest_to_sheet(text: str, rest_type: str, hit_dice_spent: int = 0, hea
     hp_m = hp_pat.search(text)
     if hp_m:
         cur_hp, max_hp = int(hp_m.group(2)), int(hp_m.group(3))
-        if rest_type == "long" and cur_hp == 0:
+        if cur_hp == 0 and (rest_type == "long" or hit_dice_spent or heal):
+            # RAW: at 0 HP a creature can neither benefit from a long rest nor spend Hit Dice.
             return text, {"benefit": "no benefit at 0 HP"}
         if rest_type == "long":
             new_hp = max_hp

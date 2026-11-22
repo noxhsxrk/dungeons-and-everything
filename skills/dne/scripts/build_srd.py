@@ -1643,6 +1643,10 @@ def _norm_bits_feature(record: dict, trait: bool = False) -> dict:
         "class": None if trait else (record.get("class") or {}).get("index"),
         "level_req": None if trait else record.get("level"),
         "type": "race" if trait else "class",
+        # Subclass features and option sub-features (Pact of the Chain, Circle of the Land: Arctic)
+        # must not be listed as everyone's new features at level-up.
+        "subclass": None if trait else (record.get("subclass") or {}).get("index"),
+        "parent": None if trait else (record.get("parent") or {}).get("index"),
     }
 
 

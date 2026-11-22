@@ -232,7 +232,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
 
    Output is a focused subgraph (nodes by type + relationships block). **Internalize this subgraph before delivering the recap** — it is the authoritative source for who-relates-to-whom in the current scene. Do not re-read `npcs-full.md` for relationships you can answer from the subgraph.
 
-   If output reads `# graph not initialized` — graph hasn't been seeded for this campaign yet. **Graph init is a hard requirement, not deferrable.** The continuity-archive compression rule (step 6 below + `/dne save`) assumes graph.json is present and canonical for relational state; deferring init creates state-archive drift that compounds session-over-session. Run the init flow before delivering the recap:
+   If output reads `# graph not initialized` — graph hasn't been seeded for this campaign yet. **Graph init is a hard requirement, not deferrable.** The continuity-archive compression rule (the graph-init steps below + `/dne save`) assumes graph.json is present and canonical for relational state; deferring init creates state-archive drift that compounds session-over-session. Run the init flow before delivering the recap:
 
    1. **Detect legacy.** A campaign is "legacy" if any of: `Session count > 1` in state.md header, OR `## Continuity Archive` has at least one `### Session N` entry, OR session-log.md is > 100 lines. A freshly-created campaign at `/dne new` time fails all three signals — do NOT classify it as legacy.
 
@@ -438,7 +438,7 @@ session-log.md keeps only the **2 most recent full session entries**. Older entr
 - Calibration / DM Notes
 - Cliffhangers and pause-points
 
-Treat each bullet as one sentence with one job. If the only job is "restate a graph edge", drop it. If it carries content + edge, keep the content half. The graph is queried at `/dne load` step 5; the archive is queried for chronological narrative + mechanical state — they should not overlap.
+Treat each bullet as one sentence with one job. If the only job is "restate a graph edge", drop it. If it carries content + edge, keep the content half. The graph is queried at `/dne load` step 7; the archive is queried for chronological narrative + mechanical state — they should not overlap.
 
 The continuity summary is what stays hot in context. The full verbose log is in the archive, readable on `/dne recap` or explicit request. When a past detail surfaces mid-scene, check `## Continuity Archive` first, then `/dne graph scene-context` for relational context, then read session-log-archive.md if more depth is needed.
 
@@ -600,8 +600,8 @@ Default to `Step by step` if the question is dismissed. Either path lands in the
    - **2014:** `--race <origin/race> [--subrace <subrace>]` grants the increase (an unknown race exits non-zero, so a typo can't silently drop bonuses). A background is passed too — `--background <name>` — for its skills only; `--background-asi` is refused in 2014.
    - **2024:** `--background <name> --background-asi STR=2,CON=1` (or `+1/+1/+1`, checked against the background's three abilities) grants the increase; `--race <origin/species>` may still be given for its traits, and grants no increase. Note the background's origin feat (`lookup.py feat <name>`).
    Add `--armor <armor index> [--shield]` (or `--armor none`) for AC, `--proficient …` for chosen class skills, `--expertise …` for rogue/bard expertise, `--fighting-style <style>`, and `--subclass <name>` when one is owed at this level. `lookup.py race|origin <name>` shows the full entry. **Starting above level 1:** run `character.py levelup -c <campaign> --class <class> --from N` for each level from 1 up to the starting level and resolve every owed choice (subclass, ASIs, invocations, new powers); use maximum HP at level 1 and the listed average (or player rolls) after.
-5. Ask: Fighting Style (fighter/paladin/ranger chassis — World Kit names from `class_options` kind `fighting_style` when the kit has them), powers/spells (if caster), and in 2024 the weapon masteries (fighter 3, barbarian/paladin/ranger 2) from `lookup.py mastery <property>`; record masteries on the sheet under `### Class Features → Weapon Mastery:`.
-6. Assign starting equipment per class + background
+5. Ask: Fighting Style (fighter/paladin/ranger chassis — World Kit names from `class_options` kind `fighting_style` when the kit has them), powers/spells (if caster), and in 2024 the weapon masteries (fighter 3, barbarian/paladin/ranger/rogue 2) from `lookup.py mastery <property>`; record masteries on the sheet under `### Class Features → Weapon Mastery:`.
+6. Assign starting equipment per class + background — in a World Kit campaign pick kit gear of the same kind and give starting money equal to the chassis's 5e starting gold (1 world coin = 1 gp), written in the world currency
 7. Write to `characters/<file>.md` using `templates/character-sheet.md` — `<file>` is the name in lowercase with spaces as hyphens (`walt-brennan.md`; Thai names as written, `ทองดี.md`); scripts accept the display name or the file name. Set `## Campaign History → Origin campaign`
 8. Add to `state.md` party line
 9. Mirror to global roster: `cp characters/<name>.md ~/.dne/characters/<name>.md`
@@ -650,13 +650,13 @@ Read `characters/<name>.md`, display cleanly. If name omitted and one character 
    |    |         | 20 | 355,000 |
 
    Insufficient XP → report deficit and stop. Only continue on explicit DM override.
-2. Read sheet. Run `character.py levelup --class <c> --from <n> --con-mod <m> [--con-mod-before <old>] [--subclass <s>] -c <campaign>`. It lists the **choices the new level owes** — an Ability Score Improvement, the subclass, Eldritch Invocations (by the SRD table), a Pact Boon, a Fighting Style — and the retroactive HP when the CON modifier rose; resolve every one with the player before writing the sheet. Apply class features. Ask for HP roll or average. Update sheet + global roster. Narrate the growth.
+2. Read sheet. Update the sheet's XP line to the next level's threshold (`**XP:** <xp> / <next>`). Run `character.py levelup --class <c> --from <n> --con-mod <m> [--con-mod-before <old>] [--subclass <s>] -c <campaign>`. It lists the **choices the new level owes** — an Ability Score Improvement, the subclass, Eldritch Invocations (by the SRD table), a Pact Boon, a Fighting Style — and the retroactive HP when the CON modifier rose; resolve every one with the player before writing the sheet. Apply class features. Ask for HP roll or average. Update sheet + global roster. Narrate the growth.
 
    **Ruleset-aware subclass timing:** read campaign ruleset via `paths.campaign_ruleset(<campaign>)`.
    - **2014:** Subclass selection happens at the class's specified level (Cleric/Sorcerer/Warlock at 1; Druid/Wizard at 2; most others at 3).
    - **2024:** Subclass selection unifies at **level 3** for ALL classes. If the player is hitting level 3 in a 2024 campaign and hasn't picked a subclass yet, prompt for it. Class features that 2014 placed at level 1 (e.g. Cleric Domain) shift to level 3 in 2024.
 
-   **Weapon Mastery (2024 only):** Fighter/Barbarian/Paladin/Ranger gain Weapon Mastery at level 1 (Fighter knows 3 mastery properties; others know 2). Track which properties the character knows on the sheet under `## Class Features → Weapon Mastery: <list>`. Properties are picked from the eight in `data/dnd5e_srd_2024.json → weapon_mastery_properties`. The character can use mastery only with weapons that have the matching property (look up on `data/dnd5e_srd_2024.json → equipment[…].mastery`).
+   **Weapon Mastery (2024 only):** Fighter/Barbarian/Paladin/Ranger/Rogue gain Weapon Mastery at level 1 (Fighter knows 3 mastery properties; others know 2). Track which properties the character knows on the sheet under `## Class Features → Weapon Mastery: <list>`. Properties are picked from the eight in `data/dnd5e_srd_2024.json → weapon_mastery_properties`. The character can use mastery only with weapons that have the matching property (look up on `data/dnd5e_srd_2024.json → equipment[…].mastery`).
 
 ---
 
@@ -847,7 +847,7 @@ Local-only typed-edge relationship graph supplementing markdown. Stored at `~/.d
 All subcommands invoke `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_graph.py <subcommand> --campaign <name> [args]`.
 
 ### `/dne graph init [campaign-name]`
-First-time bootstrap. Run `campaign_graph.py init --campaign <name>` to create the empty `graph.json` — idempotent on an empty graph, and it refuses to overwrite one that already holds nodes or edges. Then read existing `npcs.md` / `world.md` / `state.md` for the campaign. Propose a node list (NPCs as `npc_*`, factions as `faction_*`, key locations as `place_*`) and a starter edge list (faction membership from npcs.md tables, NPC location from "Lives in / Based at" fields, faction relationships from world.md). Display the proposed list to the DM and **ask for approval** before writing — do not silently extract. After approval, run `add-node` and `add-edge` for each. Use `--since` matching state.md's current session count.
+First-time bootstrap. Run `campaign_graph.py init --campaign <name>` to create the empty `graph.json` — idempotent on an empty graph, and it refuses to overwrite one that already holds nodes or edges. Then read existing `npcs.md` / `world.md` / `state.md` for the campaign. Propose a node list (NPCs as `npc_*`, factions as `faction_*`, key locations as `place_*`) and a starter edge list (faction membership from npcs.md tables, NPC location from "Lives in / Based at" fields, faction relationships from world.md). Display the proposed list to the DM and **ask for approval** before writing — do not silently extract. After approval, run `add-node` and `add-edge` for each. Use `--since 1` for everything already true before play (a fresh campaign's session count is 0), and the current session number for anything newer.
 
 For existing campaigns being initialized for the first time, the `/dne load` flow offers to back the campaign directory up first; honour that flow rather than running init from a cold prompt.
 

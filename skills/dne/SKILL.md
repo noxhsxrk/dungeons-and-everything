@@ -31,7 +31,7 @@ The differences that affect narration and resolution at the table:
 |---|---|---|
 | Ability score increases (character creation) | From race | From background; species grants traits + 1 free origin feat |
 | Subclass selection | Class-dependent (Cleric L1, Druid L2, etc.) | Unified at **level 3** for all classes |
-| Weapon mastery (Cleave / Graze / Nick / Push / Sap / Slow / Topple / Vex) | Not present | Available to Fighter / Barbarian / Paladin / Ranger from L1 |
+| Weapon mastery (Cleave / Graze / Nick / Push / Sap / Slow / Topple / Vex) | Not present | Available to Fighter / Barbarian / Paladin / Ranger / Rogue from L1 |
 | Exhaustion | 6 levels with discrete effects | Cumulative -2 to all d20 rolls per level (death at 6) |
 | Inspiration label | "Inspiration" | "Heroic Inspiration" (same mechanic) |
 | Crit damage (PCs) | Nat 20 → double dice | Nat 20 → double dice (unchanged) |
@@ -467,7 +467,8 @@ a. send.py --player  ← player action (or describe NPC intent inline)
 b. Roll all dice (combat.py attack / dice.py)
 c. send.py --dice    ← ALL roll results with context
 d. tracker.py        ← conditions, concentration, death saves if applicable
-   tracker.py effect tick <actor>  ← decrement round effects; prints any expiry warnings
+(tick at the START of each creature's turn, before its action: `tracker.py effect tick <actor>` — decrements
+ its round effects and any `--until <actor>` effects it placed on others; prints expiry warnings)
 e. Write full narration for this turn
 f. send.py [--stat-*] ← send complete narration + ALL stat changes — NEVER skip
    Use --effect-start / --effect-end flags when effects begin or end this turn (syncs display)

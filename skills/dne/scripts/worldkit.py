@@ -297,7 +297,7 @@ def show(kit):
     print('Premise:', meta.get('premise', ''))
     currency = kit.get('currency', {})
     print('Currency:', ', '.join(f'{k}: {v}' for k, v in currency.items()) if isinstance(currency, dict) else currency)
-    print('Origins:')
+    print('Origins (ability bonuses apply under 2014 rules; 2024 origins grant traits only):')
     for r in kit.get('races', []):
         print(f"  {r['name']}: " + ', '.join(f'{a} {v:+}' for a, v in r['ability_bonuses'].items()))
     print('Classes:')

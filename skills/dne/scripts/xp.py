@@ -95,7 +95,7 @@ LEVEL_XP: dict[int, int] = {
 DIFF_IDX: dict[str, int] = {"easy": 0, "medium": 1, "hard": 2, "deadly": 3}
 DIFF_LABELS: dict[int, str] = {0: "Easy", 1: "Medium", 2: "Hard", 3: "Deadly"}
 
-from paths import CHARACTER_LEVEL_RE, find_campaign as _find_campaign, campaigns_dir as _campaigns_dir, display_dir as _display_dir
+from paths import CHARACTER_LEVEL_RE, find_campaign as _find_campaign, campaigns_dir as _campaigns_dir, display_dir as _display_dir, campaign_ruleset
 CAMPAIGNS_DIR = _campaigns_dir()
 DISPLAY_SCRIPT = _display_dir() / "push_stats.py"
 
@@ -146,16 +146,50 @@ def _parse_monsters(monsters_str: str) -> list[tuple[str, str, int]]:
     return result
 
 
-def _calc_monster_xp(monsters: list[tuple[str, str, int]], players: int = 4) -> tuple[int, float, int]:
-    """Returns (raw_xp, multiplier, adjusted_xp)."""
+def _calc_monster_xp(monsters: list[tuple[str, str, int]], players: int = 4,
+                     ruleset: str = "2014") -> tuple[int, float, int]:
+    """Returns (raw_xp, multiplier, adjusted_xp). 2024 has no group multiplier."""
     raw = sum(CR_XP[cr] * cnt for _, cr, cnt in monsters)
     total_count = sum(cnt for _, _, cnt in monsters)
-    mult = _monster_multiplier(total_count, players)
+    mult = 1 if ruleset == "2024" else _monster_multiplier(total_count, players)
     return raw, mult, int(raw * mult)
 
 
-def party_xp_thresholds(levels) -> tuple:
-    return tuple(map(sum, zip(*(XP_THRESHOLDS.get(level, XP_THRESHOLDS[20]) for level in levels))))
+#: 2024 DMG XP budget per character: (Low, Moderate, High) by level. No group multiplier in 2024.
+XP_BUDGETS_2024 = dict(enumerate((
+    (50, 75, 100),
+    (100, 150, 200),
+    (150, 225, 400),
+    (250, 375, 500),
+    (500, 750, 1100),
+    (600, 1000, 1400),
+    (750, 1300, 1700),
+    (1000, 1700, 2100),
+    (1300, 2000, 2600),
+    (1600, 2300, 3100),
+    (1900, 2900, 4100),
+    (2200, 3700, 4700),
+    (2600, 4200, 5400),
+    (2900, 4900, 6200),
+    (3300, 5400, 7800),
+    (3800, 6100, 9800),
+    (4500, 7200, 11700),
+    (5000, 8700, 14200),
+    (5500, 10700, 17200),
+    (6400, 13200, 22000),
+), 1))
+
+
+def _thresholds(level: int, ruleset: str = "2014") -> tuple:
+    """(easy, medium, hard, deadly) per character. 2024 has three bands: Low, Moderate, High."""
+    if ruleset == "2024":
+        low, moderate, high = XP_BUDGETS_2024.get(level, XP_BUDGETS_2024[20])
+        return (low, moderate, high, float("inf"))
+    return XP_THRESHOLDS.get(level, XP_THRESHOLDS[20])
+
+
+def party_xp_thresholds(levels, ruleset: str = "2014") -> tuple:
+    return tuple(map(sum, zip(*(_thresholds(level, ruleset) for level in levels))))
 
 
 def classify_difficulty(adjusted_xp: int, thresholds: tuple) -> str:
@@ -163,11 +197,10 @@ def classify_difficulty(adjusted_xp: int, thresholds: tuple) -> str:
     return next((name for name, limit in reversed(list(tiers)) if adjusted_xp >= limit), "trivial")
 
 
-def _xp_per_player(difficulty: str, level: int) -> int:
-    """XP per player for a difficulty-rated encounter at a given level."""
-    t = XP_THRESHOLDS.get(level, XP_THRESHOLDS[20])
-    idx = DIFF_IDX.get(difficulty.lower(), 1)
-    return t[idx]
+def _xp_per_player(difficulty: str, level: int, ruleset: str = "2014") -> int:
+    """XP per player for a difficulty-rated encounter at a given level (2024: deadly = High)."""
+    idx = min(DIFF_IDX.get(difficulty.lower(), 1), 2 if ruleset == "2024" else 3)
+    return int(_thresholds(level, ruleset)[idx])
 
 
 def _next_level_xp(current_level: int) -> int:
@@ -242,16 +275,17 @@ def cmd_calc(args: argparse.Namespace) -> None:
     """Print XP calculation without modifying any files."""
     level   = args.level
     players = args.players
+    ruleset = args.ruleset or (campaign_ruleset(args.campaign) if args.campaign else "2014")
 
     if args.monsters:
         monsters = _parse_monsters(args.monsters)
         if not monsters:
             print("No valid monsters parsed.", file=sys.stderr)
             sys.exit(1)
-        raw_xp, mult, adj_xp = _calc_monster_xp(monsters, players)
+        raw_xp, mult, adj_xp = _calc_monster_xp(monsters, players, ruleset)
         total_count = sum(c for _, _, c in monsters)
         per_player  = raw_xp // players
-        diff        = classify_difficulty(adj_xp, party_xp_thresholds([level] * players))
+        diff        = classify_difficulty(adj_xp, party_xp_thresholds([level] * players, ruleset))
 
         print(f"\n  Combat encounter — CR-based calculation")
         for name, cr, count in monsters:
@@ -264,7 +298,7 @@ def cmd_calc(args: argparse.Namespace) -> None:
         print(f"  Total:        {per_player * players:,} XP")
 
     elif args.difficulty:
-        per_player = _xp_per_player(args.difficulty, level)
+        per_player = _xp_per_player(args.difficulty, level, ruleset)
         enc_type   = (args.type or "combat").upper()
         print(f"\n  {args.difficulty.upper()} {enc_type} — Level {level} party of {players}")
         print(f"  Per player:  {per_player:,} XP")
@@ -398,6 +432,7 @@ def cmd_award(args: argparse.Namespace) -> None:
         chars.append({"name": name, "xp": xp, "level": level, "path": path})
 
     players   = len(chars)
+    ruleset   = campaign_ruleset(campaign)
 
     # Calculate XP per player
     if args.monsters:
@@ -405,11 +440,11 @@ def cmd_award(args: argparse.Namespace) -> None:
         if not monsters:
             print("No valid monsters parsed.", file=sys.stderr)
             sys.exit(1)
-        raw_xp, mult, adj_xp = _calc_monster_xp(monsters, players)
+        raw_xp, mult, adj_xp = _calc_monster_xp(monsters, players, ruleset)
         total_count = sum(c for _, _, c in monsters)
         per_player  = raw_xp // players
         awards = [per_player] * players
-        diff = classify_difficulty(adj_xp, party_xp_thresholds(c["level"] for c in chars))
+        diff = classify_difficulty(adj_xp, party_xp_thresholds((c["level"] for c in chars), ruleset))
 
         print(f"\n  Combat — CR-based  [{total_count} monsters, ×{mult} multiplier]")
         for name, cr, count in monsters:
@@ -422,7 +457,7 @@ def cmd_award(args: argparse.Namespace) -> None:
             print("Provide --difficulty or --monsters.", file=sys.stderr)
             sys.exit(1)
         diff       = args.difficulty.lower()
-        awards = [_xp_per_player(diff, c["level"]) for c in chars]
+        awards = [_xp_per_player(diff, c["level"], ruleset) for c in chars]
         type_label = f"  [{enc_type}]" if enc_type == "noncombat" else ""
         print(f"\n  {diff.upper()} {enc_type.upper()}{type_label} — Party of {players}")
 
@@ -479,6 +514,8 @@ def main() -> None:
                         help="Encounter type (default: combat)")
     calc_p.add_argument("--monsters",   metavar="LIST",
                         help="name:cr:count,... e.g. 'goblin:1/4:3,orc:1/2:2'")
+    calc_p.add_argument("--ruleset",    choices=["2014", "2024"], help="default: the campaign's, else 2014")
+    calc_p.add_argument("-c", "--campaign", metavar="NAME", help="read the ruleset from this campaign")
 
     # ── award ─────────────────────────────────────────────────────────────────
     award_p = sub.add_parser("award", help="Award XP — updates character files and display")

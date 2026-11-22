@@ -25,31 +25,10 @@ if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
 from paths import CHARACTER_LEVEL_RE, campaign_ruleset, srd_path, find_campaign
-from xp import DIFF_IDX, XP_THRESHOLDS, classify_difficulty, _monster_multiplier as _encounter_multiplier
+from xp import DIFF_IDX, XP_BUDGETS_2024, party_xp_thresholds, classify_difficulty, _monster_multiplier as _encounter_multiplier
 import worldkit
 
-XP_BUDGETS_2024 = dict(enumerate((
-    (50, 75, 100),
-    (100, 150, 200),
-    (150, 225, 400),
-    (250, 375, 500),
-    (500, 750, 1100),
-    (600, 1000, 1400),
-    (750, 1300, 1700),
-    (1000, 1700, 2100),
-    (1300, 2000, 2600),
-    (1600, 2300, 3100),
-    (1900, 2900, 4100),
-    (2200, 3700, 4700),
-    (2600, 4200, 5400),
-    (2900, 4900, 6200),
-    (3300, 5400, 7800),
-    (3800, 6100, 9800),
-    (4500, 7200, 11700),
-    (5000, 8700, 14200),
-    (5500, 10700, 17200),
-    (6400, 13200, 22000),
-), 1))
+
 
 BIOME_KEYWORDS = {
     "forest":    ["wolf", "bear", "spider", "goblin", "orc", "boar", "dryad", "treant", "owlbear", "elf", "stag", "bandit", "bugbear", "ettin", "fey", "plant", "beast", "green dragon"],
@@ -88,6 +67,7 @@ def generate_encounter(
     seed: "int | None" = None,
     ruleset: str | None = None,
     campaign=None,
+    levels=None,
 ) -> dict:
     rng = random.Random(seed)
     lvl = max(1, min(20, int(party_level)))
@@ -95,9 +75,9 @@ def generate_encounter(
     ruleset = ruleset or (campaign_ruleset(campaign) if campaign else "2014")
     rules_2024 = ruleset == "2024"
     diff_i = DIFF_IDX.get(difficulty.lower(), 1)
-    per_character = XP_BUDGETS_2024[lvl] if rules_2024 else XP_THRESHOLDS[lvl]
-    thresholds = tuple(value * size for value in per_character)
-    budget = thresholds[min(diff_i, len(thresholds) - 1)]
+    # Mixed-level parties sum each character's budget (both DMGs); otherwise level × size.
+    thresholds = party_xp_thresholds(levels or [lvl] * size, ruleset)
+    budget = thresholds[min(diff_i, 2 if rules_2024 else 3)]
     budget_limit = budget if rules_2024 else budget * 1.15
 
     def multiplier(count):
@@ -255,6 +235,7 @@ def main() -> None:
             match = CHARACTER_LEVEL_RE.search(sheet.read_text(encoding="utf-8", errors="replace"))
             if match:
                 levels.append(int(match.group(1)))
+    sheet_levels = levels if levels and args.party_size is None and args.party_level is None else None
     if levels:
         if args.party_size is None:
             args.party_size = len(levels)
@@ -274,6 +255,7 @@ def main() -> None:
         enc = generate_encounter(
             args.biome, args.party_level, args.party_size,
             difficulty=args.difficulty, seed=args.seed, ruleset=args.ruleset, campaign=args.campaign,
+            levels=sheet_levels,
         )
         if args.json:
             print(json.dumps(enc, indent=2, ensure_ascii=False))
