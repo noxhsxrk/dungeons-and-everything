@@ -53,7 +53,7 @@ class WorldCurrencyTests(unittest.TestCase):
 class TypedDamageTests(unittest.TestCase):
     def attack(self, dmg):
         return subprocess.run([sys.executable, str(SCRIPTS / "combat.py"), "attack", "--atk", "30",
-                               "--ac", "1", "--dmg", dmg], capture_output=True, encoding="utf-8")
+                               "--ac", "1", "--roll", "15", "--dmg", dmg], capture_output=True, encoding="utf-8")
 
     def test_weapon_damage_string_with_type(self):
         r = self.attack("1d10 Piercing")

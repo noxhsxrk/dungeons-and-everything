@@ -253,7 +253,7 @@ class CombatTests(unittest.TestCase):
         self.assertIn("d20(4)", r.stdout)
 
     def test_compound_damage(self):
-        r = self.combat("attack", "--atk", "30", "--ac", "1", "--dmg", "1d6+5+1d4 bludgeoning")
+        r = self.combat("attack", "--atk", "30", "--ac", "1", "--roll", "15", "--dmg", "1d6+5+1d4 bludgeoning")
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertRegex(r.stdout, r"\(1d6\+5\+1d4\) = \d+ bludgeoning damage")
 
