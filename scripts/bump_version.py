@@ -6,7 +6,7 @@ drift-prone. This updates them all (and optionally commits + tags):
 
   1. VERSION                          — source of truth
   2. .claude-plugin/plugin.json       — top-level "version"
-  3. .claude-plugin/marketplace.json  — the `dm` plugin entry's "version"
+  3. .claude-plugin/marketplace.json  — the `dne` plugin entry's "version"
   4. skills/dne/SKILL.md              — the "vMAJOR.MINOR.PATCH ·" slash-picker prefix
   5. CHANGELOG.md                     — promote [Unreleased] → [X.Y.Z] — <date>
 
@@ -76,10 +76,10 @@ def bump_plugin_json(root, old, new, dry):
 
 
 def bump_marketplace_json(root, old, new, dry):
-    # Only the dm plugin entry's version equals `old`; the marketplace's own
-    # metadata.version is independent (e.g. 1.0.0), so a scoped single match.
+    # Only the plugin entry's version; the marketplace's own metadata.version is
+    # independent and may hold the same string (both were 1.0.0 at first release).
     p = root / ".claude-plugin" / "marketplace.json"
-    out = _sub_once(_read(p), rf'("version":\s*)"{re.escape(old)}"', rf'\g<1>"{new}"',
+    out = _sub_once(_read(p), rf'(?s)("plugins".*?"version":\s*)"{re.escape(old)}"', rf'\g<1>"{new}"',
                     where="marketplace.json (plugin entry)")
     if not dry:
         p.write_text(out, encoding="utf-8")
