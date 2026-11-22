@@ -319,11 +319,9 @@ def _push_conditions(entity_name: str, conditions: list[str]) -> None:
 def _send_announce(msg: str) -> None:
     """Send a one-line announcement to the display companion."""
     try:
-        proc = subprocess.Popen(
-            [sys.executable, SEND_PY, "--dice"],
-            stdin=subprocess.PIPE, capture_output=True, timeout=3,
-        )
-        proc.communicate(input=msg.encode())
+        # Popen takes neither capture_output nor timeout; run() does.
+        subprocess.run([sys.executable, SEND_PY, "--dice"], input=msg.encode(),
+                       capture_output=True, timeout=3)
     except Exception:
         pass
 
