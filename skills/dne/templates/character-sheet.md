@@ -2,7 +2,7 @@
 **Player:** <player>  **Campaign:** <campaign>  **Last Updated:** <date>
 
 ## Identity
-- **Race:** | **Class:** | **Level:** | **Background:**
+- **Race:** <origin/race> | **Class:** <class> (<chassis> chassis — World Kit only) | **Level:** | **Background:**
 - **Alignment:** | **XP:** / <next level threshold>
 
 ## Character Pillar
@@ -21,13 +21,15 @@
 |-----|-----|-----|-----|-----|-----|
 | XX (+X) | XX (+X) | XX (+X) | XX (+X) | XX (+X) | XX (+X) |
 
-*Base scores via <roll/point buy>. Racial bonuses applied.*
+*Base scores via <roll/point buy>. Origin/racial (2014) or background (2024) increases applied.*
 
 ## Combat Stats
 - **HP:** current / max | **Temp HP:** 0
 - **AC:** | **Initiative:** | **Speed:**
 - **Hit Dice:** Xd[Y] (remaining: X)
 - **Death Saves:** Successes: 0 | Failures: 0
+- **Inspiration:** no
+- **Passive Perception:**
 
 ## Saving Throws
 | STR | DEX | CON | INT | WIS | CHA |
@@ -63,16 +65,23 @@
 |------|-------------|--------|------|-------|
 | | | | | |
 
-## Spell Slots (if applicable)
+## Spell Slots
+*Casters only — delete this section and Known Spells for a non-casting class. A warlock-chassis class records its pact slots here (they return on a short rest).*
+
 | Level | Total | Used |
 |-------|-------|------|
 | 1st | | |
 
 ## Known Spells / Cantrips
+*Spellcasting ability: | Save DC: | Spell attack: — in a World Kit campaign list the world's power names (`lookup.py power <name> --campaign <campaign>`).*
 
 ## Features & Traits
 
 ### <Class>
+-
+
+### Class Features
+*Subclass, invocations / pact boon, fighting style, 2024 weapon mastery (`Weapon Mastery: <list>`), expertise.*
 -
 
 ### <Race> Racial
@@ -91,6 +100,6 @@
 **Adventuring Gear:**
 -
 
-**Currency:** 0gp 0sp 0cp
+**Currency:** 0   *(classic: `0gp 0sp 0cp`; World Kit: `0 <currency abbreviation>`)*
 
 ## Backstory & Notes

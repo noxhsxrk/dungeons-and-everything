@@ -7,7 +7,7 @@
 - **HP:** | **AC:** | **Attack:** | **Notable abilities:**
 - **Demeanor:** | **Motivation:** | **Secret:**
 - **Speech quirk:**
-- **Attitude toward party:** neutral (scale: hostile → unfriendly → neutral → friendly → allied)
+- **Attitude toward party:** neutral (scale: hostile → suspicious → neutral → friendly → allied)
 - **Faction:** <faction name or "independent">
 - **Current goal:** <what this NPC is actively doing or trying to achieve right now — update each session>
 - **Schedule:** <when and where they can typically be found>

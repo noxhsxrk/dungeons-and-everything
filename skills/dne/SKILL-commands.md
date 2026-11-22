@@ -236,8 +236,8 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
 
    2. **Backup the campaign directory** (always — both fresh and legacy):
       ```bash
-      cp -R ~/.dne/campaigns/<name> \
-            ~/.dne/campaigns/<name>.backup-$(date +%Y%m%d-%H%M%S)
+      mkdir -p "${DNE_CAMPAIGN_ROOT:-$HOME/.dne}"/.backups && cp -R "${DNE_CAMPAIGN_ROOT:-$HOME/.dne}"/campaigns/<name> \
+            "${DNE_CAMPAIGN_ROOT:-$HOME/.dne}"/.backups/<name>-$(date +%Y%m%d-%H%M%S)
       ```
       Tell the DM the backup path explicitly so they can revert if needed.
 
@@ -254,7 +254,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
 
       For fresh (non-legacy) campaigns: skip the offer entirely — there's nothing to compress yet, and the going-forward rule covers all future entries.
 
-   6. Re-run scene-context (now populated). Then proceed to step 6 (recap).
+   6. Re-run scene-context (now populated; on a fresh campaign pass `--at-session 1` so the foundational `--since 1` edges show). Then proceed to the recap step.
 
 8. Deliver one in-character paragraph recapping current situation — where the party is, what's at stake, what was last happening.
 9. Enter active DM mode — no `/dne` prefix needed from this point.
@@ -382,7 +382,9 @@ Campaign "<name>" created from <source title>.
 ---
 
 ## `/dne save`
-Write session events to session-log.md, update state.md (location, active quests, party HP/resources, recent events), update any characters/*.md that changed. Mirror each updated character to global roster (`~/.dne/characters/<name>.md`).
+Write session events to session-log.md, update state.md (location, active quests, party HP/resources, recent events), update any characters/*.md that changed. Mirror each updated character to the global roster (`<DNE_CAMPAIGN_ROOT>/characters/<file>.md`, default `~/.dne/characters/`).
+
+**Header bookkeeping:** on the first save of a session, increment `**Session count:**` and set `**Last session:**` to today's real date in the state.md header (later saves in the same session leave them alone). **NPC attitudes:** when an NPC's attitude changed, update its row in `npcs.md` and its `**Attitude toward party:**` line in `npcs-full.md` (and `campaign_graph.py set-disposition` if the graph is initialised), using the one scale everywhere: hostile → suspicious → neutral → friendly → allied.
 
 **Inspiration tracking:** On every save, record each PC's Inspiration state in `state.md → ## Current Situation → Party status`. Use explicit text: `Inspiration ✓` if held, omit or `No Inspiration` if not. Inspiration persists across sessions and is NOT cleared by long rests. Example: `Mara: HP 24/24. Inspiration ✓. Theo: HP 24/24.`
 
@@ -479,7 +481,7 @@ If `graph.json` doesn't exist yet for this campaign, skip the sweep entirely (no
       bash ${CLAUDE_SKILL_DIR}/display/verify_tail.sh <campaign-name>
       ```
       Exit 0 = healthy. Exit 1 = missing/empty/corrupt → write a canonical replacement to `~/.dne/campaigns/<name>/session_tail.json` from session context (5–8 entries, each `{"text": "...", "_camp": "<name>"}`) BEFORE the display kill — once the display is dead, only the file matters. The display's own `_persist_tail` has skip-on-empty + atomic-write guards, but the backstop ensures a worst-case file state is impossible.
-2. Stop the display (always — even if `_display_running` was unclear):
+2. Stop the display — only when Session Flags say `display` is not `none` (or a display process is running):
    ```bash
    kill $(cat ${CLAUDE_SKILL_DIR}/display/app.pid 2>/dev/null) 2>/dev/null
    rm -f ${CLAUDE_SKILL_DIR}/display/app.pid
@@ -553,7 +555,7 @@ Read `~/.dne/campaigns/*/state.md`, print summary table: campaign name | last se
 
 ## `/dne character new [campaign-name]`
 
-**Read the campaign's ruleset first** — `python3 ${CLAUDE_SKILL_DIR}/scripts/paths.py` is not a CLI; instead inline-read with:
+**Read the campaign's ruleset first** — `python3 ${CLAUDE_SKILL_DIR}/scripts/paths.py campaign-ruleset <campaign>`, or inline:
 
 ```bash
 python3 -c "import sys; sys.path.insert(0,'${CLAUDE_SKILL_DIR}/scripts'); from paths import campaign_ruleset; print(campaign_ruleset('<campaign>'))"
@@ -594,7 +596,7 @@ Default to `Step by step` if the question is dismissed. Either path lands in the
 4. Run `character.py calc -c <campaign> --class <class> --race <race> [--subrace <subrace>]` with the BASE ability array (World Kit origins and classes resolve through `-c`; a world background takes `--background <name> --background-asi …` using its own three `ability_options`). **It applies the racial bonuses itself** and prints base / race / final, along with every secondary stat — do not add racial bonuses by hand first, and do not omit `--race`. An unknown race exits non-zero rather than applying nothing, so a typo cannot produce a sheet quietly missing its bonuses. `lookup.py race <name>` has the full entry (bonuses, traits, speed, languages) if the player wants to read it. **In a 2024 campaign the increase comes from the background instead:** run `character.py calc --background <acolyte|criminal|sage|soldier> --background-asi STR=2,CON=1` (or `+1/+1/+1`) and no `--race`; it checks the increase is one the background allows and prints base / background / final. Add `--armor <srd-armor-index> [--shield]` (or `--armor none`) for the Armor Class.
 5. Ask: Fighting Style (Fighter/Paladin/Ranger), spells (if caster)
 6. Assign starting equipment per class + background
-7. Write to `characters/<name>.md` using `templates/character-sheet.md`; set `## Campaign History → Origin campaign`
+7. Write to `characters/<file>.md` using `templates/character-sheet.md` — `<file>` is the name in lowercase with spaces as hyphens (`walt-brennan.md`; Thai names as written, `ทองดี.md`); scripts accept the display name or the file name. Set `## Campaign History → Origin campaign`
 8. Add to `state.md` party line
 9. Mirror to global roster: `cp characters/<name>.md ~/.dne/characters/<name>.md`
 10. **Classic campaigns only** (no `worldkit.json` — the script skips World Kit campaigns on its own): run the supplemental builder to fetch any non-SRD spells/features the character uses:
@@ -661,7 +663,7 @@ Read `characters/<name>.md`, display cleanly. If name omitted and one character 
   When **/dne new** generates a batch of NPCs during world-gen, run the check on each generated name in the same loop: if duplicate, regenerate that name (re-prompt the LLM with the prior name added to a "do-not-pick" exclusion list). After world-gen completes, batch-call `name_registry.py add` for every accepted NPC.
 
 ## `/dne npc attitude <name> <shift>`
-Find NPC in npcs.md, shift attitude one step (hostile → unfriendly → neutral → friendly → allied), log reason and date.
+Find NPC in npcs.md, shift attitude one step (hostile → suspicious → neutral → friendly → allied — the same scale as the graph and Live State Flags), update `npcs.md` and `npcs-full.md`, log reason and date; if the graph is initialised also run `campaign_graph.py set-disposition`.
 
 ## `/dne companion <add|leave|mode|status|ask|on|off> [name] [...]`
 Opt-in NPC companions played by their own subagent. Full procedure: read `${CLAUDE_SKILL_DIR}/SKILL-companions.md`.
@@ -749,19 +751,19 @@ DNDEND
 ---
 
 ## `/dne rest <short|long>`
-Rests run on in-game time. `calendar.py rest` advances the clock **and** the tracker's timed effects by the same hour or eight hours, so an 8-hour Mage Armor survives a short rest and is spent by a long one. Without a calendar, use `tracker.py -c <campaign> rest short|long` instead. Neither wipes effects — **do not run `tracker.py clear` for a rest**; it is for the end of an encounter.
+Three scripts, one job each: **`economy.py rest`** writes the rest to the character sheets, **`character.py`** only computes (hit-die rolls, previews), **`calendar.py rest`** moves the clock and the tracker's timed effects. **Do not run `tracker.py clear` for a rest**; it is for the end of an encounter.
 
 **Short (1 hour):**
-1. Ask how many Hit Dice the player spends. Resolve them with `character.py hitdie --die d<N> --con-mod <M> --hp <cur> --max-hp <max> --remaining <R> --count <K> -c <campaign>` — each die heals its roll + CON mod (never below 0 in 2014, 1 in 2024), HP stops at max, and it refuses a character at 0 HP or with no dice left. Update HP, push `push_stats.py --player NAME --hp`, and `--hit-dice-use` once per die.
-2. Note class features that recharge (e.g. Second Wind → `push_stats.py --player NAME --second-wind true`).
-3. Advance time: `calendar.py -c <campaign> rest short`
+1. Ask how many Hit Dice each player spends. The player rolls them (`dice.py <K>d<N>+<K×CON> --player <pc> --label "Hit Dice"`), or use `character.py hitdie --die d<N> --con-mod <M> --hp <cur> --max-hp <max> --remaining <R> --count <K> -c <campaign>` (refuses at 0 HP or with no dice left).
+2. Apply per character: `economy.py -c <campaign> rest --type short --char "<Name>" --hit-dice <K> --heal <total>` — updates HP (capped at max), Hit Dice remaining, and restores a warlock-chassis character's pact slots.
+3. Note class features that recharge (e.g. Second Wind → `push_stats.py --player NAME --second-wind true`).
+4. Advance time: `calendar.py -c <campaign> rest short`.
 
 **Long (8 hours):**
-1. **Life-state gate first.** A character at 0 HP — dying, stable or dead — gains **nothing** from a long rest; RAW it needs at least 1 HP. Do not restore their HP or dice; resolve how they regain consciousness first (a stable creature regains 1 HP after 1d4 hours).
-2. For everyone else: `character.py rest long --level <L> --hd-remaining <R> --hp <cur> --max-hp <max> [--exhaustion <E>] -c <campaign>` gives the numbers — full HP; Hit Dice regained equal to **half the character's total, rounded down, minimum 1** (2014) or **all spent dice** (2024); exhaustion **one level lower** (2014 also requires food and drink). Restore all spell slots and long-rest features. Update the sheet.
-3. Push: `push_stats.py --player NAME --hp <max> <max>`, `--hit-dice-restore <n>`, and `--second-wind true`.
-4. Advance time: `calendar.py -c <campaign> rest long` — this also ends every concentration (sleep is unconsciousness), lowers tracked exhaustion by one for anyone above 0 HP, and runs effects down by eight hours. It does **not** clear death saves or lasting conditions; reset a character's death saves with `tracker.py saves <name> reset` only once they have regained HP.
-5. Update `state.md` in-world date to match calendar output.
+1. `economy.py -c <campaign> rest --type long --char all` — full HP, Temp HP 0, Hit Dice regained per ruleset (2014: half the total, rounded down, min 1; 2024: all), spell slots restored, death saves reset. A character at **0 HP gains nothing** (the script leaves them untouched and says so): resolve how they regain consciousness first (a stable creature regains 1 HP after 1d4 hours). Exhaustion drops one level (2014 also requires food and drink) — `character.py rest long … -c <campaign>` previews these numbers if needed.
+2. Push: `push_stats.py --player NAME --hp <max> <max>`, `--hit-dice-restore <n>`, and `--second-wind true`.
+3. Advance time: `calendar.py -c <campaign> rest long` — ends every concentration, lowers tracked exhaustion by one for anyone above 0 HP, runs effects down by eight hours. Reset a dying character's death saves with `tracker.py saves <name> reset` only once they have regained HP.
+4. Update `state.md` in-world date to match calendar output.
 
 ---
 
@@ -1000,10 +1002,11 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/turn_snapshot.py -c <campaign> undo [--to N]
 Execute atomic currency and inventory transactions via `economy.py` (refuses negative balances, logs receipts to `.economy_ledger.json`):
 
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/scripts/economy.py -c <campaign> buy --char "<Name>" --item "<Item>" --cost 50gp
-python3 ${CLAUDE_SKILL_DIR}/scripts/economy.py -c <campaign> sell --char "<Name>" --item "<Item>" --value 5gp
-python3 ${CLAUDE_SKILL_DIR}/scripts/economy.py -c <campaign> gold --char "<Name>" --delta -10gp --reason "Inn room"
+python3 ${CLAUDE_SKILL_DIR}/scripts/economy.py -c <campaign> buy --char "<Name>" --item "<Item>" --cost 50
+python3 ${CLAUDE_SKILL_DIR}/scripts/economy.py -c <campaign> sell --char "<Name>" --item "<Item>" --value 5
+python3 ${CLAUDE_SKILL_DIR}/scripts/economy.py -c <campaign> gold --char "<Name>" --delta -10 --reason "Inn room"
 ```
+Amounts are gp-equivalent: in a World Kit campaign use plain numbers or the kit currency (`50 sc`, `12.5`); classic campaigns may also write `50gp 5sp`. Loot that costs nothing is `buy --cost 0`. `--char` accepts the character's name or file name.
 
 ## `/dne lorebook <scan|add|import|export>`
 
@@ -1030,10 +1033,11 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_chain.py --from <old-campaign> --to
 ## Tactics, World & Tension Commands
 
 ## `/dne encounter <biome> [difficulty]`
-Generate a balanced 5e XP-budget encounter from SRD monsters for the current biome and party level:
+Generate a balanced 5e XP-budget encounter for the current biome and party:
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/scripts/encounter_gen.py --biome <biome> --party-level <L> --party-size <N> --difficulty <easy|medium|hard|deadly>
+python3 ${CLAUDE_SKILL_DIR}/scripts/encounter_gen.py -c <campaign> --biome <biome> [--party-level <L>] [--party-size <N>] --difficulty <easy|medium|hard|deadly>
 ```
+With `-c`, a World Kit campaign draws only its own monsters (biomes are the kit's), and party size/level default to the state.md header. Without a World Kit, biomes are the SRD set (forest, crypt, cave, …).
 
 ## `/dne map <init|place|move|terrain|clear>`
 Open and control the on-demand 2D tactical battlemap on the Display Companion (5ft squares, difficult terrain, walls, cover, diagonal costs):

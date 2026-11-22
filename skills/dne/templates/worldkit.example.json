@@ -19,7 +19,11 @@
     "gold": "scrip",
     "dungeon": "dead zone",
     "long rest": "lockdown",
-    "short rest": "breather"
+    "short rest": "breather",
+    "tavern": "mess hall",
+    "temple": "shrine-bunker",
+    "holy symbol": "colony badge",
+    "potion": "stim vial"
   },
   "currency": {
     "name": "Scrip",
@@ -69,6 +73,25 @@
         "Signal Ghost: Watchers have disadvantage to detect you by heat"
       ],
       "description": "Survivors fitted with salvaged EDEN cybernetics."
+    },
+    {
+      "name": "Wasteland Drifter",
+      "index": "wasteland-drifter",
+      "ability_bonuses": {
+        "DEX": 2,
+        "CON": 1
+      },
+      "speed": 35,
+      "size": "Medium",
+      "languages": [
+        "Common",
+        "Trade Sign"
+      ],
+      "traits": [
+        "Dust-Sense: advantage on Survival to find water or shelter on the surface",
+        "Light Sleeper: you can't be surprised while asleep"
+      ],
+      "description": "Grew up topside among scavenger clans, out of EDEN's sight."
     }
   ],
   "classes": [
@@ -77,7 +100,18 @@
       "index": "soldier",
       "chassis": "fighter",
       "description": "Hollow-9's armed guard; first through the hatch.",
-      "power_source": "none"
+      "power_source": "none",
+      "subclass_label": "Posting",
+      "subclasses": [
+        {
+          "name": "Line Guard",
+          "description": "Chassis: Champion (crit on 19–20 from level 3)."
+        },
+        {
+          "name": "Breach Lead",
+          "description": "Re-skins Battle Master: superiority dice d8, 4 dice, maneuvers Trip Attack, Pushing Attack, Rally."
+        }
+      ]
     },
     {
       "name": "Infiltrator",
@@ -102,7 +136,18 @@
       "index": "mechanic",
       "chassis": "wizard",
       "description": "Rewires EDEN tech; protocols run on battery charges.",
-      "power_source": "tech"
+      "power_source": "tech",
+      "subclass_label": "Specialty",
+      "subclasses": [
+        {
+          "name": "Demolitions",
+          "description": "Chassis: School of Evocation (Sculpt protocols around allies)."
+        },
+        {
+          "name": "Countermeasures",
+          "description": "Re-skins School of Abjuration: an Arcane Ward (here: deflector field) of 2× level + INT HP."
+        }
+      ]
     },
     {
       "name": "Medic",
@@ -119,6 +164,24 @@
         {
           "name": "Nanite Warden",
           "description": "Chassis: Light Domain."
+        }
+      ]
+    },
+    {
+      "name": "Brawler",
+      "index": "brawler",
+      "chassis": "monk",
+      "description": "Unarmed close-quarters fighter from the colony's pit fights; ki is grit and breath control.",
+      "power_source": "none",
+      "subclass_label": "Fight School",
+      "subclasses": [
+        {
+          "name": "Pit Style",
+          "description": "Chassis: Way of the Open Hand."
+        },
+        {
+          "name": "Breaker",
+          "description": "Re-skins Way of the Four Elements as gear tricks: write each trick's effect when chosen."
         }
       ]
     }
@@ -151,6 +214,34 @@
         "Perception"
       ],
       "description": "Stood watch at the airlock for years."
+    },
+    {
+      "name": "Tunnel Runner",
+      "index": "tunnel-runner",
+      "ability_options": [
+        "DEX",
+        "CON",
+        "WIS"
+      ],
+      "skills": [
+        "Stealth",
+        "Survival"
+      ],
+      "description": "Carried messages between colonies through the dark."
+    },
+    {
+      "name": "Scavenger",
+      "index": "scavenger",
+      "ability_options": [
+        "STR",
+        "DEX",
+        "INT"
+      ],
+      "skills": [
+        "Investigation",
+        "Systems"
+      ],
+      "description": "Picked the dead cities clean for parts."
     }
   ],
   "spells": [
@@ -218,6 +309,417 @@
         "Medic"
       ],
       "description": "A diagnostic jolt stabilises a creature at 0 hit points. (chassis: Spare the Dying)"
+    },
+    {
+      "name": "Work Light",
+      "index": "work-light",
+      "level": 0,
+      "school": "Evocation",
+      "casting_time": "1 action",
+      "range": "Touch",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "1 hour",
+      "classes": [
+        "Mechanic",
+        "Medic"
+      ],
+      "description": "Your rig lights an object you touch: bright light 20 ft, dim 20 ft more, for 1 hour. (chassis: Light)"
+    },
+    {
+      "name": "Grabber Drone",
+      "index": "grabber-drone",
+      "level": 0,
+      "school": "Conjuration",
+      "casting_time": "1 action",
+      "range": "30 feet",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "1 minute",
+      "classes": [
+        "Mechanic"
+      ],
+      "description": "A palm-sized drone carries, opens or manipulates an object up to 10 lb within 30 ft for 1 minute. (chassis: Mage Hand)"
+    },
+    {
+      "name": "Steady Hands",
+      "index": "steady-hands",
+      "level": 0,
+      "school": "Divination",
+      "casting_time": "1 action",
+      "range": "Touch",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Concentration, up to 1 minute",
+      "classes": [
+        "Medic"
+      ],
+      "description": "Coach a creature you touch: once in the next minute it adds 1d4 to one ability check. (chassis: Guidance)"
+    },
+    {
+      "name": "Arc Lance",
+      "index": "arc-lance",
+      "level": 0,
+      "school": "Evocation",
+      "casting_time": "1 action",
+      "range": "60 feet",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Instantaneous",
+      "classes": [
+        "Medic"
+      ],
+      "description": "A defib spike hits a creature within 60 ft: DEX save or 1d8 radiant damage; cover gives no bonus. (chassis: Sacred Flame)"
+    },
+    {
+      "name": "Signal Sweep",
+      "index": "signal-sweep",
+      "level": 1,
+      "school": "Divination",
+      "casting_time": "1 action",
+      "range": "Self",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Concentration, up to 10 minutes",
+      "classes": [
+        "Mechanic",
+        "Medic"
+      ],
+      "description": "For 10 minutes you sense EDEN tech and powered devices within 30 ft and can see their aura. (chassis: Detect Magic)"
+    },
+    {
+      "name": "Swarm Darts",
+      "index": "swarm-darts",
+      "level": 1,
+      "school": "Evocation",
+      "casting_time": "1 action",
+      "range": "120 feet",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Instantaneous",
+      "classes": [
+        "Mechanic"
+      ],
+      "description": "Three micro-drones each hit a creature you can see within 120 ft for 1d4+1 force damage. (chassis: Magic Missile)"
+    },
+    {
+      "name": "Lullaby Gas",
+      "index": "lullaby-gas",
+      "level": 1,
+      "school": "Enchantment",
+      "casting_time": "1 action",
+      "range": "90 feet",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "1 minute",
+      "classes": [
+        "Mechanic"
+      ],
+      "description": "A canister releases sleep gas: roll 5d8; creatures within 20 ft of a point in 90 ft fall unconscious, lowest HP first. (chassis: Sleep)"
+    },
+    {
+      "name": "Shock Plate",
+      "index": "shock-plate",
+      "level": 1,
+      "school": "Evocation",
+      "casting_time": "1 action",
+      "range": "Self (15-foot cube)",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Instantaneous",
+      "classes": [
+        "Mechanic"
+      ],
+      "description": "A pressure wave from your gauntlet: each creature in a 15-ft cube CON save or 2d8 thunder and pushed 10 ft. (chassis: Thunderwave)"
+    },
+    {
+      "name": "Tripwire Node",
+      "index": "tripwire-node",
+      "level": 1,
+      "school": "Abjuration",
+      "casting_time": "1 minute",
+      "range": "30 feet",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "8 hours",
+      "classes": [
+        "Mechanic"
+      ],
+      "description": "Ward a door or 20-ft cube for 8 hours; you are pinged when anything Tiny or larger enters. (chassis: Alarm)"
+    },
+    {
+      "name": "Stim Round",
+      "index": "stim-round",
+      "level": 1,
+      "school": "Enchantment",
+      "casting_time": "1 action",
+      "range": "30 feet",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Concentration, up to 1 minute",
+      "classes": [
+        "Medic"
+      ],
+      "description": "Up to three allies within 30 ft add 1d4 to attack rolls and saves for 1 minute. (chassis: Bless)"
+    },
+    {
+      "name": "Auto-Injector",
+      "index": "auto-injector",
+      "level": 1,
+      "school": "Evocation",
+      "casting_time": "1 bonus action",
+      "range": "60 feet",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Instantaneous",
+      "classes": [
+        "Medic"
+      ],
+      "description": "As a bonus action, a creature within 60 ft regains 1d4 + your spellcasting modifier HP. (chassis: Healing Word)"
+    },
+    {
+      "name": "Do-Not-Harm Beacon",
+      "index": "do-not-harm-beacon",
+      "level": 1,
+      "school": "Abjuration",
+      "casting_time": "1 bonus action",
+      "range": "30 feet",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "1 minute",
+      "classes": [
+        "Medic"
+      ],
+      "description": "A creature within 30 ft is tagged as a non-combatant: attackers must make a WIS save or pick a new target. (chassis: Sanctuary)"
+    },
+    {
+      "name": "Seize Servo",
+      "index": "seize-servo",
+      "level": 2,
+      "school": "Enchantment",
+      "casting_time": "1 action",
+      "range": "60 feet",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Concentration, up to 1 minute",
+      "classes": [
+        "Mechanic"
+      ],
+      "description": "A humanoid within 60 ft — or a Reaper's motor bus — WIS save or paralysed, repeating the save each turn. (chassis: Hold Person)"
+    },
+    {
+      "name": "Grapple Line",
+      "index": "grapple-line",
+      "level": 2,
+      "school": "Conjuration",
+      "casting_time": "1 bonus action",
+      "range": "Self",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Instantaneous",
+      "classes": [
+        "Mechanic"
+      ],
+      "description": "Fire a magnetic line and reel yourself up to 30 ft to a point you can see. (chassis: Misty Step)"
+    },
+    {
+      "name": "Thermal Cloak",
+      "index": "thermal-cloak",
+      "level": 2,
+      "school": "Illusion",
+      "casting_time": "1 action",
+      "range": "Touch",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Concentration, up to 1 hour",
+      "classes": [
+        "Mechanic"
+      ],
+      "description": "A creature you touch is invisible to sight and heat sensors for 1 hour or until it attacks. (chassis: Invisibility)"
+    },
+    {
+      "name": "Detox Flush",
+      "index": "detox-flush",
+      "level": 2,
+      "school": "Abjuration",
+      "casting_time": "1 action",
+      "range": "Touch",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Instantaneous",
+      "classes": [
+        "Medic"
+      ],
+      "description": "End one disease or the blinded, deafened, paralysed or poisoned condition on a creature you touch. (chassis: Lesser Restoration)"
+    },
+    {
+      "name": "Adrenal Boost",
+      "index": "adrenal-boost",
+      "level": 2,
+      "school": "Abjuration",
+      "casting_time": "1 action",
+      "range": "30 feet",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "8 hours",
+      "classes": [
+        "Medic"
+      ],
+      "description": "Up to three creatures within 30 ft gain 5 to max and current HP for 8 hours. (chassis: Aid)"
+    },
+    {
+      "name": "Defib Drone",
+      "index": "defib-drone",
+      "level": 2,
+      "school": "Evocation",
+      "casting_time": "1 bonus action",
+      "range": "60 feet",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "1 minute",
+      "classes": [
+        "Medic"
+      ],
+      "description": "A drone within 60 ft strikes as a bonus action: melee spell attack, 1d8 + modifier force; move it 20 ft each turn. (chassis: Spiritual Weapon)"
+    },
+    {
+      "name": "Rail Discharge",
+      "index": "rail-discharge",
+      "level": 3,
+      "school": "Evocation",
+      "casting_time": "1 action",
+      "range": "Self (100-foot line)",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Instantaneous",
+      "classes": [
+        "Mechanic"
+      ],
+      "description": "A 100-ft line of current: DEX save, 8d6 lightning, half on success. (chassis: Lightning Bolt)"
+    },
+    {
+      "name": "Signal Jam",
+      "index": "signal-jam",
+      "level": 3,
+      "school": "Abjuration",
+      "casting_time": "1 reaction",
+      "range": "60 feet",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Instantaneous",
+      "classes": [
+        "Mechanic"
+      ],
+      "description": "As a reaction, kill a protocol being run within 60 ft (level 3 or lower automatically). (chassis: Counterspell)"
+    },
+    {
+      "name": "Thruster Pack",
+      "index": "thruster-pack",
+      "level": 3,
+      "school": "Transmutation",
+      "casting_time": "1 action",
+      "range": "Touch",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Concentration, up to 10 minutes",
+      "classes": [
+        "Mechanic"
+      ],
+      "description": "A willing creature you touch flies at 60 ft for 10 minutes. (chassis: Fly)"
+    },
+    {
+      "name": "Restart",
+      "index": "restart",
+      "level": 3,
+      "school": "Necromancy",
+      "casting_time": "1 action",
+      "range": "Touch",
+      "components": [
+        "V",
+        "S",
+        "M"
+      ],
+      "duration": "Instantaneous",
+      "classes": [
+        "Medic"
+      ],
+      "description": "Return a creature dead for under 1 minute to life with 1 HP (consumes a 300-sc nanite vial). (chassis: Revivify)"
+    },
+    {
+      "name": "Triage Swarm",
+      "index": "triage-swarm",
+      "level": 3,
+      "school": "Evocation",
+      "casting_time": "1 bonus action",
+      "range": "60 feet",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Instantaneous",
+      "classes": [
+        "Medic"
+      ],
+      "description": "As a bonus action, up to six creatures within 60 ft regain 1d4 + your modifier HP. (chassis: Mass Healing Word)"
+    },
+    {
+      "name": "System Purge",
+      "index": "system-purge",
+      "level": 3,
+      "school": "Abjuration",
+      "casting_time": "1 action",
+      "range": "120 feet",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Instantaneous",
+      "classes": [
+        "Medic"
+      ],
+      "description": "End every protocol of level 3 or lower on one target within 120 ft. (chassis: Dispel Magic)"
     }
   ],
   "equipment": [
@@ -245,6 +747,77 @@
       "stealth_disadv": true,
       "str_minimum": null,
       "description": "Welded car panels."
+    },
+    {
+      "name": "Stun Baton",
+      "index": "stun-baton",
+      "category": "Weapon",
+      "cost": "15 sc",
+      "weight": 3,
+      "damage": "1d6 Bludgeoning",
+      "properties": [
+        "Light"
+      ],
+      "range": "5 ft",
+      "description": "On a hit you may spend a power cell: target makes a CON save DC 12 or is stunned until the end of its next turn."
+    },
+    {
+      "name": "Scrap Rifle",
+      "index": "scrap-rifle",
+      "category": "Weapon",
+      "cost": "75 sc",
+      "weight": 8,
+      "damage": "1d10 Piercing",
+      "properties": [
+        "Ammunition",
+        "Loud",
+        "Two-Handed"
+      ],
+      "range": "100/400 ft",
+      "description": "Bolt-action; reliable."
+    },
+    {
+      "name": "Salvage Vest",
+      "index": "salvage-vest",
+      "category": "Armor",
+      "cost": "10 sc",
+      "weight": 8,
+      "ac": "AC 12 + DEX",
+      "stealth_disadv": false,
+      "description": "Layered canvas and tire rubber."
+    },
+    {
+      "name": "Riot Shield",
+      "index": "riot-shield",
+      "category": "Armor",
+      "cost": "10 sc",
+      "weight": 6,
+      "ac": "AC +2",
+      "description": "Worn with --shield."
+    },
+    {
+      "name": "Nanite Vial",
+      "index": "nanite-vial",
+      "category": "Gear",
+      "cost": "300 sc",
+      "weight": 0,
+      "description": "Consumed by the Restart protocol."
+    },
+    {
+      "name": "Ration Brick",
+      "index": "ration-brick",
+      "category": "Gear",
+      "cost": "1 sc",
+      "weight": 1,
+      "description": "One day of food."
+    },
+    {
+      "name": "Power Cell",
+      "index": "power-cell",
+      "category": "Gear",
+      "cost": "5 sc",
+      "weight": 1,
+      "description": "Powers a stun baton charge or a lamp for 8 hours."
     }
   ],
   "monsters": [
@@ -351,6 +924,109 @@
       ],
       "role": "brute",
       "description": "Siege Monster. Survivors cannot fight it head-on."
+    },
+    {
+      "name": "Scav Raider",
+      "index": "scav-raider",
+      "cr": 0.125,
+      "xp": 25,
+      "size": "Medium",
+      "type": "humanoid",
+      "hp": 9,
+      "hp_dice": "2d8",
+      "ac": 12,
+      "speed": "walk 30 ft.",
+      "str": 11,
+      "dex": 12,
+      "con": 12,
+      "int": 10,
+      "wis": 10,
+      "cha": 10,
+      "alignment": "unaligned",
+      "languages": "—",
+      "biomes": [
+        "tunnels",
+        "ruins"
+      ],
+      "role": "skirmisher",
+      "description": "Action — Pipe Knife. Melee Weapon Attack: +3 to hit, 1d4+1 piercing."
+    },
+    {
+      "name": "Rat Swarm",
+      "index": "rat-swarm",
+      "cr": 0.25,
+      "xp": 50,
+      "size": "Medium",
+      "type": "beast",
+      "hp": 24,
+      "hp_dice": "7d8-7",
+      "ac": 10,
+      "speed": "walk 30 ft.",
+      "str": 9,
+      "dex": 11,
+      "con": 9,
+      "int": 2,
+      "wis": 10,
+      "cha": 3,
+      "alignment": "unaligned",
+      "languages": "—",
+      "biomes": [
+        "tunnels"
+      ],
+      "role": "brute",
+      "description": "Swarm: can occupy another creature's space. Action — Bites. +2 to hit, 2d6 piercing (1d6 if at half HP or less)."
+    },
+    {
+      "name": "Spider Drone",
+      "index": "spider-drone",
+      "cr": 1,
+      "xp": 200,
+      "size": "Small",
+      "type": "construct",
+      "hp": 22,
+      "hp_dice": "5d6+5",
+      "ac": 14,
+      "speed": "walk 40 ft., climb 40 ft.",
+      "str": 8,
+      "dex": 16,
+      "con": 12,
+      "int": 3,
+      "wis": 12,
+      "cha": 1,
+      "alignment": "unaligned",
+      "languages": "—",
+      "biomes": [
+        "tunnels",
+        "surface"
+      ],
+      "role": "ranged",
+      "description": "Action — Taser Dart. Ranged Weapon Attack: +5 to hit, 30/60 ft., 1d6+3 lightning; CON save DC 11 or speed 0 until end of its next turn."
+    },
+    {
+      "name": "Rogue Medbot",
+      "index": "rogue-medbot",
+      "cr": 2,
+      "xp": 450,
+      "size": "Medium",
+      "type": "construct",
+      "hp": 45,
+      "hp_dice": "7d8+14",
+      "ac": 13,
+      "speed": "walk 30 ft.",
+      "str": 12,
+      "dex": 12,
+      "con": 14,
+      "int": 10,
+      "wis": 12,
+      "cha": 6,
+      "alignment": "unaligned",
+      "languages": "—",
+      "biomes": [
+        "tunnels",
+        "ruins"
+      ],
+      "role": "support",
+      "description": "Repair Pulse (Recharge 5–6): one construct within 30 ft regains 2d8+2 HP. Action — Bone Saw. +3 to hit, 2d6+1 slashing."
     }
   ]
 }

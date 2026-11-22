@@ -653,7 +653,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/turn_snapshot.py -c <campaign> undo [--to N]
 ### Deterministic Economy & Rest — `scripts/economy.py`
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/economy.py -c <campaign> gold --char "<Name>" --delta -15gp --reason "Bribe"
-python3 ${CLAUDE_SKILL_DIR}/scripts/economy.py -c <campaign> buy  --char "<Name>" --item "Healing Potion" --cost 50gp
+python3 ${CLAUDE_SKILL_DIR}/scripts/economy.py -c <campaign> buy  --char "<Name>" --item "Healing Potion" --cost 50   # gp-equivalent; "50gp" or "50 <kit currency>" also accepted
 python3 ${CLAUDE_SKILL_DIR}/scripts/economy.py -c <campaign> sell --char "<Name>" --item "Dagger" --value 1gp
 python3 ${CLAUDE_SKILL_DIR}/scripts/economy.py -c <campaign> rest --type long --char all
 python3 ${CLAUDE_SKILL_DIR}/scripts/economy.py -c <campaign> rest --type short --char "<Name>" --hit-dice 2 --heal 11
