@@ -185,6 +185,39 @@
         "Mechanic"
       ],
       "description": "Your rig flares a hard-light barrier: +5 AC until the start of your next turn. (chassis: Shield)"
+    },
+    {
+      "name": "Patch Job",
+      "index": "patch-job",
+      "level": 1,
+      "school": "Evocation",
+      "casting_time": "1 action",
+      "range": "Touch",
+      "components": [
+        "V",
+        "S"
+      ],
+      "duration": "Instantaneous",
+      "classes": [
+        "Medic"
+      ],
+      "description": "Nanite sealant knits a wound: the target regains 1d8 + your spellcasting modifier hit points. (chassis: Cure Wounds)"
+    },
+    {
+      "name": "Triage Ping",
+      "index": "triage-ping",
+      "level": 0,
+      "school": "Necromancy",
+      "casting_time": "1 action",
+      "range": "Touch",
+      "components": [
+        "S"
+      ],
+      "duration": "Instantaneous",
+      "classes": [
+        "Medic"
+      ],
+      "description": "A diagnostic jolt stabilises a creature at 0 hit points. (chassis: Spare the Dying)"
     }
   ],
   "equipment": [
