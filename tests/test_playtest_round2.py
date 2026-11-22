@@ -52,6 +52,34 @@ class TrackerTests(_Camp):
         self.assertEqual(r.returncode, 0, r.stderr)
 
 
+class EffectUntilTests(_Camp):
+    def test_effect_until_caster_survives_target_turn(self):
+        t = lambda *a: self.run_py("tracker.py", "-c", "eden", *a)
+        t("effect", "start", "Ghoul", "Dead Man's Hand", "1r", "--until", "Silas")
+        t("effect", "tick", "Ghoul")
+        self.assertIn("Dead Man", t("status").stdout)
+        t("effect", "tick", "Silas")
+        self.assertNotIn("Dead Man", t("status").stdout)
+
+
+class PowerDialTests(unittest.TestCase):
+    def test_power_dial_warnings(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import worldkit
+        kit = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        kit["_meta"]["power"] = "none"
+        self.assertTrue(any("power is none" in w for w in worldkit.warnings(kit)))
+        kit["_meta"]["power"] = "medium"
+        self.assertFalse(any("_meta.power" in w for w in worldkit.warnings(kit)))
+
+    def test_example_kit_is_warning_free(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import worldkit
+        example = json.loads((ROOT / "skills" / "dne" / "templates" / "worldkit.example.json").read_text(encoding="utf-8"))
+        self.assertEqual(worldkit.validate(example), [])
+        self.assertEqual(worldkit.warnings(example), [])
+
+
 class SnapshotTests(_Camp):
     def test_undo_restores_calendar_and_xp_ledger(self):
         cal = self.camp / "calendar.json"

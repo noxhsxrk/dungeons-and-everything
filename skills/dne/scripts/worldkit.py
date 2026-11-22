@@ -231,6 +231,13 @@ def warnings(kit):
     for biome in sorted(biomes):
         if not any(biome in r.get('biomes', []) and Fraction(str(r.get('cr', 0))) <= 1 for r in kit.get('monsters', [])):
             out.append(f'{biome}: no monster of CR ≤ 1')
+    casters = [c['name'] for c in kit.get('classes', [])
+               if c.get('chassis', '').lower() in (*CANTRIPS_START, 'paladin', 'ranger')]
+    power = str(kit.get('_meta', {}).get('power', '')).lower()
+    if power == 'none' and casters:
+        out.append(f"_meta.power is none but these classes cast: {', '.join(casters)}")
+    if power == 'low' and len(casters) > 2:
+        out.append(f"_meta.power is low (at most 2 casting classes) but {len(casters)} cast: {', '.join(casters)}")
     if not kit.get('currency'):
         out.append('missing currency')
     for field in ('name', 'genre', 'premise'):

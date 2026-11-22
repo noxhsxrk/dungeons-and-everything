@@ -330,7 +330,7 @@ def _send_announce(msg: str) -> None:
 
 def cmd_effect(campaign: str, action: str, entity_name: str,
                spell: str = "", duration: str = "", is_conc: bool = False,
-               mod: str = "", on: str = "") -> None:
+               mod: str = "", on: str = "", until: str = "") -> None:
     if action == "advance":
         # `effect advance <time>` — the time arrives in the entity slot.
         minutes = parse_time(entity_name)
@@ -355,6 +355,9 @@ def cmd_effect(campaign: str, action: str, entity_name: str,
             return
 
         effect = {"name": spell, "concentration": is_conc, **dur}
+        if until.strip():
+            # "Until the end/start of the caster's next turn": counts down on that turn.
+            effect["until"] = until.strip()
         if mod:
             applies = [t.strip().lower() for t in (on or "").split(",") if t.strip()]
             bad = [t for t in applies if t not in MODIFIER_TARGETS]
@@ -407,8 +410,25 @@ def cmd_effect(campaign: str, action: str, entity_name: str,
     elif action == "tick":
         # One round passes for this entity: six seconds of in-game time, so a
         # round-counted effect loses a round and a minute effect 0.1 minute.
+        me = entity_name.strip().lower()
+        held = [e for e in ent["effects"] if e.get("until") and e["until"].lower() != me]
+        ent["effects"] = [e for e in ent["effects"] if e not in held]
         all_expired = _run_down(ent, MINUTES_PER_ROUND)
+        ent["effects"] += held
         kept = ent["effects"]
+        # Effects other creatures carry that last until THIS entity's turn.
+        for key, other in state.items():
+            if key.startswith("_") or not isinstance(other, dict) or other is ent:
+                continue
+            mine = [e for e in other.get("effects", []) if (e.get("until") or "").lower() == me]
+            if not mine:
+                continue
+            rest = [e for e in other["effects"] if e not in mine]
+            other["effects"] = mine
+            gone = _run_down(other, MINUTES_PER_ROUND)
+            other["effects"] += rest
+            if gone:
+                _report_expired(other, gone)
 
         if not all_expired and not kept:
             # Nothing to report
@@ -902,6 +922,9 @@ def main() -> None:
                      help="Typed modifier the effect grants, e.g. +1d4 (Bless) or -1d4 (Bane)")
     eff.add_argument("--on", default="",
                      help=f"Roll types the modifier applies to: {', '.join(MODIFIER_TARGETS)}")
+    eff.add_argument("--until", default="",
+                     help="Count the effect down on this creature's turn instead (e.g. the caster's, "
+                          "for 'until the start of your next turn' effects placed on a target)")
 
     # rest
     rst = sub.add_parser("rest", help="Advance in-game time for a rest and apply its bookkeeping")
@@ -959,7 +982,7 @@ def main() -> None:
         cmd_effect(args.campaign, args.action, args.entity,
                    spell=args.spell, duration=args.duration,
                    is_conc=(args.conc.lower() == "conc"),
-                   mod=args.mod, on=args.on)
+                   mod=args.mod, on=args.on, until=args.until)
     elif args.cmd == "rest":
         cmd_rest(args.campaign, args.type)
     elif args.cmd == "condition":

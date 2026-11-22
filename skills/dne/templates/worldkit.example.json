@@ -9,7 +9,8 @@
     ],
     "premise": "AD 2289, 87 years after EDEN, humanity's central AI, took over. Survivors hide underground from its machines.",
     "base_ruleset": "2014",
-    "srd_fallback": false
+    "srd_fallback": false,
+    "power": "medium"
   },
   "lexicon": {
     "spell": "protocol",

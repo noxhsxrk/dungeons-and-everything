@@ -39,7 +39,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
    **Classic fantasy** → skip step 7; the bundled SRD is the world's content (no `worldkit.json`). Continue at step 7b.
 
 7. **World Kit — build the world's infrastructure (Strongest tier).** Everything a 5e table normally takes from the Player's Handbook and Monster Manual is re-imagined for *this* world and written to `<campaign>/worldkit.json` (schema: SKILL.md → *World Kit*; full example: `${CLAUDE_SKILL_DIR}/templates/worldkit.example.json`). Derive every entry from the player's description — reuse their names, factions, enemies and roles verbatim where they gave them.
-   - **`_meta`** — `name`, `genre`, one-line `premise`, `base_ruleset` (the step-2 ruleset), `srd_fallback: false`.
+   - **`_meta`** — `name`, `genre`, one-line `premise`, `power` (the step-6 power level: none/low/medium/high), `base_ruleset` (the step-2 ruleset), `srd_fallback: false`.
    - **`lexicon`** — 8–15 renames of 5e terms that would break immersion here (spell, spell slot, cantrip, magic, gold, long/short rest, temple, tavern, dungeon…). **`currency`** — the world's money.
    - **`skills`** — rename only the SRD skills whose names don't fit (Arcana, Religion, Nature, Animal Handling usually; keep the governing ability).
    - **`races`** — 3–6 origins/peoples/backgrounds-of-birth that exist in this world; each with legal 5e ability bonuses (total +3: +2/+1, or +1/+1/+1), speed, size, 2–3 traits on par with SRD racial traits, languages. If the world has only humans, make origins out of upbringing or augmentation.
