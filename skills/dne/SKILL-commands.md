@@ -407,7 +407,7 @@ Then update `## Faction Moves` in state.md: for each active faction, answer *"wh
    ```bash
    bash ${CLAUDE_SKILL_DIR}/display/verify_tail.sh <campaign-name>
    ```
-   The script returns 0 if the tail is healthy (non-empty + valid JSON list), 1 if missing/empty/corrupt. If it returns 1, the tail is unsafe to rely on for next session's replay — **write a canonical replacement directly to the campaign path** with this session's 5–8 most important narrative beats as a JSON list of `{"text": "...", "_camp": "<name>"}` entries (no display call needed; the display may already be dead). Use the `${CLAUDE_SKILL_DIR}/display/write_canonical_tail.py` helper.
+   The script returns 0 if the tail is healthy (non-empty + valid JSON list), 1 if missing/empty/corrupt. If it returns 1, the tail is unsafe to rely on for next session's replay — **write a canonical replacement directly to the campaign path** with this session's 5–8 most important narrative beats as a JSON list of `{"text": "...", "_camp": "<name>"}` entries (no display call needed; the display may already be dead). Use the helper: `python3 ${CLAUDE_SKILL_DIR}/display/write_canonical_tail.py --campaign <name> --json '[{"text": "…", "_camp": "<name>"}]'` (or `--file <path>`).
 2. Also write `<campaign dir>/session-tail.md` (human-readable snapshot — companion to the JSON, used as fallback during /dne load if JSON read fails).
 3. **Keep world.md in step with state.md:** if the threat stage, a faction's attitude toward the party, or a settlement fact changed this session, update the matching lines in `world.md` (`**Current stage:**`, each faction's `**Attitude toward party:**`, `**Current activity:**`). `/dne load` reads world.md in full, so a stale value there contradicts state.md.
 

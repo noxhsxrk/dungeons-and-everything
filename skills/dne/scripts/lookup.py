@@ -782,6 +782,8 @@ def main() -> None:
 
     # Pull out value-bearing flags first so the positional parser doesn't see them
     campaign_arg, raw = _parse_value_flag(raw, "--campaign")
+    if campaign_arg is None:   # the docs promise -c on every rules script
+        campaign_arg, raw = _parse_value_flag(raw, "-c")
     ruleset_arg, raw  = _parse_value_flag(raw, "--ruleset")
 
     # Remaining --bool flags
