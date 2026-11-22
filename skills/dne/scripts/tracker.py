@@ -807,7 +807,7 @@ def cmd_enemy(
         elif r == "skirmisher":
             tips.append("SKIRMISHER: flank isolated targets, hit-and-run using mobility/stealth, avoid trading blows with heavy tanks.")
         else:
-            tips.append("BRUTE: hold chokepoints, screen allied casters/archers, pressure closest melee threat.")
+            tips.append("BRUTE: hold chokepoints, screen allied ranged and support creatures, pressure closest melee threat.")
         print(f"  Tactical Advisory — {ent['name']} [{r.upper()}, HP {hp_pct}%, dist {distance_ft}ft]:")
         for t in tips:
             print(f"    • {t}")
@@ -833,8 +833,12 @@ def cmd_clear(campaign: str, clear_all: bool = False) -> None:
     """
     state = _load(campaign)
     ent_count = 0
-    for k, ent in state.items():
+    for k, ent in list(state.items()):
         if k.startswith("_") or not isinstance(ent, dict):
+            continue
+        if "enemy_profile" in ent:
+            del state[k]
+            ent_count += 1
             continue
         _entity(state, ent["name"])
         saves = ent.get("death_saves", {})

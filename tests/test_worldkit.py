@@ -204,6 +204,8 @@ class CharacterTests(_CampaignRoot):
         self.assertIn("Armor Class: 15", r.stdout)       # 14 + DEX +1
 
     def test_world_background_increase(self):
+        # A background's ability increase is a 2024 rule (2014 refuses --background-asi).
+        (self.root / "campaigns" / "eden" / "state.md").write_text("# eden\n**Ruleset:** 2024\n", encoding="utf-8")
         r = self.run_script("character.py", "calc", "-c", "eden", "--class", "Mechanic",
                             "--background", "Ex-EDEN Technician", "--background-asi", "INT=2,WIS=1", *BASE)
         self.assertEqual(r.returncode, 0, r.stderr)

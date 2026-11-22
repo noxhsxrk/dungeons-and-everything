@@ -28,6 +28,9 @@ Usage:
         Armor Class from the SRD armor record. `--armor none` gives
         unarmored AC, with Unarmored Defense for a barbarian or monk.
 
+    calc also accepts --expertise <skill> [<skill> ...], --subclass <name>,
+        --ruleset 2014|2024, and -c/--campaign <campaign>.
+
     python3 character.py levelup --class fighter --from 1 --to 2 \\
         --hp-roll 6 --con-mod 2 [--con-mod-before 1] [--subclass champion] \\
         [--ruleset 2014|2024]
@@ -36,7 +39,7 @@ Usage:
         and HP owed retroactively when the CON modifier rose.
 
     python3 character.py hitdie --die d10 --con-mod 2 --hp 9 --max-hp 20 \\
-        --remaining 3 [--count 2] [--ruleset 2014|2024 | -c <campaign>]
+        --remaining 3 [--count 2] [--roll N[,N…]] [--ruleset 2014|2024 | -c <campaign>]
         Spend Hit Dice on a short rest: each die rolls + CON mod.
 
     python3 character.py rest long --level 5 --hd-remaining 1 --hp 9 \\
@@ -55,6 +58,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import worldkit
+from paths import campaign_ruleset, norm_key, srd_path
 
 # Windows / non-UTF-8 consoles: the output carries arrows and dashes, which a
 # cp1252, GBK or ASCII stdout cannot encode. Same fix as the sibling scripts.
@@ -221,10 +225,7 @@ _AC_PAT = re.compile(r"^AC\s*(\+?)(\d+)(\s*\+\s*DEX)?(?:\s*\(max\s*(\d+)\))?", r
 
 def _armor_records() -> dict:
     """SRD armor records keyed by index, from the bundled dataset."""
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from paths import data_dir
-    path = data_dir() / "dnd5e_srd.json"
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(srd_path("2014").read_text(encoding="utf-8"))
     return {r["index"]: r for r in data.get("equipment", []) if r.get("ac")}
 
 
@@ -381,13 +382,26 @@ def _world_class(args):
     campaign = _campaign_from(args)
     kit = worldkit.load(campaign) if campaign else None
     name = args[args.index("--class") + 1] if "--class" in args else "fighter"
-    cls = worldkit.class_chassis(name, campaign)
     record = worldkit.find(kit, "classes", name) if kit else None
     if kit is not None and "classes" in kit and record is None:
         raise ValueError(f"Unknown class {name!r}. This world's classes: "
                          + ", ".join(r["name"] for r in kit["classes"]))
-    label = f"{record['name']} ({cls} chassis)" if record else cls.title()
-    return kit, cls, label
+    cls = norm_key(record["chassis"] if record else name)
+    return kit, cls, record
+
+
+def _subclass_from(args, world):
+    if "--subclass" not in args:
+        return ""
+    subclass = args[args.index("--subclass") + 1]
+    options = (world or {}).get("subclasses", [])
+    if not options:
+        return subclass
+    match = worldkit.find({"subclasses": options}, "subclasses", subclass)
+    if match is None:
+        raise ValueError(f"Unknown subclass {subclass!r}. Choose from: "
+                         + ", ".join(r["name"] for r in options))
+    return match["name"]
 
 
 def do_calc(args: list[str]):
@@ -401,30 +415,38 @@ def do_calc(args: list[str]):
         if arg.startswith("--") and arg not in allowed:
             print(f"character.py: unknown flag {arg}", file=sys.stderr)
             sys.exit(2)
-    try:
-        kit, cls, class_label = _world_class(args)
-    except ValueError as exc:
-        print(f"character.py: {exc}", file=sys.stderr)
-        sys.exit(2)
     lvl = int(args[args.index("--level") + 1]) if "--level" in args else 1
     base_scores = parse_scores(args)
     proficient = parse_proficient(args)  # list of stat names + skill names
     race = args[args.index("--race") + 1] if "--race" in args else ""
     subrace = args[args.index("--subrace") + 1] if "--subrace" in args else ""
     background = args[args.index("--background") + 1] if "--background" in args else ""
-    bg_spec = args[args.index("--background-asi") + 1] if "--background-asi" in args else ""
     armor = args[args.index("--armor") + 1] if "--armor" in args else None
-    style = args[args.index("--fighting-style") + 1] if "--fighting-style" in args else ""
 
     # The scores passed in are the BASE array, before racial bonuses. Applying
     # them here is what makes the step verifiable: an unknown race raises
     # rather than applying nothing.
     try:
-        origin_traits_only = kit is not None and (_ruleset_from(args) == "2024" or kit.get("_meta", {}).get("base_ruleset") == "2024")
-        if background and (race or subrace) and not origin_traits_only:
+        kit, cls, world = _world_class(args)
+        subclass = _subclass_from(args, world)
+        ruleset = _ruleset_from(args, kit)
+        background_2014 = ruleset == "2014" and (_campaign_from(args) is not None or "--ruleset" in args)
+        origin_traits_only = kit is not None and ruleset == "2024"
+        if background_2014 and "--background-asi" in args:
+            raise ValueError("2014 backgrounds do not grant ability increases (--background-asi)")
+        if background and (race or subrace) and not (background_2014 or origin_traits_only):
             raise ValueError(
                 "--race (2014) and --background (2024) both grant ability "
                 "increases; a character takes one or the other")
+        style = ""
+        if "--fighting-style" in args:
+            style = args[args.index("--fighting-style") + 1]
+            options = [r for r in (kit or {}).get("class_options", []) if r.get("kind") == "fighting_style"]
+            options += _class_options("fighting_style")
+            match = worldkit.find({"styles": options}, "styles", style)
+            if match is None:
+                raise ValueError(f"Unknown fighting style {style!r}")
+            style = match["name"]
         if kit is not None and "races" in kit and (race or subrace):
             record = worldkit.find(kit, "races", race)
             if not record:
@@ -443,18 +465,21 @@ def do_calc(args: list[str]):
             scores, racial = dict(base_scores), {}
             print("2024: origin grants traits only")
         bg_bonus: dict = {}
-        if background:
-            key = _race_key(background)
-            if kit is not None:
-                record = worldkit.find(kit, "backgrounds", background)
-                if not record:
-                    raise ValueError(f"Unknown world background {background!r}")
-                allowed = tuple(record["ability_options"])
-                proficient.extend(record.get("skills", []))
-            else:
+        world_bg = None
+        if background and kit is not None:
+            world_bg = worldkit.find(kit, "backgrounds", background)
+            if not world_bg:
+                raise ValueError(f"Unknown world background {background!r}")
+            proficient.extend(world_bg.get("skills", []))
+        if background and not background_2014:
+            if world_bg is None:
+                key = _race_key(background)
                 if key not in BACKGROUND_ABILITIES:
                     parse_background_asi("", background)   # raises: unknown background
                 allowed = BACKGROUND_ABILITIES[key]
+            else:
+                allowed = world_bg["ability_options"]
+            bg_spec = args[args.index("--background-asi") + 1] if "--background-asi" in args else ""
             if bg_spec:
                 bg_bonus = parse_background_asi(bg_spec, background, allowed)
             else:
@@ -480,7 +505,8 @@ def do_calc(args: list[str]):
                     for key, record in _armor_records().items():
                         records.setdefault(key, record)
             ac_info = armor_class(scores, cls, armor or "none", "--shield" in args, style, records)
-    except ValueError as exc:
+        casting = spell_progression(cls, lvl) if cls in CASTING_ABILITIES else {}
+    except (ValueError, IndexError) as exc:
         print(f"character.py: {exc}", file=sys.stderr)
         sys.exit(2)
 
@@ -489,12 +515,13 @@ def do_calc(args: list[str]):
     con_mod = mod(scores.get("CON", 10))
     hp = hd + con_mod  # level 1 max
     save_profs = SAVE_PROFS.get(cls, [])
+    class_label = f"{world['name']} ({cls} chassis)" if world else cls.title()
 
     print(f"\n{'='*50}")
     print(f"  {class_label} Level {lvl}  |  Proficiency Bonus: +{prof}")
     print(f"{'='*50}")
 
-    if bg_bonus or (background and not racial):
+    if bg_bonus or (background and not (racial or background_2014)):
         label = background.strip().title()
         print(f"\n  Ability Scores  (base + {label} background increase):")
         print(f"  {'Stat':<6} {'Base':>6} {'Bkgd':>6} {'Score':>6} {'Mod':>5}")
@@ -565,14 +592,24 @@ def do_calc(args: list[str]):
         print(f"  {marker} {display:<22} ({ability})  {fmt(bonus)}")
 
     print(f"  Passive Perception: {passive}")
-    subclass = args[args.index("--subclass") + 1] if "--subclass" in args else ""
     if subclass:
         print(f"  Subclass: {subclass}")
-    elif lvl >= (3 if _ruleset_from(args) == "2024" else SUBCLASS_LEVEL_2014.get(cls, 3)):
-        world = worldkit.find(kit, "classes", args[args.index("--class") + 1]) if kit and "--class" in args else {}
+    elif lvl >= (3 if ruleset == "2024" else SUBCLASS_LEVEL_2014.get(cls, 3)):
         label = (world or {}).get("subclass_label", SUBCLASS_NAME.get(cls, "subclass"))
         options = ", ".join(r["name"] for r in (world or {}).get("subclasses", []))
         print(f"  Choose a subclass — {label}" + (f": {options}" if options else ""))
+
+    if casting:
+        ability = CASTING_ABILITIES[cls]
+        bonus = prof + mod(scores.get(ability, 10))
+        print(f"\n  Spellcasting ability: {ability}")
+        print(f"  Spell save DC: {8 + bonus}")
+        print(f"  Spell attack: {fmt(bonus)}")
+        if "Pact slots" in casting:
+            print(f"  Pact slots: {casting.pop('Pact slots')} × level-{casting.pop('Pact slot level')}")
+        for name, value in casting.items():
+            if value:
+                print(f"  {name}: {value}")
 
     print(f"\n  XP to next level: {XP_THRESHOLDS.get(lvl+1, 'MAX')} total")
     print()
@@ -619,15 +656,16 @@ FIGHTING_STYLE_LEVEL = {"fighter": 1, "paladin": 2, "ranger": 2}
 CHAMPION_STYLE_LEVEL = {"2014": 10, "2024": 7}
 
 
-def _class_options(kind: str) -> list:
-    """Option names of one kind from the bundled dataset, or [] without it."""
+def _chassis_data() -> dict:
+    """Load the bundled 2014 class chassis dataset when available."""
     try:
-        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-        from paths import data_dir
-        data = json.loads((data_dir() / "dnd5e_srd.json").read_text(encoding="utf-8"))
+        return json.loads(srd_path("2014").read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return []
-    return [r for r in data.get("class_options", []) if r.get("kind") == kind]
+        return {}
+
+
+def _class_options(kind: str) -> list:
+    return [r for r in _chassis_data().get("class_options", []) if r.get("kind") == kind]
 
 
 def owed_choices(cls: str, from_lvl: int, to_lvl: int, ruleset: str = "2014",
@@ -670,6 +708,8 @@ FULL_SLOTS = [tuple(map(int, row)) for row in (
     "433320000", "433321000", "433321000", "433321100", "433321100",
     "433321110", "433321110", "433321111", "433331111", "433332111", "433332211")]
 CANTRIPS_START = {"bard": 2, "cleric": 3, "druid": 2, "sorcerer": 4, "warlock": 2, "wizard": 3}
+CASTING_ABILITIES = {"wizard": "INT", "cleric": "WIS", "druid": "WIS", "ranger": "WIS",
+                     "bard": "CHA", "sorcerer": "CHA", "warlock": "CHA", "paladin": "CHA"}
 SPELLS_KNOWN = {name: [0] + list(map(int, values.split())) for name, values in {
     "bard": "4 5 6 7 8 9 10 11 12 14 15 15 16 18 19 19 20 22 22 22",
     "ranger": "0 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10 11 11",
@@ -686,10 +726,12 @@ def spell_progression(cls: str, level: int) -> dict:
         out["Cantrips known"] = CANTRIPS_START[cls] + (level >= 4) + (level >= 10) if level else 0
     if cls in SPELLS_KNOWN:
         out["Spells known"] = SPELLS_KNOWN[cls][level]
+    if cls == "wizard":
+        out["Spells in spellbook"] = 6 + 2 * (level - 1) if level else 0
     if cls == "warlock":
         out["Pact slots"] = (1 if level == 1 else 2 if level < 11 else 3 if level < 17 else 4) if level else 0
         out["Pact slot level"] = min(5, (level + 1) // 2)
-    elif cls in ("bard", "cleric", "druid", "sorcerer", "wizard", "paladin", "ranger"):
+    elif cls in CASTING_ABILITIES:
         caster_level = (level + 1) // 2 if cls in ("paladin", "ranger") and level >= 2 else level
         if cls in ("paladin", "ranger") and level < 2:
             caster_level = 0
@@ -704,19 +746,19 @@ def retro_hp(con_before: int, con_after: int, levels: int) -> int:
     return (con_after - con_before) * levels
 
 
-def _ruleset_from(args: list) -> str:
+def _ruleset_from(args: list, kit=None) -> str:
     if "--ruleset" in args:
         rs = args[args.index("--ruleset") + 1]
         if rs not in ("2014", "2024"):
             print(f"character.py: --ruleset must be 2014 or 2024, not {rs!r}", file=sys.stderr)
             sys.exit(2)
         return rs
-    for flag in ("-c", "--campaign"):
-        if flag in args:
-            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-            from paths import campaign_ruleset
-            return campaign_ruleset(args[args.index(flag) + 1])
-    return "2014"
+    # The campaign's state.md is authoritative (SKILL.md); the kit's base_ruleset only fills in
+    # when no campaign is given.
+    campaign = _campaign_from(args)
+    if campaign:
+        return campaign_ruleset(campaign)
+    return (kit or {}).get("_meta", {}).get("base_ruleset") or "2014"
 
 
 def do_levelup(args: list[str]):
@@ -724,8 +766,9 @@ def do_levelup(args: list[str]):
         print(__doc__)
         return
     try:
-        kit, cls, class_label = _world_class(args)
-    except ValueError as exc:
+        kit, cls, world = _world_class(args)
+        subclass = _subclass_from(args, world)
+    except (ValueError, IndexError) as exc:
         print(f"character.py: {exc}", file=sys.stderr)
         sys.exit(2)
     from_lvl = int(args[args.index("--from") + 1]) if "--from" in args else 1
@@ -734,13 +777,13 @@ def do_levelup(args: list[str]):
     con_mod_val = int(args[args.index("--con-mod") + 1]) if "--con-mod" in args else 0
     con_before = (int(args[args.index("--con-mod-before") + 1])
                   if "--con-mod-before" in args else None)
-    subclass = args[args.index("--subclass") + 1] if "--subclass" in args else ""
-    ruleset = _ruleset_from(args)
+    ruleset = _ruleset_from(args, kit)
 
     hd = HIT_DICE.get(cls, 8)
     prof_old = PROF_BONUS.get(from_lvl, 2)
     prof_new = PROF_BONUS.get(to_lvl, 2)
 
+    class_label = f"{world['name']} ({cls} chassis)" if world else cls.title()
     print(f"\n  Level Up: {class_label} {from_lvl} → {to_lvl}")
     print(f"  Proficiency bonus: +{prof_old} → +{prof_new}")
 
@@ -759,17 +802,37 @@ def do_levelup(args: list[str]):
 
     print(f"  XP threshold for level {to_lvl}: {XP_THRESHOLDS.get(to_lvl, 'MAX')}")
 
+    chassis = _chassis_data()
+    world_options = (kit or {}).get("class_options", [])
+    replaced_kinds = {r["kind"] for r in world_options}
+    replaced_options = {r["index"] for r in chassis.get("class_options", []) if r.get("kind") in replaced_kinds}
+    features = [r["name"] for r in chassis.get("features", [])
+                if r.get("class") == cls and r.get("level_req") == to_lvl and r.get("index") not in replaced_options]
+    if world and world.get("subclasses"):
+        subclass_label = world.get("subclass_label", "specialisation")
+        features = [subclass_label if name == SUBCLASS_NAME.get(cls) else name for name in features]
+    if features:
+        print(f"  New features: {', '.join(dict.fromkeys(features))}")
+
     before, after = spell_progression(cls, from_lvl), spell_progression(cls, to_lvl)
+    powers = worldkit.class_powers(kit, world)
+    highest = max((int(name[0]) for name, n in after.items()
+                   if n and name.endswith("-level slots")), default=after.get("Pact slot level", 0))
     for name, value in after.items():
-        if value != before.get(name, 0):
-            print(f"  {name}: {before.get(name, 0)} → {value}")
+        old = before.get(name, 0)
+        if value != old:
+            print(f"  {name}: {old} → {value}")
+        if value > old and name in ("Cantrips known", "Spells known", "Spells in spellbook"):
+            names = [p["name"] for p in powers if (p["level"] == 0 if name == "Cantrips known"
+                                                   else 1 <= p["level"] <= highest)]
+            if names:
+                print(f"    Learn {value - old}: {', '.join(names)}")
     if subclass:
         print(f"  Subclass: {subclass}")
-    pact_boons = [r["name"] for r in (kit or {}).get("class_options", []) if r.get("kind") == "pact_boon"]
+    pact_boons = [r["name"] for r in world_options if r.get("kind") == "pact_boon"]
     owed_list = owed_choices(cls, from_lvl, to_lvl, ruleset, subclass)
     if owed_list:
         print(f"\n  Choices owed ({ruleset} rules):")
-        world = worldkit.find(kit, "classes", args[args.index("--class") + 1]) if kit and "--class" in args else None
         world_subs = [s.get("name", "") for s in (world or {}).get("subclasses", [])]
         for line in owed_list:
             if "Pact Boon" in line and pact_boons:
@@ -784,15 +847,15 @@ def do_levelup(args: list[str]):
                 ("fighting_style", any("Fighting Style" in x for x in owed_list), "fighting styles")):
             if not needed:
                 continue
-            options = [r for r in (kit or {}).get("class_options", []) if r.get("kind") == kind]
-            world_options = bool(options)
+            options = [r for r in world_options if r.get("kind") == kind]
+            uses_world_options = bool(options)
             if not options:
                 options = _class_options(kind)
                 if kind == "fighting_style":
                     options = [r for r in options if r.get("class", "").lower() == cls]
             names = sorted(r["name"] for r in options if (r.get("level") or 0) <= to_lvl)
             if names:
-                heading = label if world_options else (f"SRD {label} (re-skin names with the world lexicon)" if kit else f"SRD {label} available")
+                heading = label if uses_world_options else (f"SRD {label} (re-skin names with the world lexicon)" if kit else f"SRD {label} available")
                 print(f"      {heading}: {', '.join(names)}")
         if not pact_boons and any("Pact Boon" in x for x in owed_list):
             print("      (lookup.py pact-boon <name> for Chain, Blade and Tome)")
@@ -825,8 +888,15 @@ def spend_hit_dice(die: int, con_mod: int, hp: int, max_hp: int, remaining: int,
         raise ValueError("no Hit Dice left to spend")
     if count > remaining:
         raise ValueError(f"only {remaining} Hit Dice left, cannot spend {count}")
+    if count < 1 or die < 1:
+        raise ValueError("Hit Die size and count must be positive")
     floor = 1 if ruleset == "2024" else 0
-    rolls = list(rolls) if rolls is not None else [secrets.randbelow(die) + 1 for _ in range(count)]
+    if rolls is None:
+        rolls = [secrets.randbelow(die) + 1 for _ in range(count)]
+    else:
+        rolls = list(rolls)
+        if len(rolls) != count or any(not 1 <= n <= die for n in rolls):
+            raise ValueError(f"--roll requires {count} result(s) between 1 and {die}")
     per_die = [max(floor, r + con_mod) for r in rolls]
     new_hp = min(max_hp, hp + sum(per_die))
     return {"rolls": rolls, "healed": per_die, "hp": new_hp,
@@ -858,11 +928,12 @@ def do_hitdie(args: list[str]):
         sys.exit(2)
     ruleset = _ruleset_from(args)
     try:
+        rolls = [int(n) for n in args[args.index("--roll") + 1].split(",")] if "--roll" in args else None
         r = spend_hit_dice(int(m.group(1)), _int_arg(args, "--con-mod", 0),
                            _int_arg(args, "--hp"), _int_arg(args, "--max-hp"),
                            _int_arg(args, "--remaining"), _int_arg(args, "--count", 1),
-                           ruleset)
-    except ValueError as exc:
+                           ruleset, rolls=rolls)
+    except (ValueError, IndexError) as exc:
         print(f"character.py: {exc}", file=sys.stderr)
         sys.exit(2)
     con = _int_arg(args, "--con-mod", 0)

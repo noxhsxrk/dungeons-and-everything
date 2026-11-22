@@ -73,7 +73,7 @@ def parse_character_sheet(text: str) -> dict:
 
     Tolerant of partially-filled sheets — missing fields default sensibly so a
     half-finished sheet still diffs cleanly. Returns:
-      {name, level, current_hp, max_hp, temp_hp, hit_dice_remaining,
+      {name, level, current_hp, max_hp, temp_hp, hit_dice_total, hit_dice_remaining,
        death_saves: {successes, failures}, exhaustion, inspiration,
        concentration, conditions: [], spell_slots_expended: {level: n}}
     """
@@ -83,6 +83,7 @@ def parse_character_sheet(text: str) -> dict:
         "current_hp": None,
         "max_hp": None,
         "temp_hp": 0,
+        "hit_dice_total": {},
         "hit_dice_remaining": {},
         "death_saves": {"successes": 0, "failures": 0},
         "exhaustion": 0,
@@ -118,6 +119,7 @@ def parse_character_sheet(text: str) -> dict:
                text)
     if m:
         die = f"d{m.group(2)}"
+        snap["hit_dice_total"][die] = int(m.group(1))
         snap["hit_dice_remaining"][die] = int(m.group(3))
 
     # Death Saves: "**Death Saves:** Successes: 1 | Failures: 2"
@@ -266,14 +268,17 @@ def diff_character(before: dict, after: dict) -> list:
     name = after.get("name") or before.get("name") or "?"
     out: list = []
 
-    def add(kind, b, a, detail=""):
+    def add(kind, b, a, detail="", **context):
         out.append({"character": name, "kind": kind, "before": b,
-                    "after": a, "detail": detail})
+                    "after": a, "detail": detail, **context})
 
+    max_before, max_after = before.get("max_hp"), after.get("max_hp")
     if before.get("current_hp") != after.get("current_hp"):
-        add("hp", before.get("current_hp"), after.get("current_hp"))
-    if before.get("max_hp") != after.get("max_hp"):
-        add("max_hp", before.get("max_hp"), after.get("max_hp"))
+        max_gain = (max_after - max_before) if max_before is not None and max_after is not None else 0
+        context = {"max_hp_gain": max_gain} if max_gain > 0 else {}
+        add("hp", before.get("current_hp"), after.get("current_hp"), **context)
+    if max_before != max_after:
+        add("max_hp", max_before, max_after)
     if (before.get("temp_hp") or 0) != (after.get("temp_hp") or 0):
         add("temp_hp", before.get("temp_hp") or 0, after.get("temp_hp") or 0)
     if before.get("level") != after.get("level"):
@@ -305,9 +310,19 @@ def diff_character(before: dict, after: dict) -> list:
 
     bhd = before.get("hit_dice_remaining") or {}
     ahd = after.get("hit_dice_remaining") or {}
+    btotal = before.get("hit_dice_total") or {}
+    atotal = after.get("hit_dice_total") or {}
+    level_gain = (after.get("level") or 0) - (before.get("level") or 0) if before.get("level") else 0
     for die in sorted(set(bhd) | set(ahd)):
         b = bhd.get(die, 0)
         a = ahd.get(die, 0)
+        if a > b and level_gain > 0:
+            added = atotal[die] - btotal[die] if die in atotal and die in btotal else level_gain
+            earned = min(a - b, max(0, added), level_gain)
+            if earned:
+                add("hit_die_level", b, b + earned, detail=die)
+                b += earned
+                level_gain -= earned
         if b != a:
             add("hit_die", b, a, detail=die)
 
@@ -347,7 +362,8 @@ def _phrase(c: dict) -> str:
         if delta < 0:
             return f"took {abs(delta)} damage ({b}→{a} HP)"
         if delta > 0:
-            return f"healed {delta} HP ({b}→{a})"
+            healing = delta - c.get("max_hp_gain", 0)
+            return f"healed {healing} HP ({b}→{a})" if healing > 0 else f"HP {b}→{a}"
     if kind == "max_hp":
         return f"max HP {b}→{a}"
     if kind == "temp_hp":
@@ -374,6 +390,8 @@ def _phrase(c: dict) -> str:
         if delta > 0:
             return f"spent {delta} {detail} slot{'s' if delta != 1 else ''}"
         return f"recovered {abs(delta)} {detail} slot{'s' if abs(delta) != 1 else ''}"
+    if kind == "hit_die_level":
+        return f"+{int(a) - int(b)} hit die (level up)"
     if kind == "hit_die":
         delta = int(a) - int(b)
         if delta < 0:
@@ -498,16 +516,17 @@ def cmd_diff_files(args) -> int:
 
 def main() -> int:
     p = argparse.ArgumentParser(prog="session_recap", description=__doc__.split("\n", 2)[1])
+    p.add_argument("-c", "--campaign")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     sp = sub.add_parser("snapshot", help="snapshot the party's current state")
-    sp.add_argument("--campaign", required=True)
+    sp.add_argument("-c", "--campaign", default=argparse.SUPPRESS)
     sp.add_argument("--out", help="also write the snapshot JSON to this path")
     sp.add_argument("--print", action="store_true", help="print snapshot to stdout")
     sp.set_defaults(func=cmd_snapshot)
 
     sp = sub.add_parser("diff", help="diff against the last snapshot and print a summary")
-    sp.add_argument("--campaign", required=True)
+    sp.add_argument("-c", "--campaign", default=argparse.SUPPRESS)
     sp.add_argument("--before", help="explicit before-snapshot file (default: prev/last)")
     sp.add_argument("--after", help="explicit after-snapshot file (default: snapshot now)")
     sp.add_argument("--json", action="store_true", help="emit structured changes + summary")
@@ -522,6 +541,8 @@ def main() -> int:
     sp.set_defaults(func=cmd_diff_files)
 
     args = p.parse_args()
+    if args.cmd != "diff-files" and not args.campaign:
+        p.error("-c/--campaign is required for snapshot and diff")
     return args.func(args)
 
 

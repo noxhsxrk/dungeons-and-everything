@@ -126,19 +126,28 @@ def find_campaign(name: str) -> pathlib.Path:
 
 
 def find_character_file(campaign: str, name: str) -> pathlib.Path:
-    """Resolve a sheet by filename, display name, or hyphen/underscore slug."""
+    """Resolve a sheet by filename, display name, slug, or unique given name."""
     cdir = find_campaign(campaign) / "characters"
     target = norm_key(name)
     files = sorted(cdir.glob("*.md"))
     for path in files:
         if path.stem == name:
             return path
+    first_names = []
     for path in files:
         if norm_key(path.stem) == target:
             return path
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-        if any(line.startswith("# ") and norm_key(line[2:]) == target for line in lines):
+        headings = [line[2:].strip() for line in lines if line.startswith("# ") and line[2:].strip()]
+        if any(norm_key(display) == target for display in headings):
             return path
+        if headings and headings[0].split()[0].casefold() == name.strip().casefold():
+            first_names.append((path, headings[0]))
+    if len(first_names) == 1:
+        return first_names[0][0]
+    if first_names:
+        candidates = ", ".join(display for _, display in first_names)
+        raise FileNotFoundError(f"Ambiguous character name {name!r}. Candidates: {candidates}")
     raise FileNotFoundError(f"Character sheet not found for '{name}' in {cdir}")
 
 
@@ -164,6 +173,8 @@ def norm_key(name) -> str:
 # to 2014 — the historical ruleset of this skill.
 
 import re as _re
+
+CHARACTER_LEVEL_RE = _re.compile(r"\*\*(?:Level|等级):\*\*\s*(\d+)", _re.IGNORECASE)
 
 VALID_RULESETS = ("2014", "2024")
 DEFAULT_RULESET = "2014"

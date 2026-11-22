@@ -61,7 +61,8 @@ SEND_PY = str(_display_dir() / "send.py")
 # Time of day labels and approximate hour ranges
 TIMES_OF_DAY = [
     ("midnight",    0,  1),
-    ("early morning", 1, 5),
+    ("early morning", 1, 4),
+    ("dawn",        5,  5),
     ("morning",     6,  10),
     ("midday",      11, 13),
     ("afternoon",   14, 17),
@@ -72,12 +73,16 @@ TIMES_OF_DAY = [
 HOURS_PER_TIME = {
     "midnight":      0,
     "early morning": 3,
+    "dawn":          5,
     "morning":       8,
     "midday":        12,
     "afternoon":     15,
     "evening":       19,
     "night":         22,
 }
+
+MINUTES_PER_UNIT = dict.fromkeys(("minute", "minutes", "min", "m"), 1)
+MINUTES_PER_UNIT.update(hour=60, hours=60, day=1440, days=1440, week=10080, weeks=10080)
 
 
 def _cal_path(campaign: str) -> str:
@@ -117,15 +122,17 @@ def _format_date(cal: dict) -> str:
     month  = cal.get("month", 1)
     year   = cal.get("year", 1)
     hour   = cal.get("hour", 8)
+    minute = cal.get("minute", 0)
     months = _month_list(cal)
     days   = _day_names(cal)
 
     month_str = months[month - 1] if months and 1 <= month <= len(months) else f"Month {month}"
     day_str   = f"Day {day}"
-    if days:
+    if cal.get("gregorian"):
+        day_str = WEEKDAYS[date(year, month, day).weekday()]
+    elif days:
         ordinal = ((year - 1) * (len(months) or 12) + month - 1) * _month_length(cal) + day - 1
-        day_of_week = date(year, month, day).weekday() if cal.get("gregorian") else ordinal % len(days)
-        day_str = days[day_of_week]
+        day_str = days[ordinal % len(days)]
 
     # Map hour to time-of-day label
     tod = "night"
@@ -134,37 +141,28 @@ def _format_date(cal: dict) -> str:
             tod = label
             break
 
-    return f"{day_str}, {day} {month_str} {year} — {tod} (hour {hour})"
+    clock = f"{hour}:{minute:02d}" if minute else str(hour)
+    return f"{day_str}, {day} {month_str} {year} — {tod} (hour {clock})"
 
 
-def _advance_hours(cal: dict, hours: int) -> None:
-    """Advance the calendar by a given number of hours."""
+def _advance_minutes(cal: dict, minutes: int) -> None:
+    """Advance the calendar, including sub-hour time."""
     cal.setdefault("hour", 8)
     cal.setdefault("day", 1)
     cal.setdefault("month", 1)
     cal.setdefault("year", 1)
+    minute = cal.get("minute", 0)
 
     if cal.get("gregorian"):
-        value = datetime(cal["year"], cal["month"], cal["day"], cal["hour"]) + timedelta(hours=hours)
-        cal.update(year=value.year, month=value.month, day=value.day, hour=value.hour)
+        value = datetime(cal["year"], cal["month"], cal["day"], cal["hour"], minute) + timedelta(minutes=minutes)
+        cal.update(year=value.year, month=value.month, day=value.day, hour=value.hour, minute=value.minute)
         return
-    cal["hour"] += hours
+    days, minute_of_day = divmod(cal["hour"] * 60 + minute + minutes, 24 * 60)
+    hour, minute = divmod(minute_of_day, 60)
     month_len = _month_length(cal)
-
-    # Roll over hours → days
-    while cal["hour"] >= 24:
-        cal["hour"] -= 24
-        cal["day"] += 1
-
-    # Roll over days → months
-    months = _month_list(cal)
-    num_months = len(months) if months else 12
-    while cal["day"] > month_len:
-        cal["day"] -= month_len
-        cal["month"] += 1
-        if cal["month"] > num_months:
-            cal["month"] = 1
-            cal["year"] += 1
+    months, day = divmod(cal["day"] - 1 + days, month_len)
+    years, month = divmod(cal["month"] - 1 + months, len(_month_list(cal)) or 12)
+    cal.update(year=cal["year"] + years, month=month + 1, day=day + 1, hour=hour, minute=minute)
 
 
 def _send_date(cal: dict) -> None:
@@ -205,7 +203,7 @@ def _set_date(cal: dict, date_str: str) -> None:
 
 def _time_hour(label: str) -> int:
     if label.lower() not in HOURS_PER_TIME:
-        raise ValueError(f"Unknown time label: {label}")
+        raise ValueError(f"Unknown time label: {label}. Valid labels: {', '.join(HOURS_PER_TIME)}")
     return HOURS_PER_TIME[label.lower()]
 
 
@@ -238,15 +236,14 @@ def cmd_advance(campaign: str, amount: int, unit: str) -> None:
         print("Calendar not initialised. Run `calendar.py -c <campaign> init` first.")
         sys.exit(1)
 
-    hours = {"hour": 1, "hours": 1, "day": 24, "days": 24, "week": 168, "weeks": 168}.get(unit, 1)
-    total_hours = amount * hours
-    _advance_hours(cal, total_hours)
+    minutes = amount * MINUTES_PER_UNIT[unit]
+    _advance_minutes(cal, minutes)
     _save(campaign, cal)
 
     label = f"+{amount} {unit}"
     print(f"  {label} → {_format_date(cal)}")
     _send_date(cal)
-    _tracker().advance(campaign, total_hours * 60)
+    _tracker().advance(campaign, minutes)
 
 
 def cmd_rest(campaign: str, rest_type: str) -> None:
@@ -256,10 +253,10 @@ def cmd_rest(campaign: str, rest_type: str) -> None:
         sys.exit(1)
 
     if rest_type == "short":
-        _advance_hours(cal, 1)
+        _advance_minutes(cal, 60)
         label = "Short rest (+1 hour)"
     else:
-        _advance_hours(cal, 8)
+        _advance_minutes(cal, 480)
         label = "Long rest (+8 hours)"
 
     _save(campaign, cal)
@@ -282,11 +279,11 @@ def cmd_set(campaign: str, date_str: str, time_str: str, hour=None) -> None:
         date_str = f"{date_str} {cal['months'][cal.get('month', 1) - 1]} {cal.get('year', 1)}"
     _set_date(cal, date_str)
     if time_str:
-        cal["hour"] = _time_hour(time_str)
+        cal.update(hour=_time_hour(time_str), minute=0)
     if hour is not None:
         if not 0 <= hour <= 23:
             raise ValueError("Hour must be between 0 and 23")
-        cal["hour"] = hour
+        cal.update(hour=hour, minute=0)
     _save(campaign, cal)
     print(f"  Date set: {_format_date(cal)}")
     _send_date(cal)
@@ -297,7 +294,7 @@ def cmd_time(campaign: str, time_str: str) -> None:
     if not cal:
         print("Calendar not initialised.")
         sys.exit(1)
-    cal["hour"] = HOURS_PER_TIME.get(time_str.lower(), cal.get("hour", 8))
+    cal.update(hour=_time_hour(time_str), minute=0)
     _save(campaign, cal)
     print(f"  Time set: {_format_date(cal)}")
     _send_date(cal)
@@ -328,7 +325,7 @@ def main() -> None:
     ini.add_argument("--date",         default="1 Month 1",
                      help="Starting date, e.g. '15 Harvestmoon 1247'")
     ini.add_argument("--time",         default="morning",
-                     help="Starting time of day (morning/midday/afternoon/evening/night/midnight)")
+                     help=f"Starting time of day ({', '.join(HOURS_PER_TIME)})")
     ini.add_argument("--months",       default="",
                      help="Comma-separated month names in order")
     ini.add_argument("--month-length", default="30",
@@ -338,8 +335,7 @@ def main() -> None:
 
     adv = sub.add_parser("advance", help="Advance time by amount")
     adv.add_argument("amount", type=int)
-    adv.add_argument("unit",
-                     choices=["hour","hours","day","days","week","weeks"])
+    adv.add_argument("unit", choices=MINUTES_PER_UNIT)
 
     rst = sub.add_parser("rest", help="Advance time for a short or long rest")
     rst.add_argument("type", choices=["short","long"])

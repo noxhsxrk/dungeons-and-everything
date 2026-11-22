@@ -9,7 +9,7 @@ phone is connected — so rolling never blocks).
 
 Usage:
     python3 dice.py <notation> [--silent] [--label "..."] [--auto]
-                    [--vs check|save|attack|death] [--dc N]
+                    [--player <pc>] [--vs check|save|attack|death] [--dc N]
                     [--effects <entity> -c <campaign>]
 
     --vs says what the d20 is FOR. Only an attack roll crits or fumbles, so
@@ -17,6 +17,7 @@ Usage:
     reports its own nat 20 / nat 1 rules; a check or save just notes the
     natural roll. Without --vs nothing is labelled a crit.
     --dc N adds PASS / FAIL by arithmetic (for an attack, N is the target AC).
+    --player routes a physical roll to the named PC, with a marked local fallback.
     --effects adds the modifiers tracker.py holds for that entity on this
     kind of roll (e.g. Bless: +1d4 to attacks and saves). Needs --vs.
 
@@ -32,9 +33,8 @@ Notation supported:
     2d6+3             multiple dice + modifier
 
 Env vars:
-    DNE_DICE_PHYSICAL=1   opt in to physical-roll routing (default: 0, local-random).
-                          Auto-enabled when ~/.dne-dice/ exists (the install-launchd.sh
-                          script creates this marker on setup).
+    DNE_DICE_PHYSICAL=1   opt in to physical-roll routing, or set 0 to disable it.
+                          When unset, ~/.dne-dice/ enables it (created on setup).
     DNE_DICE_PORT=7777    server port (default 7777)
     DNE_DICE_LABEL=...    label shown on the phone for this roll
 """
@@ -249,10 +249,10 @@ def run(notation: str, silent: bool = False, label: str = "",
     #   - ~/.dne-dice/ marker directory exists (auto-set by install-launchd.sh)
     # This way `dice.py` adds zero latency for users who haven't installed
     # the optional server.
-    env_opt_in = os.environ.get("DNE_DICE_PHYSICAL", "0") == "1"
-    marker_opt_in = (os.path.expanduser("~/.dne-dice") and
-                     os.path.isdir(os.path.expanduser("~/.dne-dice")))
-    use_physical = not force_local and (env_opt_in or marker_opt_in)
+    physical_setting = os.environ.get("DNE_DICE_PHYSICAL")
+    use_physical = not force_local and (
+        physical_setting == "1" if physical_setting is not None
+        else os.path.isdir(os.path.expanduser("~/.dne-dice")))
     if use_physical:
         spec = _to_server_notation(num_dice, die_size, modifier, keep_mode, keep_count, adv, dis)
         if spec is not None:
@@ -270,6 +270,9 @@ def run(notation: str, silent: bool = False, label: str = "",
         # fall through to local fallback
 
     # ----- Local random fallback (original dice.py logic) -----
+    local_tag = " (local roll)" if player else ""
+    if silent and local_tag:
+        print(local_tag.strip(), file=sys.stderr)
     if adv or dis:
         roll_a = roll_dice(num_dice, die_size)
         roll_b = roll_dice(num_dice, die_size)
@@ -282,7 +285,7 @@ def run(notation: str, silent: bool = False, label: str = "",
         if not silent:
             print(f"[{lbl}] Roll A: {roll_a}{format_modifier(modifier)} = {total_a}")
             print(f"[{lbl}] Roll B: {roll_b}{format_modifier(modifier)} = {total_b}")
-            print(f"Takes roll {taken} → Total: {chosen}")
+            print(f"Takes roll {taken} → Total: {chosen}{local_tag}")
         return _finish(chosen, raw if die_size == 20 else None, silent, vs, dc, extras)
 
     rolls = roll_dice(num_dice, die_size)
@@ -296,7 +299,7 @@ def run(notation: str, silent: bool = False, label: str = "",
             kept_str = " + ".join(str(r) for r in kept)
             drop_str = f"  (dropped: {dropped})" if dropped else ""
             print(f"Rolls: {rolls}{drop_str}")
-            print(f"Kept ({keep_mode}{keep_count}): [{kept_str}]{format_modifier(modifier)} = {result}")
+            print(f"Kept ({keep_mode}{keep_count}): [{kept_str}]{format_modifier(modifier)} = {result}{local_tag}")
         return _finish(result, None, silent, vs, dc, extras)
 
     result = sum(rolls) + modifier
@@ -306,9 +309,9 @@ def run(notation: str, silent: bool = False, label: str = "",
             # With effects still to add, the natural-roll flag waits for the
             # final line so it sits next to the total it describes.
             flag = "" if extras else d20_flag(raw, vs)
-            print(f"Roll: {raw}{format_modifier(modifier)} = {result}{flag}")
+            print(f"Roll: {raw}{format_modifier(modifier)} = {result}{flag}{local_tag}")
         else:
-            print(f"Rolls: {rolls}{format_modifier(modifier)} = {result}")
+            print(f"Rolls: {rolls}{format_modifier(modifier)} = {result}{local_tag}")
     return _finish(result, raw, silent, vs, dc, extras, flagged=not extras)
 
 

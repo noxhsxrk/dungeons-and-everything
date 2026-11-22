@@ -43,6 +43,7 @@ import json
 import pathlib
 import re
 import sys
+import unicodedata
 
 from paths import campaigns_dir, characters_dir, _root
 from utf8io import read_text, TextDecodeError
@@ -66,16 +67,15 @@ def _today() -> str:
 
 #: Thai titles written attached to the name ("นางจันทร์เพ็ญ"). Only titles that are unlikely to
 #: be the start of an ordinary name: short ones like ตา, อา, พระ, พัน would turn อานนท์ into นนท์.
-THAI_HONORIFICS = sorted("แม่หญิง หลวงพี่ หลวงพ่อ หลวงตา นางสาว พระยา หลวง ขุน หมื่น นาย นาง เจ๊ เฮีย คุณ ด.ช. ด.ญ.".split(),
+THAI_HONORIFICS = sorted(("แม่หญิง หลวงพี่ หลวงพ่อ หลวงตา นางสาว พระยา หลวง ขุน หมื่น นาย นาง เจ๊ เฮีย คุณ ด.ช. ด.ญ. "
+                         "คุณหญิง ออกญา ออกหลวง ออกพระ เจ้าพระยา พระครู หม่อม ผู้กอง").split(),
                          key=len, reverse=True)
 
 
 def _strip_thai_title(name):
-    import unicodedata
     for title in THAI_HONORIFICS:
         rest = name[len(title):].strip() if name.startswith(title) else ""
-        # The remainder must be a plausible name: 2+ chars, not starting with a combining mark.
-        if len(rest) >= 2 and unicodedata.category(rest[0]) != "Mn":
+        if len(rest) >= 2 and ('\u0e01' <= rest[0] <= '\u0e2e' or '\u0e40' <= rest[0] <= '\u0e44'):
             return rest
     return name
 
@@ -86,7 +86,6 @@ def slug(name: str) -> str:
     Strips parenthetical content first so 'Vedra Ceth (V.C.)' and
     'Vedra Ceth' produce the same slug. Strips trailing/leading whitespace.
     """
-    import unicodedata
     s = _strip_thai_title(name.strip().lower())
     s = re.sub(r"\s*\([^)]*\)\s*", " ", s)  # drop parenthetical asides
     s = "".join(c for c in s if c.isspace() or unicodedata.category(c)[0] in "LMN")            # drop remaining punctuation
@@ -345,7 +344,31 @@ HONORIFICS = {
     "brother", "sister", "elder", "saint", "st", "king", "queen", "prince",
     "princess", "duke", "duchess", "baron", "baroness", "count", "countess",
     "old", "young", "high", "archmage", "magister", "maester",
+    "pastor", "reverend", "rev", "deputy", "sheriff", "officer", "detective",
+    "agent", "judge", "mayor", "chief", "coach", "professor", "prof", "nurse",
 }
+
+
+def _without_english_titles(words):
+    while len(words) > 1 and words[0].strip(".,;:").casefold() in HONORIFICS:
+        words = words[1:]
+    return words
+
+
+def _duplicate_key(name: str) -> str:
+    name = re.sub(r"\s*\([^)]*\)\s*", " ", name.strip())
+    name = _strip_thai_title(name)
+    folded = []
+    latin = False
+    for char in unicodedata.normalize("NFKD", name):
+        category = unicodedata.category(char)
+        if latin and category == "Mn":
+            continue
+        if not category.startswith("M"):
+            latin = category.startswith("L") and unicodedata.name(char, "").startswith("LATIN ")
+        folded.append(char)
+    words = _without_english_titles("".join(folded).casefold().split())
+    return slug(" ".join(words))
 
 
 def first_name(name: str) -> str | None:
@@ -358,9 +381,7 @@ def first_name(name: str) -> str | None:
     n = re.sub(r"\s*\([^)]*\)\s*", " ", name or "").strip()
     n = _strip_thai_title(n)
     words = [w.strip(".,;:") for w in n.split()]
-    words = [w for w in words if w]
-    while len(words) > 1 and words[0].casefold() in HONORIFICS:
-        words = words[1:]
+    words = _without_english_titles([w for w in words if w])
     if not words:
         return None
     if (len(words) == 1 and NO_DELIMITER_SCRIPT.search(words[0])
@@ -438,10 +459,14 @@ def check(name: str) -> dict:
                 "severity": severity, "message": "registry check disabled",
                 "first_name_clash": []}
 
-    clash = first_name_clashes(name)
+    entries = _load().get("entries", {})
+    clash = first_name_clashes(name, entries=entries)
     clash_msg = (f"; first name matches player character {', '.join(clash)}"
                  if clash else "")
-    e = lookup(name)
+    e = entries.get(slug(name))
+    if not e:
+        key = _duplicate_key(name)
+        e = next((entry for entry in entries.values() if _duplicate_key(entry["name"]) == key), None)
     if not e:
         return {"name": name, "is_duplicate": False, "entry": None,
                 "severity": severity, "first_name_clash": clash,
@@ -450,8 +475,9 @@ def check(name: str) -> dict:
 
     where = ", ".join(e.get("currently_active_in", [])) or "(retired everywhere)"
     src = e.get("source", "canonical")
-    msg = (f"'{name}' was first used in {e['first_campaign']} S{e['first_session']} "
-           f"({src}); currently active in: {where}{clash_msg}")
+    origin = (f"{e['first_campaign']} S{e['first_session']}" if 'first_campaign' in e and 'first_session' in e
+              else e.get('first_used', 'an earlier session'))
+    msg = f"'{e['name']}' was first used in {origin} ({src}); currently active in: {where}{clash_msg}"
     return {"name": name, "is_duplicate": True, "entry": e,
             "severity": severity, "message": msg, "first_name_clash": clash}
 

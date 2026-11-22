@@ -24,24 +24,9 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
-from paths import srd_path, find_campaign
-from xp import _monster_multiplier as _encounter_multiplier
+from paths import CHARACTER_LEVEL_RE, srd_path, find_campaign
+from xp import DIFF_IDX, XP_THRESHOLDS, classify_difficulty, _monster_multiplier as _encounter_multiplier
 import worldkit
-
-# 5e DMG XP thresholds per character by level (1..20)
-XP_THRESHOLDS = {
-    1:  (25, 50, 75, 100),      2:  (50, 100, 150, 200),
-    3:  (75, 150, 225, 400),    4:  (125, 250, 375, 500),
-    5:  (250, 500, 750, 1100),  6:  (300, 600, 900, 1400),
-    7:  (350, 750, 1100, 1700), 8:  (450, 900, 1400, 2100),
-    9:  (550, 1100, 1600, 2400),10: (600, 1200, 1900, 2800),
-    11: (800, 1600, 2400, 3600),12: (1000, 2000, 3000, 4500),
-    13: (1100, 2200, 3400, 5100),14:(1250, 2500, 3800, 5700),
-    15: (1400, 2800, 4300, 6400),16:(1600, 3200, 4800, 7200),
-    17: (2000, 3900, 5900, 8800),18:(2100, 4200, 6300, 9500),
-    19: (2400, 4900, 7300, 10900),20:(2800, 5700, 8500, 12700),
-}
-DIFF_IDX = {"easy": 0, "medium": 1, "hard": 2, "deadly": 3}
 
 BIOME_KEYWORDS = {
     "forest":    ["wolf", "bear", "spider", "goblin", "orc", "boar", "dryad", "treant", "owlbear", "elf", "stag", "bandit", "bugbear", "ettin", "fey", "plant", "beast", "green dragon"],
@@ -83,9 +68,10 @@ def generate_encounter(
 ) -> dict:
     rng = random.Random(seed)
     lvl = max(1, min(20, int(party_level)))
-    size = max(1, min(10, int(party_size)))
+    size = max(1, int(party_size))
     diff_i = DIFF_IDX.get(difficulty.lower(), 1)
-    budget = XP_THRESHOLDS[lvl][diff_i] * size
+    thresholds = tuple(value * size for value in XP_THRESHOLDS[lvl])
+    budget = thresholds[diff_i]
 
     kit = worldkit.load(campaign) if campaign else None
     world_monsters = kit is not None
@@ -212,6 +198,7 @@ def generate_encounter(
         "party_level": lvl,
         "party_size": size,
         "difficulty": difficulty.lower(),
+        "actual_difficulty": classify_difficulty(adj_xp, thresholds),
         "xp_budget": budget,
         "raw_xp": raw_xp,
         "adjusted_xp": adj_xp,
@@ -231,7 +218,19 @@ def main() -> None:
     parser.add_argument("--ruleset", choices=["2014", "2024"], default="2014")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
-    state = find_campaign(args.campaign) / "state.md" if args.campaign else None
+    campaign_dir = find_campaign(args.campaign) if args.campaign else None
+    levels = []
+    if campaign_dir and (args.party_size is None or args.party_level is None):
+        for sheet in (campaign_dir / "characters").glob("*.md"):
+            match = CHARACTER_LEVEL_RE.search(sheet.read_text(encoding="utf-8", errors="replace"))
+            if match:
+                levels.append(int(match.group(1)))
+    if levels:
+        if args.party_size is None:
+            args.party_size = len(levels)
+        if args.party_level is None:
+            args.party_level = (2 * sum(levels) + len(levels)) // (2 * len(levels))
+    state = campaign_dir / "state.md" if campaign_dir else None
     header = state.read_text(encoding="utf-8") if state and state.exists() else ""
     for attr, label, default in (("party_size", "Party size", 4), ("party_level", "Starting level", 3)):
         if getattr(args, attr) is None:
@@ -249,8 +248,11 @@ def main() -> None:
         if args.json:
             print(json.dumps(enc, indent=2, ensure_ascii=False))
             return
-        print(f"Encounter [{enc['biome'].title()} · {enc['difficulty'].upper()}] "
+        actual = enc['actual_difficulty']
+        print(f"Encounter [{enc['biome'].title()} · {actual.upper()}] "
               f"Party: {enc['party_size']}×L{enc['party_level']} (budget {enc['xp_budget']} XP → adj {enc['adjusted_xp']} XP)")
+        if DIFF_IDX.get(actual, -1) < DIFF_IDX[enc['difficulty']]:
+            print(f"  under budget: {enc['adjusted_xp']} XP falls below the {enc['difficulty']} threshold ({enc['xp_budget']} XP)")
         for m in enc["monsters"]:
             print(f"  {m['count']}× {m['name']} (CR {worldkit.format_cr(m['cr'])}, AC {m['ac']}, HP {m['hp']}, role={m['tactical_role']})")
     except ValueError as e:

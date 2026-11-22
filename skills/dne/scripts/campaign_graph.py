@@ -56,6 +56,7 @@ import json
 import pathlib
 import shutil
 import sys
+import unicodedata
 from typing import Optional
 
 from paths import find_campaign
@@ -125,7 +126,7 @@ _DISPOSITION_EDGE_TYPES = ("disposition", "standing")
 # -------- helpers --------
 
 def _slug(s: str) -> str:
-    return "".join(c if c.isalnum() else "_" for c in s.lower()).strip("_")
+    return "".join(c if unicodedata.category(c)[0] in "LMN" else "_" for c in s.lower()).strip("_")
 
 
 def _next_edge_id(edges: list) -> str:

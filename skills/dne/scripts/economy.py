@@ -37,7 +37,7 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
-from paths import find_campaign, find_character_file, campaign_ruleset
+from paths import find_campaign, find_character_file, campaign_ruleset, norm_key
 
 # Standard D&D 5e coin conversion to copper pieces (cp)
 COIN_TO_CP = {"pp": 1000, "gp": 100, "ep": 50, "sp": 10, "cp": 1}
@@ -148,27 +148,40 @@ def _item_lines(text: str, item: str):
     return list(re.finditer(pattern, text[span.start():span.end()], re.M | re.I))
 
 
-def _add_inventory_item(text: str, item: str) -> str:
+def _add_inventory_item(text: str, item: str, section: str) -> str:
     span = _inventory_span(text)
-    matches = _item_lines(text, item)
-    if matches:
-        body = text[span.start():span.end()]
-        count = 1 + sum(int(m.group(1) or 1) for m in matches)
-        for m in reversed(matches[1:]):
-            body = body[:m.start()] + body[m.end():]
-        m = matches[0]
-        body = body[:m.start()] + f"- {item} ×{count}\n" + body[m.end():]
-        return text[:span.start()] + body + text[span.end():]
+    marker = f"**{section}:**"
     if span:
-        body = text[span.start():span.end()]
-        marker = "**Adventuring Gear:**"
-        idx = body.find(marker)
-        if idx >= 0:
-            pos = span.start() + idx + len(marker)
-            return text[:pos] + f"\n- {item}" + text[pos:]
-        pos = span.end()
-        return text[:pos].rstrip() + f"\n- {item}\n\n" + text[pos:]
-    return text.rstrip() + f"\n\n## Equipment & Inventory\n**Adventuring Gear:**\n- {item}\n"
+        body = span.group()
+        matches = _item_lines(text, item)
+        count = 1 + sum(int(m.group(1) or 1) for m in matches)
+        entry = f"- {item}" + (f" ×{count}" if count > 1 else "")
+        for m in reversed(matches):
+            body = body[:m.start()] + body[m.end():]
+        heading = re.search(r"^" + re.escape(marker) + r"[ \t]*$", body, re.M | re.I)
+        if heading:
+            body = body[:heading.end()] + f"\n{entry}" + body[heading.end():]
+        else:
+            body = body.rstrip() + f"\n\n{marker}\n{entry}\n\n"
+        return text[:span.start()] + body + text[span.end():]
+    return text.rstrip() + f"\n\n## Equipment & Inventory\n{marker}\n- {item}\n"
+
+
+def _inventory_section(campaign: str, item: str) -> str:
+    from lookup import lookup_record
+
+    key = norm_key(item)
+    for source in ({"campaign": campaign}, {"ruleset": campaign_ruleset(campaign)}):
+        record = lookup_record(item, "equipment", **source)
+        if not record or key not in (norm_key(record.get("name")), norm_key(record.get("index"))):
+            continue
+        category = norm_key(record.get("category"))
+        if category in ("armor", "armour") or (not category and record.get("ac")):
+            return "Armour"
+        if category == "weapon" or (not category and record.get("damage")):
+            return "Weapons"
+        break
+    return "Adventuring Gear"
 
 
 def _remove_inventory_item(text: str, item: str) -> tuple[str, bool]:
@@ -237,7 +250,7 @@ def buy_item(campaign: str, char_name: str, item: str, cost_spec: str) -> dict:
         )
     new_cp = cur_cp - cost_cp
     text = _write_currency_cp(text, new_cp)
-    text = _add_inventory_item(text, item)
+    text = _add_inventory_item(text, item, _inventory_section(campaign, item))
     cf.write_text(text, encoding="utf-8")
     rec = {
         "type": "buy",

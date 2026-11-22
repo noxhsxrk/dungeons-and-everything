@@ -7,11 +7,14 @@ Usage:
     python3 combat.py init <combatants_json>
         Rolls initiative for all combatants and prints turn order.
         combatants_json: JSON array of {"name": str, "dex_mod": int, "hp": int, "ac": int, "type": "pc"|"npc"}
+        Optional keys: "roll" (supplied d20), "init_bonus" (extra modifier),
+        and "max_hp" (defaults to hp).
 
     python3 combat.py tracker <state_json>
         Prints the current combat tracker table from a JSON state blob.
 
     python3 combat.py attack --atk <bonus> --ac <target_ac> --dmg <notation> [--crit]
+                             [--roll N[,N]] [--adv|--dis] [--crit-range N]
                              [--effects <entity> -c <campaign>]
         Resolves a single attack roll and damage. --crit makes any hit a
         critical hit (a paralyzed or unconscious target within 5 ft); a
@@ -57,13 +60,27 @@ def roll(n, sides):
     return [d(sides) for _ in range(n)]
 
 
+_DAMAGE_TERM = r"(?:\d+d[1-9]\d*|\d+)"
+_DAMAGE_EXPRESSION = rf"[+-]?{_DAMAGE_TERM}(?:\s*[+-]\s*{_DAMAGE_TERM})*"
+
+
+def parse_damage(notation: str) -> tuple[str, str]:
+    match = re.fullmatch(rf"({_DAMAGE_EXPRESSION})(?:\s+(\S+))?", notation.strip(), re.I)
+    if match:
+        damage_type = match[2] or ""
+        if not damage_type or (damage_type[0].isalpha() and all(
+                unicodedata.category(c)[0] in "LM" for c in damage_type)):
+            return re.sub(r"\s+", "", match[1]), damage_type
+    raise ValueError(f"Bad damage notation: {notation}")
+
+
 def dice(notation: str, critical: bool = False) -> tuple[int, list[int]]:
     """Roll compound damage, doubling every dice term on a critical hit."""
     notation = notation.strip().lower()
-    if not re.fullmatch(r"[+-]?(?:\d*d[1-9]\d*|\d+)(?:[+-](?:\d*d[1-9]\d*|\d+))*", notation):
+    if not re.fullmatch(_DAMAGE_EXPRESSION, notation):
         raise ValueError(f"Bad dice notation: {notation}")
     total, rolls = 0, []
-    for term in re.findall(r"[+-]?(?:\d*d\d+|\d+)", notation):
+    for term in re.findall(rf"[+-]?{_DAMAGE_TERM}", re.sub(r"\s+", "", notation)):
         value, rolled = _roll_mod(term, double_dice=critical)
         total += value
         rolls.extend(rolled)
@@ -125,8 +142,9 @@ def resolve_attack(atk_bonus: int, target_ac: int, dmg_notation: str, is_crit: b
     natural 1 still misses. `attack_mods` / `damage_mods` are
     [(label, '+1d4'), ...] from tracker.active_modifiers.
     """
+    dmg_notation, dmg_type = parse_damage(dmg_notation)
     if supplied_roll is None:
-        raw_rolls = [d(20) for _ in range(2 if adv or dis else 1)]
+        raw_rolls = [d(20) for _ in range(2 if adv != dis else 1)]
     else:
         raw_rolls = [int(n) for n in str(supplied_roll).split(",")]
         if len(raw_rolls) != (2 if adv != dis else 1) or any(not 1 <= n <= 20 for n in raw_rolls):
@@ -146,6 +164,7 @@ def resolve_attack(atk_bonus: int, target_ac: int, dmg_notation: str, is_crit: b
 
     result = {
         "d20": raw,
+        "d20_rolls": raw_rolls,
         "attack_bonus": atk_bonus,
         "total": total_atk,
         "target_ac": target_ac,
@@ -157,9 +176,6 @@ def resolve_attack(atk_bonus: int, target_ac: int, dmg_notation: str, is_crit: b
     }
 
     if hit:
-        # A damage type may follow the dice ("1d10 Piercing", as weapon records write it).
-        dmg_notation, _, dmg_type = dmg_notation.strip().partition(" ")
-        dmg_type = dmg_type.strip()
         dmg, rolls = dice(dmg_notation, critical=crit)
         for label, value in damage_mods or []:
             # Extra damage dice are doubled on a crit like the weapon's own.
@@ -184,7 +200,11 @@ def format_attack(r: dict) -> str:
         flag = " *** FUMBLE — automatic miss ***"
 
     mods = "".join(f" + {m['label']} {m['value']}({m['total']:+d})" for m in r.get("attack_mods", []))
-    atk_str = f"d20({r['d20']}) + {r['attack_bonus']}{mods} = {r['total']} vs AC {r['target_ac']}"
+    rolls = r.get("d20_rolls", [r["d20"]])
+    d20_text = ", ".join(f"d20({roll})" for roll in rolls)
+    if len(rolls) > 1:
+        d20_text += f" → {r['d20']}"
+    atk_str = f"{d20_text} + {r['attack_bonus']}{mods} = {r['total']} vs AC {r['target_ac']}"
     outcome = "HIT" if r["hit"] else "MISS"
     lines.append(f"Attack: {atk_str} — {outcome}{flag}")
 

@@ -177,7 +177,7 @@ class CharacterWorldTests(_Root):
         self.assertEqual(r.stderr.count("scrap-plate"), 1)
 
     def test_background_skills_are_proficient(self):
-        r = self.calc("eden", "--class", "Soldier", "--background", "Hollow Guard",
+        r = self.calc("eden24", "--class", "Soldier", "--background", "Hollow Guard",
                       "--background-asi", "STR=2,CON=1", *BASE)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertRegex(r.stdout, r"\*\s+Athletics")

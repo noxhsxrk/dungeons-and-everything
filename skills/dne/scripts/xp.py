@@ -95,7 +95,7 @@ LEVEL_XP: dict[int, int] = {
 DIFF_IDX: dict[str, int] = {"easy": 0, "medium": 1, "hard": 2, "deadly": 3}
 DIFF_LABELS: dict[int, str] = {0: "Easy", 1: "Medium", 2: "Hard", 3: "Deadly"}
 
-from paths import find_campaign as _find_campaign, campaigns_dir as _campaigns_dir, display_dir as _display_dir
+from paths import CHARACTER_LEVEL_RE, find_campaign as _find_campaign, campaigns_dir as _campaigns_dir, display_dir as _display_dir
 CAMPAIGNS_DIR = _campaigns_dir()
 DISPLAY_SCRIPT = _display_dir() / "push_stats.py"
 
@@ -154,13 +154,12 @@ def _calc_monster_xp(monsters: list[tuple[str, str, int]], players: int = 4) -> 
     return raw, mult, int(raw * mult)
 
 
-def _classify_difficulty(adj_xp_per_player: int, level: int) -> str:
-    t = XP_THRESHOLDS.get(level, XP_THRESHOLDS[20])
-    if adj_xp_per_player >= t[3]: return "deadly"
-    if adj_xp_per_player >= t[2]: return "hard"
-    if adj_xp_per_player >= t[1]: return "medium"
-    if adj_xp_per_player >= t[0]: return "easy"
-    return "trivial"
+def party_xp_thresholds(levels) -> tuple:
+    return tuple(map(sum, zip(*(XP_THRESHOLDS.get(level, XP_THRESHOLDS[20]) for level in levels))))
+
+
+def classify_difficulty(adjusted_xp: int, thresholds: tuple) -> str:
+    return next((name for name in reversed(DIFF_IDX) if adjusted_xp >= thresholds[DIFF_IDX[name]]), "trivial")
 
 
 def _xp_per_player(difficulty: str, level: int) -> int:
@@ -183,7 +182,7 @@ def _read_char_state(path: pathlib.Path) -> tuple[int, int]:
     """Read current XP and level from a character file. Returns (xp, level)."""
     text = path.read_text(encoding="utf-8")
     xp_m   = re.search(r"\*\*(?:XP|经验|经验值):\*\*\s*(\d+)", text)
-    level_m = re.search(r"\*\*(?:Level|等级):\*\*\s*(\d+)", text)
+    level_m = CHARACTER_LEVEL_RE.search(text)
     xp    = int(xp_m.group(1))    if xp_m    else 0
     level = int(level_m.group(1)) if level_m else 1
     return xp, level
@@ -251,7 +250,7 @@ def cmd_calc(args: argparse.Namespace) -> None:
         raw_xp, mult, adj_xp = _calc_monster_xp(monsters, players)
         total_count = sum(c for _, _, c in monsters)
         per_player  = raw_xp // players
-        diff        = _classify_difficulty(adj_xp // players, level)
+        diff        = classify_difficulty(adj_xp, party_xp_thresholds([level] * players))
 
         print(f"\n  Combat encounter — CR-based calculation")
         for name, cr, count in monsters:
@@ -397,7 +396,6 @@ def cmd_award(args: argparse.Namespace) -> None:
         xp, level = _read_char_state(path)
         chars.append({"name": name, "xp": xp, "level": level, "path": path})
 
-    avg_level = round(sum(c["level"] for c in chars) / len(chars))
     players   = len(chars)
 
     # Calculate XP per player
@@ -409,7 +407,8 @@ def cmd_award(args: argparse.Namespace) -> None:
         raw_xp, mult, adj_xp = _calc_monster_xp(monsters, players)
         total_count = sum(c for _, _, c in monsters)
         per_player  = raw_xp // players
-        diff        = _classify_difficulty(adj_xp // players, avg_level)
+        awards = [per_player] * players
+        diff = classify_difficulty(adj_xp, party_xp_thresholds(c["level"] for c in chars))
 
         print(f"\n  Combat — CR-based  [{total_count} monsters, ×{mult} multiplier]")
         for name, cr, count in monsters:
@@ -422,10 +421,9 @@ def cmd_award(args: argparse.Namespace) -> None:
             print("Provide --difficulty or --monsters.", file=sys.stderr)
             sys.exit(1)
         diff       = args.difficulty.lower()
-        per_player = _xp_per_player(diff, avg_level)
+        awards = [_xp_per_player(diff, c["level"]) for c in chars]
         type_label = f"  [{enc_type}]" if enc_type == "noncombat" else ""
-        print(f"\n  {diff.upper()} {enc_type.upper()}{type_label} — Level {avg_level} party of {players}")
-        print(f"  Per player: {per_player:,} XP")
+        print(f"\n  {diff.upper()} {enc_type.upper()}{type_label} — Party of {players}")
 
     if note:
         print(f"  Note: {note}")
@@ -434,19 +432,19 @@ def cmd_award(args: argparse.Namespace) -> None:
     print()
     any_levelup = False
     _ledger_entries = []
-    for c in chars:
+    for c, award in zip(chars, awards):
         old_xp  = c["xp"]
-        new_xp  = old_xp + per_player
+        new_xp  = old_xp + award
         leveled = _write_char_xp(c["path"], new_xp, c["level"])
         _push_xp_display(c["name"], new_xp, c["level"])
-        _ledger_entries.append({"name": c["name"], "awarded": per_player,
+        _ledger_entries.append({"name": c["name"], "awarded": award,
                                 "total_after": new_xp})
 
         next_lvl   = _next_level_xp(c["level"])
         up_tag     = f"  ⚠ LEVEL {c['level'] + 1} UP!" if leveled else ""
         remaining  = max(0, next_lvl - new_xp)
         rem_note   = "" if leveled else f"  ({remaining:,} to Level {c['level'] + 1})"
-        print(f"  {c['name']}: {old_xp:,} + {per_player:,} = {new_xp:,} / {next_lvl:,}{rem_note}{up_tag}")
+        print(f"  {c['name']}: {award:,} XP — {old_xp:,} → {new_xp:,} / {next_lvl:,}{rem_note}{up_tag}")
         if leveled:
             any_levelup = True
 
