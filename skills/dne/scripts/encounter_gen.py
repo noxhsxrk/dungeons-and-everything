@@ -207,6 +207,7 @@ def generate_encounter(
         "biome": b_key,
         "party_level": lvl,
         "party_size": size,
+        "party_levels": sorted(levels, reverse=True) if levels else [lvl] * size,
         "difficulty": difficulty.lower(),
         "actual_difficulty": classify_difficulty(adj_xp, thresholds),
         "xp_budget": budget,
@@ -262,7 +263,7 @@ def main() -> None:
             return
         actual = enc['actual_difficulty']
         print(f"Encounter [{enc['biome'].title()} · {actual.upper()}] "
-              f"Party: {enc['party_size']}×L{enc['party_level']} (budget {enc['xp_budget']} XP → adj {enc['adjusted_xp']} XP)")
+              f"Party: {'+'.join(f'L{l}' for l in enc['party_levels']) if len(set(enc['party_levels'])) > 1 else str(enc['party_size']) + '×L' + str(enc['party_level'])} (budget {enc['xp_budget']} XP → adj {enc['adjusted_xp']} XP)")
         if enc['adjusted_xp'] < enc['xp_budget']:
             print(f"  under budget: {enc['adjusted_xp']} XP falls below the {enc['difficulty']} threshold ({enc['xp_budget']} XP)")
         for m in enc["monsters"]:

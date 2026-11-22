@@ -163,3 +163,27 @@ class RestAndRegistryTests(_Camp):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RedoSafetyTests(_Camp):
+    def test_redo_refuses_after_play_continued(self):
+        st = self.camp / "state.md"
+        snap = lambda *a: self.run_py("turn_snapshot.py", "-c", "eden", *a)
+        snap("save", "--label", "t1")
+        st.write_text("turn 2\n", encoding="utf-8")
+        self.assertEqual(snap("undo").returncode, 0)
+        st.write_text("new timeline after undo\n", encoding="utf-8")
+        r = snap("redo")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertEqual(st.read_text(encoding="utf-8"), "new timeline after undo\n")
+
+    def test_redo_still_works_right_after_undo(self):
+        st = self.camp / "state.md"
+        snap = lambda *a: self.run_py("turn_snapshot.py", "-c", "eden", *a)
+        snap("save", "--label", "t1")
+        st.write_text("turn 2\n", encoding="utf-8")
+        snap("undo")
+        r = snap("redo")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(st.read_text(encoding="utf-8"), "turn 2\n")
+        self.assertIn("Redid", r.stdout)

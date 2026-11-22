@@ -113,6 +113,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/combat.py attack --atk 4 --ac 15 --dmg 2d6+2
 # A player's own d20 (roll_mode: players); advantage/disadvantage takes both naturals; Champion crits on 19+
 python3 ${CLAUDE_SKILL_DIR}/scripts/combat.py attack --atk 6 --ac 14 --dmg "1d10+4 piercing" --roll 17
 python3 ${CLAUDE_SKILL_DIR}/scripts/combat.py attack --atk 6 --ac 14 --dmg 1d8+4 --roll 4,17 --adv --crit-range 19
+# A natural roll inside the crit range is a critical hit and always hits (Sage Advice ruling), like a natural 20
 # --dmg: dice/number terms joined by + or - (e.g. 1d6+5+1d4), optionally followed by a damage type word
 
 # Target paralyzed or unconscious and within 5 ft: any hit is a critical hit

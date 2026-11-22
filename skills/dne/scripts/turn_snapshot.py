@@ -256,6 +256,12 @@ def _move_snapshot(campaign: str, to_turn, dry_run: bool, notify_display: bool, 
     restored_turn = target["turn"]
     removed_files = []
 
+    if redo and target.get("state_after_undo") and target["state_after_undo"] != _fingerprint(cdir):
+        # Play continued after the undo; that play is now the timeline. Re-applying the undone
+        # state would silently throw it away.
+        raise RuntimeError("The campaign changed since the undo, so redo would discard that play. "
+                           "Nothing was restored.")
+
     if not dry_run:
         inverse = _capture_snapshot(campaign, target["label"], redo=not redo)
         try:
@@ -270,6 +276,11 @@ def _move_snapshot(campaign: str, to_turn, dry_run: bool, notify_display: bool, 
             if s["turn"] >= target["turn"]:
                 shutil.rmtree(s["dir"], ignore_errors=True)
 
+        if not redo:
+            meta_path = pathlib.Path(inverse["dir"]) / "meta.json"
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            meta["state_after_undo"] = _fingerprint(cdir)
+            meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
         if redo:
             restored_turn = inverse["turn"]
         display_ok = _notify_display_rollback(campaign, restored_turn) if notify_display else False
@@ -289,6 +300,17 @@ def _move_snapshot(campaign: str, to_turn, dry_run: bool, notify_display: bool, 
         "dry_run": dry_run,
         "display_notified": display_ok,
     }
+
+
+def _fingerprint(cdir: pathlib.Path) -> str:
+    """Hash of every snapshotted campaign file, to tell whether play continued after an undo."""
+    import hashlib
+    h = hashlib.sha256()
+    paths = [cdir / rel for rel in CAMPAIGN_FILES] + sorted((cdir / "characters").glob("*.md"))
+    for path in paths:
+        h.update(str(path.relative_to(cdir)).encode())
+        h.update(path.read_bytes() if path.is_file() else b"<absent>")
+    return h.hexdigest()
 
 
 def _restore_snapshot(cdir: pathlib.Path, target: dict) -> tuple[list, list]:
@@ -366,9 +388,12 @@ def main() -> None:
                 res = undo_snapshot(args.campaign, args.to, args.dry_run, not args.no_display)
             else:
                 res = redo_snapshot(args.campaign, args.dry_run, not args.no_display)
-            prefix = "[DRY RUN] Would restore" if res["dry_run"] else ("Rolled back" if args.cmd == "undo" else "Restored")
             lbl = f" ({res['label']})" if res["label"] else ""
-            print(f"{prefix} '{args.campaign}' to Turn {res['restored_turn']}{lbl}")
+            if args.cmd == "redo" and not res["dry_run"]:
+                print(f"Redid '{args.campaign}': re-applied the changes undone at Turn {res['restored_turn']}{lbl}")
+            else:
+                prefix = "[DRY RUN] Would restore" if res["dry_run"] else "Rolled back"
+                print(f"{prefix} '{args.campaign}' to Turn {res['restored_turn']}{lbl}")
             print(f"  Restored ({len(res['restored_files'])}): {', '.join(res['restored_files'])}")
             if res["removed_files"]:
                 print(f"  Removed ({len(res['removed_files'])}): {', '.join(res['removed_files'])}")
