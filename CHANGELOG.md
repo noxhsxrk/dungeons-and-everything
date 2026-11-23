@@ -15,7 +15,6 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
   Python 3.10 run on release tags (`v*`) and on manual runs, so every release is still tested on all
   of them.
 
-### Changed
 - **Display text is faster, with a "Show all" button.** Typing runs at 14 ms a character by default
   (was 36); Settings → Type Speed cycles Normal / Fast / Instant / Slow and is remembered per browser.
   While a long passage is still typing, a **Show all** button above the input shows the rest at once.
