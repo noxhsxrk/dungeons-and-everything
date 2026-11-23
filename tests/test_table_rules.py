@@ -35,7 +35,8 @@ class DegreeLadderTests(_Camp):
 
     def test_cli_prints_degree_without_crit_wording(self):
         r = self.run_py("dice.py", "d20+40", "--vs", "check", "--dc", "15")
-        self.assertIn("critical success", r.stdout)
+        # a natural 1 (1 in 20) steps the critical success down to a plain success
+        self.assertRegex(r.stdout, r"· critical success|\(natural 1\)[\s\S]*· success")
         self.assertNotIn("CRITICAL HIT", r.stdout)   # the display flashes on that text
 
 
