@@ -48,8 +48,13 @@ Usage:
 
     python3 character.py xp --level 1 --gained 150
         Print XP total and whether level-up threshold is reached.
+
+    python3 character.py hero <use|award|reset|recover> --char <name> -c <campaign>
+    python3 character.py focus <use|refocus|reset> --char <name> -c <campaign> [--max N]
+        Update the optional point pools on a character sheet.
 """
 
+import argparse
 import json
 import os
 import re
@@ -58,7 +63,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import worldkit
-from paths import campaign_ruleset, norm_key, srd_path
+from paths import campaign_ruleset, find_character_file, norm_key, srd_path
 
 # Windows / non-UTF-8 consoles: the output carries arrows and dashes, which a
 # cp1252, GBK or ASCII stdout cannot encode. Same fix as the sibling scripts.
@@ -1080,6 +1085,87 @@ def do_xp(args: list[str]):
     print()
 
 
+HP_RE = re.compile(r"(\*\*HP:\*\*\s*)(\d+)\s*/\s*(\d+)")
+HERO_POINTS_RE = re.compile(r"(\*\*Hero Points:\*\*[ \t]*)(\d+)[ \t]*/[ \t]*(\d+)")
+FOCUS_POINTS_RE = re.compile(r"(\*\*Focus Points:\*\*[ \t]*)(\d+)[ \t]*/[ \t]*(\d+)")
+
+
+def insert_after_hp(text: str, line: str) -> str:
+    hp = HP_RE.search(text)
+    if hp is None:
+        raise ValueError("Character sheet has no HP line")
+    end = text.find("\n", hp.end())
+    if end < 0:
+        return f"{text}\n{line}\n"
+    return f"{text[:end + 1]}{line}\n{text[end + 1:]}"
+
+
+def do_points(pool: str, args: list[str]) -> None:
+    hero = pool == "hero"
+    label = "Hero Points" if hero else "Focus Points"
+    actions = ("use", "award", "reset", "recover") if hero else ("use", "refocus", "reset")
+    parser = argparse.ArgumentParser(prog=f"character.py {pool}", description=f"Manage {label}.")
+    parser.add_argument("action", choices=actions)
+    parser.add_argument("--char", required=True)
+    parser.add_argument("-c", "--campaign", required=True)
+    if not hero:
+        parser.add_argument("--max", type=int, help="Set the maximum when resetting Focus Points")
+    opts = parser.parse_args(args)
+    if not hero and opts.max is not None and (opts.max < 1 or opts.action != "reset"):
+        parser.error("--max must be positive and used with reset")
+
+    try:
+        path = find_character_file(opts.campaign, opts.char)
+        text = path.read_text(encoding="utf-8")
+        pattern = HERO_POINTS_RE if hero else FOCUS_POINTS_RE
+        match = pattern.search(text)
+        current = int(match[2]) if match else 0
+        if hero:
+            maximum = 3
+        elif match:
+            maximum = int(match[3])
+        else:
+            maximum = None
+        if not hero and maximum is None and opts.action == "reset" and opts.max is None:
+            parser.error("--max is required to initialize Focus Points")
+        if not hero and maximum is None and opts.action == "refocus":
+            raise ValueError("Focus Points must be initialized with reset --max N")
+
+        if opts.action == "reset":
+            if not hero and opts.max is not None:
+                maximum = opts.max
+            current = 1 if hero else maximum
+        elif opts.action in ("award", "refocus"):
+            current = min(maximum, current + 1)
+        else:
+            if current < 1:
+                raise ValueError(f"{opts.char} has no {label} to spend")
+            if opts.action == "recover":
+                hp = HP_RE.search(text)
+                if hp is None or int(hp[2]) != 0:
+                    raise ValueError("Hero Point recovery requires a character at 0 HP")
+                current = 0
+                death_saves = "**Death Saves:** Successes: 0 | Failures: 0"
+                text, count = re.subn(r"\*\*Death Saves:\*\*[^\n]*", death_saves, text, count=1)
+                if not count:
+                    text = insert_after_hp(text, f"- {death_saves}")
+            else:
+                current -= 1
+
+        if match:
+            text = pattern.sub(rf"\g<1>{current} / {maximum}", text, count=1)
+        else:
+            text = insert_after_hp(text, f"- **{label}:** {current} / {maximum}")
+        path.write_text(text, encoding="utf-8")
+    except (OSError, ValueError) as exc:
+        print(f"character.py: {exc}", file=sys.stderr)
+        sys.exit(1)
+    result = f"{opts.char}: {label} {current} / {maximum}"
+    if opts.action == "recover":
+        result += " — stable at 0 HP"
+    print(result)
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print(__doc__)
@@ -1088,7 +1174,9 @@ if __name__ == "__main__":
     cmd = sys.argv[1]
     args = sys.argv[2:]
 
-    if cmd == "calc":
+    if cmd in ("--help", "-h"):
+        print(__doc__)
+    elif cmd == "calc":
         do_calc(args)
     elif cmd == "levelup":
         do_levelup(args)
@@ -1098,6 +1186,8 @@ if __name__ == "__main__":
         do_hitdie(args)
     elif cmd == "rest":
         do_rest(args)
+    elif cmd in ("hero", "focus"):
+        do_points(cmd, args)
     else:
-        print(f"Unknown command: {cmd}. Use: calc | levelup | hitdie | rest | xp")
+        print(f"Unknown command: {cmd}. Use: calc | levelup | hitdie | rest | xp | hero | focus")
         sys.exit(1)

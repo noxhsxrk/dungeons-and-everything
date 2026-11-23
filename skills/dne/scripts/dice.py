@@ -16,7 +16,8 @@ Usage:
     CRITICAL HIT / FUMBLE are printed only with --vs attack; a death save
     reports its own nat 20 / nat 1 rules; a check or save just notes the
     natural roll. Without --vs nothing is labelled a crit.
-    --dc N adds PASS / FAIL by arithmetic (for an attack, N is the target AC).
+    --dc N adds PASS / FAIL by arithmetic and the degree of a check or save
+    (for an attack, N is the target AC).
     --player routes a physical roll to the named PC, with a marked local fallback.
     --effects adds the modifiers tracker.py holds for that entity on this
     kind of roll (e.g. Bless: +1d4 to attacks and saves). Needs --vs.
@@ -47,15 +48,6 @@ import json
 import time
 import urllib.request
 import urllib.error
-
-# Windows / non-UTF-8 consoles: the output carries arrows and dashes, which a
-# cp1252, GBK or ASCII stdout cannot encode. Same fix as the sibling scripts.
-for _stream in (sys.stdout, sys.stderr):
-    try:
-        _stream.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
-
 
 # --------------------------------------------------------------------------
 # Local-random fallback (unchanged behavior from the original dice.py)
@@ -120,6 +112,30 @@ def dc_verdict(raw: int, total: int, dc: int, vs: str = None) -> str:
         ok = total >= dc
     what = "AC" if vs == "attack" else "DC"
     return f"  → {'PASS' if ok else 'FAIL'} (vs {what} {dc})"
+
+
+def degree(raw: int, total: int, dc: int, vs: str | None = None) -> str | None:
+    """Grade a check or save against its DC."""
+    if vs not in (None, "check", "save"):
+        return None
+    ladder = ("critical failure", "failure", "success at a cost", "success", "critical success")
+    margin = total - dc
+    if margin >= 10:
+        step = 4
+    elif margin >= 0:
+        step = 3
+    elif margin >= -4:
+        step = 2
+    elif margin <= -10:
+        step = 0
+    else:
+        step = 1
+    if raw == 20:
+        # A natural 20 can improve a miss up to success at a cost.
+        step = min(step + 1, 2 if margin < 0 else 4)
+    elif raw == 1:
+        step = max(step - 1, 0)
+    return ladder[step]
 
 
 def roll_extra(notation: str) -> tuple:
@@ -331,7 +347,13 @@ def _finish(total: int, raw, silent: bool, vs, dc, extras, flagged: bool = False
     if raw is not None and not flagged:
         tail += d20_flag(raw, vs)
     if dc is not None:
-        tail += dc_verdict(raw if raw is not None else 0, total, dc, vs)
+        face = raw if raw is not None else 0
+        tail += dc_verdict(face, total, dc, vs)
+        result = degree(face, total, dc, vs)
+        if result is not None:
+            tail += f" · {result}"
+            if result == "success at a cost":
+                tail += " — the GM may grant it with a price"
     if tail.strip():
         print(tail.strip() if not tail.startswith("Total") else tail)
     return total
@@ -389,6 +411,12 @@ def _print_physical(res: dict, num_dice: int, die_size: int, modifier: int,
 # --------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    # Keep arrows and dashes printable on non-UTF-8 consoles.
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     argv = sys.argv[1:]
     if "--help" in argv or "-h" in argv:
         print(__doc__)

@@ -366,6 +366,15 @@ def _apply_rest_to_sheet(text: str, rest_type: str, hit_dice_spent: int = 0, hea
         if ds_pat.search(text):
             text = ds_pat.sub(r"\g<1>Successes: 0 | Failures: 0", text, count=1)
 
+    # Focus Points: a short rest (refocus) restores 1, a long rest all.
+    fp = re.search(r"(\*\*Focus Points:\*\*\s*)(\d+)\s*/\s*(\d+)", text)
+    if fp:
+        cur, top = int(fp.group(2)), int(fp.group(3))
+        new = top if rest_type == "long" else min(top, cur + 1)
+        if new != cur:
+            text = text[:fp.start()] + f"{fp.group(1)}{new} / {top}" + text[fp.end():]
+            changes["focus_points"] = f"{cur}->{new}/{top}"
+
     return text, changes
 
 
@@ -402,6 +411,90 @@ def apply_rest(
     return results
 
 
+# ── Treat Wounds ───────────────────────────────────────────────────────────
+
+TREAT_DICE = {"critical success": 4, "success": 2, "success at a cost": 2}
+
+
+def _calendar_minutes(campaign: str):
+    """Absolute in-world minutes from calendar.json, or None without a calendar."""
+    path = find_campaign(campaign) / "calendar.json"
+    try:
+        cal = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not cal:
+        return None
+    year, month, day = int(cal.get("year", 1)), int(cal.get("month", 1)), int(cal.get("day", 1))
+    if cal.get("gregorian"):
+        days = datetime(year, month, day).toordinal()
+    else:
+        per_year = max(1, len(cal.get("months") or [])) * int(cal.get("month_length", 30))
+        days = year * per_year + (month - 1) * int(cal.get("month_length", 30)) + day - 1
+    return days * 1440 + int(cal.get("hour", 0)) * 60 + int(cal.get("minute", 0))
+
+
+def treat_wounds(campaign: str, char_name: str, total: int, dc: int = 15, natural=None,
+                 heal=None, force: bool = False) -> dict:
+    """Medicine check outside combat: heal by degree, once per patient per in-world hour."""
+    import random
+    from dice import degree
+    cf = _find_char_file(campaign, char_name)
+    text = cf.read_text(encoding="utf-8")
+    hp_pat = re.compile(r"(\*\*HP:\*\*\s*)(\d+)\s*/\s*(\d+)")
+    hp_m = hp_pat.search(text)
+    if not hp_m:
+        raise ValueError(f"No **HP:** line on {cf.name}")
+    cur, top = int(hp_m.group(2)), int(hp_m.group(3))
+    if cur == 0:
+        raise ValueError(f"{_display_name(cf)} is at 0 HP: stabilise them first; Treat Wounds needs a living patient")
+    now = _calendar_minutes(campaign)
+    last_pat = re.compile(r"(\*\*Last Treated:\*\*\s*)(\d+)")
+    last = last_pat.search(text)
+    if now is not None and last and not force and now - int(last.group(2)) < 60:
+        raise ValueError(f"{_display_name(cf)} was treated less than an hour ago (in-world); "
+                         "wait an hour or pass --force")
+    result = degree(natural or 10, total, dc, "check")
+    if result in TREAT_DICE:
+        amount = heal if heal is not None else sum(random.randint(1, 8) for _ in range(TREAT_DICE[result]))
+    elif result == "critical failure":
+        amount = -(heal if heal is not None else random.randint(1, 8))
+    else:
+        amount = 0
+    new = max(0, min(top, cur + amount))
+    text = hp_pat.sub(rf"\g<1>{new} / {top}", text, count=1)
+    if now is not None:
+        if last:
+            text = last_pat.sub(rf"\g<1>{now}", text, count=1)
+        else:
+            line_end = text.find("\n", hp_pat.search(text).end())
+            line_end = len(text) if line_end == -1 else line_end
+            text = text[:line_end] + f"\n- **Last Treated:** {now}" + text[line_end:]
+    cf.write_text(text, encoding="utf-8")
+    rec = {"type": "treat_wounds", "character": _display_name(cf), "degree": result,
+           "hp": f"{cur}->{new}/{top}", "calendar": now is not None}
+    _append_ledger(campaign, rec)
+    return rec
+
+
+# ── Treasure (house curve) ─────────────────────────────────────────────────
+
+# House table, our own numbers: expected wealth (gp = world coin) of ONE character
+# at the start of each level 1–20. Smooth and strictly increasing.
+WEALTH_BY_LEVEL = [50, 150, 300, 550, 900, 1400, 2100, 3000, 4200, 5800,
+                   7800, 10300, 13400, 17200, 21800, 27400, 34200, 42500, 52500, 70000]
+
+
+def treasure_budget(level: int, party: int = 4, encounters: int = 7) -> dict:
+    """Treasure the party should find while at `level` (house curve)."""
+    level = max(1, min(20, int(level)))
+    here = WEALTH_BY_LEVEL[level - 1]
+    nxt = WEALTH_BY_LEVEL[level] if level < 20 else int(here * 1.3)
+    per_level_party = (nxt - here) * max(1, party)
+    return {"wealth_per_char": here, "per_level_party": per_level_party,
+            "per_encounter": max(1, round(per_level_party / max(1, encounters)))}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Deterministic D&D economy & rest recovery engine.")
     parser.add_argument("-c", "--campaign", required=True, help="Campaign name")
@@ -428,6 +521,19 @@ def main() -> None:
     p_rest.add_argument("--hit-dice", type=int, default=0, help="Hit dice spent (short rest)")
     p_rest.add_argument("--heal", type=int, default=0, help="HP healed from hit dice (short rest)")
 
+    p_tw = sub.add_parser("treat", help="Treat Wounds: Medicine check heals by degree, once per in-world hour")
+    p_tw.add_argument("--char", required=True, help="The patient")
+    p_tw.add_argument("--total", type=int, required=True, help="Medicine check total")
+    p_tw.add_argument("--dc", type=int, default=15)
+    p_tw.add_argument("--natural", type=int, help="The natural d20 (20/1 shift the outcome)")
+    p_tw.add_argument("--heal", type=int, help="Use this amount instead of rolling the d8s")
+    p_tw.add_argument("--force", action="store_true", help="Skip the once-per-hour check")
+
+    p_tr = sub.add_parser("treasure", help="House treasure budget for a level")
+    p_tr.add_argument("--level", type=int, required=True)
+    p_tr.add_argument("--party", type=int, default=4)
+    p_tr.add_argument("--encounters", type=int, default=7, help="Encounters expected this level")
+
     p_led = sub.add_parser("ledger", help="Show recent economy & rest ledger entries")
     p_led.add_argument("--limit", type=int, default=15)
 
@@ -452,6 +558,21 @@ def main() -> None:
             for r in results:
                 ch = ", ".join(f"{k}={v}" for k, v in r["changes"].items()) or "already full"
                 print(f"[{args.type.upper()} REST] {r['character']}: {ch}")
+        elif args.cmd == "treat":
+            rec = treat_wounds(args.campaign, args.char, args.total, args.dc, args.natural, args.heal, args.force)
+            print(f"[TREAT WOUNDS] {rec['character']}: {rec['degree']} — HP {rec['hp']}")
+            if rec["degree"] == "success at a cost":
+                print("  Cost: it takes an extra hour or uses extra supplies — the GM names which.")
+            if not rec["calendar"]:
+                print("  (no calendar: the once-per-hour limit is not checked)")
+        elif args.cmd == "treasure":
+            _use_world_currency(args.campaign)
+            b = treasure_budget(args.level, args.party, args.encounters)
+            money = lambda gp: format_cp(gp * 100)
+            print(f"Treasure (house table) — level {args.level}, party of {args.party}:")
+            print(f"  Typical wealth per character: {money(b['wealth_per_char'])}")
+            print(f"  Party treasure this level:    {money(b['per_level_party'])}")
+            print(f"  Per encounter (~{args.encounters}/level): {money(b['per_encounter'])}")
         elif args.cmd == "ledger":
             lp = _ledger_path(args.campaign)
             if not lp.exists():

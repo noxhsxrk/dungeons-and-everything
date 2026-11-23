@@ -11,7 +11,7 @@ Usage:
     # Conditions (5e SRD: blinded, charmed, deafened, exhausted, frightened,
     #   grappled, incapacitated, invisible, paralyzed, petrified, poisoned,
     #   prone, restrained, stunned, unconscious)
-    python3 tracker.py -c $CAMPAIGN condition add <entity> <condition>
+    python3 tracker.py -c $CAMPAIGN condition add <entity> <condition> [N] [--decay] [--penalty attack,save,check]
     python3 tracker.py -c $CAMPAIGN condition remove <entity> <condition>
     python3 tracker.py -c $CAMPAIGN condition clear <entity>
 
@@ -91,6 +91,7 @@ LASTING_CONDITIONS = {"exhausted", "petrified"}
 
 #: Roll types a tracked modifier can apply to (`effect start --on`).
 MODIFIER_TARGETS = ("attack", "save", "check", "damage")
+CONDITION_PENALTY_TARGETS = ("attack", "save", "check")
 
 #: One combat round is six seconds of in-game time.
 MINUTES_PER_ROUND = 0.1
@@ -287,7 +288,7 @@ def advance(campaign: str, minutes: float, quiet: bool = False) -> list:
 
 
 def active_modifiers(campaign: str, entity_name: str, roll_type: str) -> list:
-    """[(label, '+1d4'), ...] for the entity's effects that apply to roll_type.
+    """[(label, '+1d4'), ...] for effects and conditions that apply to roll_type.
 
     dice.py and combat.py call this for `--effects <entity>`, so a Bless that
     tracker.py holds is added to the roll instead of being remembered.
@@ -303,6 +304,10 @@ def active_modifiers(campaign: str, entity_name: str, roll_type: str) -> list:
     exhaustion = ent.get("exhaustion", int("exhausted" in ent.get("conditions", [])))
     if exhaustion > 0 and roll_type in ("attack", "save", "check", "death") and campaign_ruleset(campaign) == "2024":
         out.append((f"Exhaustion {exhaustion}", str(-2 * exhaustion)))
+    for cond, entry in ent.get("values", {}).items():
+        if roll_type in entry["penalty_on"]:
+            value = entry["value"]
+            out.append((f"{cond} {value}", f"-{value}"))
     return out
 
 
@@ -419,6 +424,20 @@ def cmd_effect(campaign: str, action: str, entity_name: str,
         all_expired = _run_down(ent, MINUTES_PER_ROUND)
         ent["effects"] += held
         kept = ent["effects"]
+        values = ent.get("values", {})
+        expired_conditions = []
+        for cond, entry in values.items():
+            if entry["decay"]:
+                entry["value"] -= 1
+                if entry["value"] == 0:
+                    expired_conditions.append(cond)
+        for cond in expired_conditions:
+            del values[cond]
+            ent["conditions"].remove(cond)
+            print(f"  - {entity_name}: {cond} removed")
+        if expired_conditions:
+            _push_conditions(entity_name, ent["conditions"])
+
         # Effects other creatures carry that last until THIS entity's turn.
         for key, other in state.items():
             if key.startswith("_") or not isinstance(other, dict) or other is ent:
@@ -450,7 +469,8 @@ def cmd_effect(campaign: str, action: str, entity_name: str,
         print(f"  error: unknown effect action '{action}' — use start / end / tick / advance")
 
 
-def cmd_condition(campaign: str, entity_name: str, action: str, condition: str = "") -> None:
+def cmd_condition(campaign: str, entity_name: str, action: str, condition: str = "",
+                  value: int | None = None, decay: bool = False, penalty_on: tuple = ()) -> None:
     state = _load(campaign)
     ent   = _entity(state, entity_name)
     conds = ent["conditions"]
@@ -479,6 +499,12 @@ def cmd_condition(campaign: str, entity_name: str, action: str, condition: str =
 
     elif action == "add":
         cond = condition.lower()
+        if value is not None:
+            entry = ent.setdefault("values", {}).setdefault(
+                cond, {"value": value, "decay": False, "penalty_on": []})
+            entry["value"] = max(entry["value"], value)
+            entry["decay"] = entry["decay"] or decay
+            entry["penalty_on"] = list(dict.fromkeys([*entry["penalty_on"], *penalty_on]))
         if cond not in conds:
             conds.append(cond)
             _push_conditions(entity_name, conds)
@@ -489,6 +515,7 @@ def cmd_condition(campaign: str, entity_name: str, action: str, condition: str =
 
     elif action == "remove":
         cond = condition.lower()
+        ent.get("values", {}).pop(cond, None)
         if cond in conds:
             conds.remove(cond)
             _push_conditions(entity_name, conds)
@@ -501,6 +528,7 @@ def cmd_condition(campaign: str, entity_name: str, action: str, condition: str =
         if conds:
             _send_announce(f"{entity_name} — all conditions cleared")
         conds.clear()
+        ent.pop("values", None)
         ent["exhaustion"] = 0
         _push_conditions(entity_name, [])
         print(f"  {entity_name}: conditions cleared")
@@ -592,9 +620,16 @@ def cmd_status(campaign: str, filter_name: str = "") -> None:
         parts = []
         if conds:
             lvl = ent.get("exhaustion", 0)
-            parts.append("Conditions: " + ", ".join(
-                f"Exhausted (level {lvl})" if c == "exhausted" and lvl else c.capitalize()
-                for c in conds))
+            values = ent.get("values", {})
+            labels = []
+            for cond in conds:
+                if cond == "exhausted" and lvl:
+                    labels.append(f"Exhausted (level {lvl})")
+                elif cond in values:
+                    labels.append(f"{cond} {values[cond]['value']}")
+                else:
+                    labels.append(cond.capitalize())
+            parts.append("Conditions: " + ", ".join(labels))
         if conc:
             parts.append(f"Concentrating: {conc}")
         if effects:
@@ -861,6 +896,7 @@ def cmd_clear(campaign: str, clear_all: bool = False) -> None:
                  or _sheet_hp(campaign, ent["name"]) == 0)   # at 0 HP before any death save
         ent["conditions"] = [c for c in ent["conditions"]
                              if c in LASTING_CONDITIONS or (c == "unconscious" and dying)]
+        ent.pop("values", None)
         ent["effects"] = [e for e in ent["effects"] if e.get("duration_type") != "rounds"]
         held = {e["name"].lower() for e in ent["effects"] if e.get("concentration")}
         if (ent.get("concentration") or "").lower() not in held:
@@ -955,6 +991,9 @@ def main() -> None:
     cond.add_argument("action", choices=["add", "remove", "clear"])
     cond.add_argument("entity")
     cond.add_argument("condition", nargs="?", default="")
+    cond.add_argument("value", nargs="?", type=int, help="Positive condition value for add")
+    cond.add_argument("--decay", action="store_true", help="Reduce value at the start of each turn")
+    cond.add_argument("--penalty", help="Penalized rolls, comma-separated: attack,save,check")
 
     # concentrate
     conc = sub.add_parser("concentrate", help="Track spell concentration")
@@ -1006,7 +1045,17 @@ def main() -> None:
     elif args.cmd == "rest":
         cmd_rest(args.campaign, args.type)
     elif args.cmd == "condition":
-        cmd_condition(args.campaign, args.entity, args.action, args.condition)
+        penalty_on = tuple(t.strip().lower() for t in args.penalty.split(",")) if args.penalty is not None else ()
+        if args.value is None and (args.decay or penalty_on):
+            cond.error("--decay and --penalty require a condition value")
+        if args.value is not None and (
+            args.value < 1 or args.action != "add" or args.condition.lower() in ("exhausted", "exhaustion")
+        ):
+            cond.error("use a positive value with condition add for conditions other than exhaustion")
+        if any(t not in CONDITION_PENALTY_TARGETS for t in penalty_on):
+            cond.error("--penalty accepts attack,save,check")
+        cmd_condition(args.campaign, args.entity, args.action, args.condition,
+                      args.value, args.decay, penalty_on)
     elif args.cmd == "concentrate":
         cmd_concentrate(args.campaign, args.entity, args.spell)
     elif args.cmd == "saves":
