@@ -21,6 +21,8 @@ sys.path.insert(0, str(SCRIPTS))
 import name_registry  # noqa: E402
 import worldkit  # noqa: E402
 
+from tests._unicode import needs_unicode_fs
+
 KIT = json.loads(FIXTURE.read_text(encoding="utf-8"))
 BASE = ["STR=15", "DEX=13", "CON=14", "INT=8", "WIS=12", "CHA=10"]
 
@@ -94,6 +96,7 @@ class NoLeakTests(_Root):
         self.assertEqual(r.returncode, 1)
         self.assertIn("No match", r.stdout)
 
+    @needs_unicode_fs
     def test_thai_origin_prints_readable_text(self):
         kit = copy.deepcopy(KIT)
         kit["races"].append({"name": "ลูกแพ", "index": "raft-born", "ability_bonuses": {"CON": 2, "WIS": 1},

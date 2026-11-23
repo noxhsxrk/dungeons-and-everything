@@ -13,6 +13,8 @@ import sys
 import tempfile
 import unittest
 
+from tests._unicode import needs_unicode_fs
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "skills" / "dne" / "scripts"
 FIXTURE = ROOT / "tests" / "fixtures" / "worldkit-eden.json"
@@ -75,6 +77,7 @@ class _Camp(unittest.TestCase):
 
 # ── economy ────────────────────────────────────────────────────────────────
 class EconomyTests(_Camp):
+    @needs_unicode_fs
     def test_sell_removes_inventory_line_only(self):
         p = self.sheet()
         r = self.run_py("economy.py", "-c", "eden", "sell", "--char", "kade", "--item", "พระเครื่อง", "--value", "5")
@@ -172,6 +175,7 @@ class CalendarTests(_Camp):
     def cal(self, *a):
         return self.run_py("calendar.py", "-c", "eden", *a)
 
+    @needs_unicode_fs
     def test_unknown_time_and_bad_date_refused(self):
         self.assertEqual(self.cal("init", "--date", "14 September 2289", "--time", "23:40x").returncode, 2)
         self.assertEqual(self.cal("init", "--date", "แรม 3 ค่ำ เดือน 12").returncode, 2)
@@ -200,6 +204,7 @@ class CalendarTests(_Camp):
 
 # ── name registry ──────────────────────────────────────────────────────────
 class RegistryMigrationTests(_Camp):
+    @needs_unicode_fs
     def test_stale_slug_keys_are_rekeyed_on_load(self):
         reg = {"entries": {"เจหงส": {"name": "เจ๊หงส์", "type": "npc", "campaigns": ["eden"],
                                      "currently_active_in": ["eden"], "first_used": "eden S0"}}}
@@ -275,6 +280,7 @@ class CombatTests(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("Usage", r.stdout)
 
+    @needs_unicode_fs
     def test_init_accepts_player_roll_and_keeps_thai_readable(self):
         r = self.combat("init", json.dumps([
             {"name": "ทองดี", "dex_mod": 1, "hp": 13, "ac": 17, "type": "pc", "roll": 18},

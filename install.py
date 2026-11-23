@@ -134,4 +134,10 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    # Non-UTF-8 consoles (LC_ALL=C, cp1252): the output carries arrows. Same fix as the skill's scripts.
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     sys.exit(main(sys.argv[1:]))

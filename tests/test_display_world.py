@@ -10,11 +10,14 @@ import tempfile
 import unittest
 import urllib.parse
 
+from tests._unicode import needs_unicode_fs
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DISPLAY = ROOT / "skills" / "dne" / "display"
 FIXTURE = ROOT / "tests" / "fixtures" / "worldkit-eden.json"
 
 
+@needs_unicode_fs
 class DisplayWorldTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

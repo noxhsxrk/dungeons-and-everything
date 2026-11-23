@@ -25,6 +25,8 @@ sys.path.insert(0, str(SCRIPTS))
 
 import worldkit  # noqa: E402
 
+from tests._unicode import needs_unicode_fs
+
 KIT = json.loads(FIXTURE.read_text(encoding="utf-8"))
 EDEN_MONSTERS = {m["name"] for m in KIT["monsters"]}
 BASE = ["STR=15", "DEX=13", "CON=14", "INT=8", "WIS=12", "CHA=10"]
@@ -253,6 +255,7 @@ class ThaiAndRulesTests(_CampaignRoot):
         p.write_text(json.dumps(kit, ensure_ascii=False), encoding="utf-8")
         return kit
 
+    @needs_unicode_fs
     def test_thai_names_are_distinct_and_resolve(self):
         def add(kit):
             kit["classes"].append({"name": "ทหารราบ", "chassis": "fighter"})

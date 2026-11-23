@@ -11,6 +11,8 @@ import sys
 import tempfile
 import unittest
 
+from tests._unicode import needs_unicode_fs
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "skills" / "dne" / "scripts"
 FIXTURE = ROOT / "tests" / "fixtures" / "worldkit-eden.json"
@@ -190,6 +192,7 @@ class RedoSafetyTests(_Camp):
 
 
 class SellQuantityFormatTests(_Camp):
+    @needs_unicode_fs
     def test_sell_from_parenthesised_quantity(self):
         p = self.camp / "characters" / "dech.md"
         p.write_text("# Dech\n## Equipment & Inventory\n**Weapons:**\n- หอก (×2)\n\n**Currency:** 5\n", encoding="utf-8")
@@ -242,6 +245,7 @@ class FinalRestCalendarTests(_Camp):
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("**HP:** 5 / 13", p.read_text(encoding="utf-8"))
 
+    @needs_unicode_fs
     def test_gregorian_with_thai_names(self):
         months = "มกราคม,กุมภาพันธ์,มีนาคม,เมษายน,พฤษภาคม,มิถุนายน,กรกฎาคม,สิงหาคม,กันยายน,ตุลาคม,พฤศจิกายน,ธันวาคม"
         days = "จันทร์,อังคาร,พุธ,พฤหัสบดี,ศุกร์,เสาร์,อาทิตย์"
@@ -277,6 +281,7 @@ class ZeroHpTrackerTests(_Camp):
 
 
 class FinalPolishTests(_Camp):
+    @needs_unicode_fs
     def test_sell_prefix_quantity_and_note(self):
         p = self.camp / "characters" / "klaa.md"
         p.write_text("# จ่ากล้า เหล็กเพชร\n## Equipment & Inventory\n**Adventuring Gear:**\n- 2× เซลล์ไฟ\n- กระสุนเรล (20 นัด)\n\n"
@@ -320,7 +325,7 @@ class RoughEdgeTests(unittest.TestCase):
 
     def test_srd_subclass_lookup(self):
         r = subprocess.run([sys.executable, str(SCRIPTS / "lookup.py"), "subclass", "champion", "--ruleset", "2014"],
-                           capture_output=True, text=True)
+                           capture_output=True, encoding="utf-8")
         self.assertIn("Improved Critical", r.stdout)
 
     def test_origin_trait_skill_auto(self):

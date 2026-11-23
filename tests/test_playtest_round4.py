@@ -12,6 +12,8 @@ import sys
 import tempfile
 import unittest
 
+from tests._unicode import needs_unicode_fs
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "skills" / "dne" / "scripts"
 FIXTURE = ROOT / "tests" / "fixtures" / "worldkit-eden.json"
@@ -279,6 +281,7 @@ class WorldkitRound4Tests(_Camp):
 
 # ── name registry ──────────────────────────────────────────────────────────
 class RegistryHonorificTests(_Camp):
+    @needs_unicode_fs
     def test_titles_do_not_hide_duplicates(self):
         self.run_py("name_registry.py", "add", "--name", "Pastor Gideon Ashby", "--type", "npc",
                     "--campaign", "eden", "--session", "0")
@@ -295,6 +298,7 @@ class RegistryHonorificTests(_Camp):
             self.assertEqual(nr.slug(titled), nr.slug(bare), titled)
         self.assertEqual(nr.slug("คุณากร"), "คุณากร")                 # sara aa after คุณ: not a title
 
+    @needs_unicode_fs
     def test_duplicate_message_names_the_existing_entry(self):
         self.run_py("name_registry.py", "add", "--name", "หมื่นเดชา", "--type", "pc",
                     "--campaign", "eden", "--session", "0")
@@ -302,6 +306,7 @@ class RegistryHonorificTests(_Camp):
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("หมื่นเดชา", r.stdout + r.stderr)
 
+    @needs_unicode_fs
     def test_accents_fold(self):
         self.run_py("name_registry.py", "add", "--name", "Inés Calloway", "--type", "npc",
                     "--campaign", "eden", "--session", "0")
