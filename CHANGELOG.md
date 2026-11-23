@@ -29,6 +29,10 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 - Any-agent docs: procedures write the data root as `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}` instead of a literal
   `~/.dne/`, and SKILL.md tells agents where campaign files live and to read rules data only via the scripts
   (found by an Antigravity CLI play-through, which otherwise ran with zero errors).
+- Final replays: 2024 fighting styles look up their 2024 (feat) text; 2024 level-up owes Expertise at rogue 6 /
+  bard 9; 2024 encounters and XP use Low/Moderate/High bands (the budget is a ceiling; no Deadly tier);
+  a character at 0 HP gets nothing from any rest; a short rest can't heal past the Hit Dice left;
+  `calendar.py init --gregorian` takes local month/day names (Thai); items written `- หอก (×2)` can be sold.
 - `redo` refuses once play has continued after an undo (it used to roll the whole later session back);
   its message now says what it re-applied. Encounters label mixed-level parties by level (L4+L3).
 - Display: Thai character names open their sheet on phone/TV; the player codex no longer shows DM prep

@@ -560,6 +560,12 @@ def _find_in_ruleset(query: str, cat_key, ruleset: str, top_n: int = 1, kind=Non
     results = _find(query, records, top_n=top_n)
     if results:
         return results, ruleset, False
+    if kind == "fighting_style" and ruleset.split("@", 1)[0] == "2024":
+        # 2024 fighting styles are feats of type "fighting-style" (their rules differ from 2014's)
+        feats = [r for r in _get_records("feats", ruleset=ruleset) if r.get("type") == "fighting-style"]
+        results = [dict(r, _cat="feats") for r in _find(query, feats, top_n=top_n)]
+        if results:
+            return results, ruleset, False
 
     # Resolve fallback for category-specific lookups
     if cat_key is not None and ruleset.split("@", 1)[0] == "2024" and cat_key in _fallback_categories(ruleset):
@@ -868,6 +874,8 @@ def main() -> None:
 
     # For item searches, resolve which sub-category each result came from
     def _resolve_cat(record, rs):
+        if record.get("_cat"):
+            return record["_cat"]
         if cat_key is not None:
             return cat_key
         for ck in ALL_CATEGORIES:

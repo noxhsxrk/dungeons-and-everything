@@ -708,6 +708,11 @@ def _class_options(kind: str) -> list:
     return [r for r in _chassis_data().get("class_options", []) if r.get("kind") == kind]
 
 
+#: Levels that grant two more Expertise picks (the 2024 data lists only the first).
+EXPERTISE_LEVELS = {"2014": {"rogue": (1, 6), "bard": (3, 10)},
+                    "2024": {"rogue": (1, 6), "bard": (2, 9)}}
+
+
 def owed_choices(cls: str, from_lvl: int, to_lvl: int, ruleset: str = "2014",
                  subclass: str = "") -> list:
     """The choices reaching `to_lvl` grants, as human-readable lines."""
@@ -723,6 +728,8 @@ def owed_choices(cls: str, from_lvl: int, to_lvl: int, ruleset: str = "2014",
             choice = str(count) if lvl == 1 else f"1 more ({count} known)"
             options = f" — {names}" if names else ""
             out.append(f"Level {lvl}: Weapon Mastery: choose {choice}{options}")
+        if lvl in EXPERTISE_LEVELS[ruleset if ruleset in EXPERTISE_LEVELS else "2014"].get(cls, ()):
+            out.append(f"Level {lvl}: Expertise: choose 2 proficient skills (or thieves' tools) to double")
         if lvl in ASI_LEVELS.get(cls, ASI_LEVELS_DEFAULT):
             if ruleset == "2024" and lvl == 19:
                 out.append(f"Level {lvl}: Epic Boon feat")

@@ -296,9 +296,13 @@ def _apply_rest_to_sheet(text: str, rest_type: str, hit_dice_spent: int = 0, hea
     hp_m = hp_pat.search(text)
     if hp_m:
         cur_hp, max_hp = int(hp_m.group(2)), int(hp_m.group(3))
-        if cur_hp == 0 and (rest_type == "long" or hit_dice_spent or heal):
-            # RAW: at 0 HP a creature can neither benefit from a long rest nor spend Hit Dice.
+        if cur_hp == 0:
+            # RAW: at 0 HP a creature gets nothing from a rest (no HP, no Hit Dice, no slots).
             return text, {"benefit": "no benefit at 0 HP"}
+        hd_now = re.search(r"\*\*Hit Dice:\*\*\s*\d+d\d+\s*\(remaining:\s*(\d+)\)", text)
+        if rest_type == "short" and hd_now and hit_dice_spent > int(hd_now.group(1)):
+            # Healing comes from the dice spent — no dice left, no healing.
+            return text, {"error": f"only {hd_now.group(1)} Hit Dice left; nothing changed"}
         if rest_type == "long":
             new_hp = max_hp
         else:
@@ -370,6 +374,8 @@ def apply_rest(
     for cf in files:
         text = cf.read_text(encoding="utf-8")
         new_text, changes = _apply_rest_to_sheet(text, rest_type, hit_dice_spent=hit_dice, heal=heal, ruleset=campaign_ruleset(campaign))
+        if "error" in changes:
+            raise ValueError(f"{cf.stem}: {changes['error']}")
         if new_text != text:
             cf.write_text(new_text, encoding="utf-8")
         cname = cf.stem

@@ -196,3 +196,58 @@ class SellQuantityFormatTests(_Camp):
         r = self.run_py("economy.py", "-c", "eden", "sell", "--char", "dech", "--item", "หอก", "--value", "1")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("- หอก ×1", p.read_text(encoding="utf-8"))
+
+
+class Final2024Tests(_Camp):
+    ruleset = "2024"
+
+    def test_2024_fighting_style_text(self):
+        kit = json.loads((self.camp / "worldkit.json").read_text(encoding="utf-8"))
+        kit["_meta"]["base_ruleset"] = "2024"
+        (self.camp / "worldkit.json").write_text(json.dumps(kit), encoding="utf-8")
+        r = self.run_py("lookup.py", "fighting-style", "great weapon fighting", "--campaign", "eden")
+        self.assertIn("as a 3", r.stdout)               # 2024 rule, not the 2014 reroll
+
+    def test_2024_expertise_at_rogue_6(self):
+        r = self.run_py("character.py", "levelup", "-c", "eden", "--class", "Infiltrator", "--from", "5", "--con-mod", "1")
+        self.assertIn("Expertise", r.stdout)
+
+    def test_2024_bands(self):
+        for name, lvl in (("a", 3), ("b", 2)):
+            (self.camp / "characters" / f"{name}.md").write_text(f"# {name}\n- **Level:** {lvl}\n", encoding="utf-8")
+        r = self.run_py("encounter_gen.py", "-c", "eden", "--biome", "surface", "--difficulty", "deadly", "--seed", "1")
+        self.assertIn("2024 has no Deadly tier", r.stdout)
+        self.assertNotIn("TRIVIAL", r.stdout)
+        r = self.run_py("xp.py", "calc", "-c", "eden", "--level", "3", "--players", "2", "--difficulty", "deadly")
+        self.assertIn("HIGH", r.stdout)
+
+
+class FinalRestCalendarTests(_Camp):
+    def sheet(self, hp, rem, cls="Hexslinger (warlock chassis)"):
+        p = self.camp / "characters" / "mae.md"
+        p.write_text(f"# Mae\n- **Class:** {cls} | **Level:** 1\n## Combat Stats\n- **HP:** {hp} / 13 | **Temp HP:** 0\n"
+                     f"- **Hit Dice:** 1d8 (remaining: {rem})\n## Spell Slots\n| Level | Total | Used |\n|---|---|---|\n"
+                     "| 1st | 1 | 1 |\n## Equipment & Inventory\n**Currency:** 5\n", encoding="utf-8")
+        return p
+
+    def test_zero_hp_short_rest_gives_nothing(self):
+        p = self.sheet(0, 1)
+        self.run_py("economy.py", "-c", "eden", "rest", "--char", "mae", "--type", "short")
+        self.assertIn("| 1st | 1 | 1 |", p.read_text(encoding="utf-8"))     # pact slot NOT restored
+
+    def test_no_dice_left_no_healing(self):
+        p = self.sheet(5, 0, cls="Soldier (fighter chassis)")
+        r = self.run_py("economy.py", "-c", "eden", "rest", "--char", "mae", "--type", "short",
+                        "--hit-dice", "1", "--heal", "9")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("**HP:** 5 / 13", p.read_text(encoding="utf-8"))
+
+    def test_gregorian_with_thai_names(self):
+        months = "มกราคม,กุมภาพันธ์,มีนาคม,เมษายน,พฤษภาคม,มิถุนายน,กรกฎาคม,สิงหาคม,กันยายน,ตุลาคม,พฤศจิกายน,ธันวาคม"
+        days = "จันทร์,อังคาร,พุธ,พฤหัสบดี,ศุกร์,เสาร์,อาทิตย์"
+        r = self.run_py("calendar.py", "-c", "eden", "init", "--gregorian", "--date", "14 พฤศจิกายน 2077",
+                        "--months", months, "--day-names", days)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("อาทิตย์, 14 พฤศจิกายน 2077", r.stdout)
+        r = self.run_py("calendar.py", "-c", "eden", "advance", "17", "days")
+        self.assertIn("1 ธันวาคม 2077", r.stdout)

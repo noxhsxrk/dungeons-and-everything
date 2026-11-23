@@ -25,7 +25,7 @@ if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
 from paths import CHARACTER_LEVEL_RE, campaign_ruleset, srd_path, find_campaign
-from xp import DIFF_IDX, XP_BUDGETS_2024, party_xp_thresholds, classify_difficulty, _monster_multiplier as _encounter_multiplier
+from xp import DIFF_IDX, XP_BUDGETS_2024, band_name, party_xp_thresholds, classify_difficulty, _monster_multiplier as _encounter_multiplier
 import worldkit
 
 
@@ -209,7 +209,8 @@ def generate_encounter(
         "party_size": size,
         "party_levels": sorted(levels, reverse=True) if levels else [lvl] * size,
         "difficulty": difficulty.lower(),
-        "actual_difficulty": classify_difficulty(adj_xp, thresholds),
+        "ruleset": ruleset,
+        "actual_difficulty": classify_difficulty(adj_xp, thresholds, ruleset),
         "xp_budget": budget,
         "raw_xp": raw_xp,
         "adjusted_xp": adj_xp,
@@ -224,7 +225,7 @@ def main() -> None:
     parser.add_argument("-c", "--campaign")
     parser.add_argument("--party-level", type=int, default=None)
     parser.add_argument("--party-size", type=int, default=None)
-    parser.add_argument("--difficulty", choices=["easy", "medium", "hard", "deadly"], default="medium")
+    parser.add_argument("--difficulty", choices=["easy", "medium", "hard", "deadly", "low", "moderate", "high"], default="medium")
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--ruleset", choices=["2014", "2024"])
     parser.add_argument("--json", action="store_true")
@@ -264,8 +265,11 @@ def main() -> None:
         actual = enc['actual_difficulty']
         print(f"Encounter [{enc['biome'].title()} · {actual.upper()}] "
               f"Party: {'+'.join(f'L{l}' for l in enc['party_levels']) if len(set(enc['party_levels'])) > 1 else str(enc['party_size']) + '×L' + str(enc['party_level'])} (budget {enc['xp_budget']} XP → adj {enc['adjusted_xp']} XP)")
-        if enc['adjusted_xp'] < enc['xp_budget']:
-            print(f"  under budget: {enc['adjusted_xp']} XP falls below the {enc['difficulty']} threshold ({enc['xp_budget']} XP)")
+        wanted = band_name(enc['difficulty'], enc['ruleset'])
+        if enc['ruleset'] == "2024" and enc['difficulty'] == "deadly":
+            print("  note: 2024 has no Deadly tier — built as High")
+        if actual != wanted:
+            print(f"  under budget: {enc['adjusted_xp']} XP is {actual.upper()}, below the {wanted} budget ({enc['xp_budget']} XP)")
         for m in enc["monsters"]:
             print(f"  {m['count']}× {m['name']} (CR {worldkit.format_cr(m['cr'])}, AC {m['ac']}, HP {m['hp']}, role={m['tactical_role']})")
     except ValueError as e:

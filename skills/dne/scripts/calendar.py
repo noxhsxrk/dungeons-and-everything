@@ -129,7 +129,7 @@ def _format_date(cal: dict) -> str:
     month_str = months[month - 1] if months and 1 <= month <= len(months) else f"Month {month}"
     day_str   = f"Day {day}"
     if cal.get("gregorian"):
-        day_str = WEEKDAYS[date(year, month, day).weekday()]
+        day_str = (days if len(days) == 7 else WEEKDAYS)[date(year, month, day).weekday()]
     elif days:
         ordinal = ((year - 1) * (len(months) or 12) + month - 1) * _month_length(cal) + day - 1
         day_str = days[ordinal % len(days)]
@@ -209,9 +209,19 @@ def _time_hour(label: str) -> int:
 
 def cmd_init(campaign: str, args) -> None:
     gregorian = getattr(args, "gregorian", False)
-    cal = {"months": GREGORIAN_MONTHS[:] if gregorian else [m.strip() for m in args.months.split(",") if m.strip()],
+    months = [m.strip() for m in (args.months or "").split(",") if m.strip()]
+    day_names = [d.strip() for d in (args.day_names or "").split(",") if d.strip()]
+    if gregorian:
+        # Real calendar, local names allowed: 12 month names, 7 day names starting Monday.
+        if months and len(months) != 12:
+            raise ValueError("--gregorian with --months needs exactly 12 month names")
+        if day_names and len(day_names) != 7:
+            raise ValueError("--gregorian with --day-names needs exactly 7 names, starting with Monday")
+        months = months or GREGORIAN_MONTHS[:]
+        day_names = day_names or WEEKDAYS[:]
+    cal = {"months": months,
            "month_length": int(args.month_length or 30),
-           "day_names": WEEKDAYS[:] if gregorian else [d.strip() for d in args.day_names.split(",") if d.strip()] or WEEKDAYS[:],
+           "day_names": day_names or WEEKDAYS[:],
            "hour": _time_hour(args.time or "morning"), "events": []}
     if cal["month_length"] < 1:
         raise ValueError("Month length must be positive")

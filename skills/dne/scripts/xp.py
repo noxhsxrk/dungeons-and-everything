@@ -92,7 +92,17 @@ LEVEL_XP: dict[int, int] = {
     16: 195000, 17: 225000,18: 265000,19: 305000, 20: 355000,
 }
 
-DIFF_IDX: dict[str, int] = {"easy": 0, "medium": 1, "hard": 2, "deadly": 3}
+DIFF_IDX: dict[str, int] = {"easy": 0, "medium": 1, "hard": 2, "deadly": 3,
+                            "low": 0, "moderate": 1, "high": 2}   # 2024 names
+#: 2024 bands. The 2024 budget is a ceiling: an encounter is the lowest band whose budget it fits in.
+BANDS_2024 = ("low", "moderate", "high")
+
+
+def band_name(difficulty: str, ruleset: str = "2014") -> str:
+    """The difficulty name the ruleset uses (2024: Low/Moderate/High; there is no Deadly)."""
+    if ruleset == "2024":
+        return BANDS_2024[min(DIFF_IDX.get(difficulty.lower(), 1), 2)]
+    return difficulty.lower()
 DIFF_LABELS: dict[int, str] = {0: "Easy", 1: "Medium", 2: "Hard", 3: "Deadly"}
 
 from paths import CHARACTER_LEVEL_RE, find_campaign as _find_campaign, campaigns_dir as _campaigns_dir, display_dir as _display_dir, campaign_ruleset
@@ -192,8 +202,10 @@ def party_xp_thresholds(levels, ruleset: str = "2014") -> tuple:
     return tuple(map(sum, zip(*(_thresholds(level, ruleset) for level in levels))))
 
 
-def classify_difficulty(adjusted_xp: int, thresholds: tuple) -> str:
-    tiers = zip(DIFF_IDX, thresholds)
+def classify_difficulty(adjusted_xp: int, thresholds: tuple, ruleset: str = "2014") -> str:
+    if ruleset == "2024":
+        return next((name for name, limit in zip(BANDS_2024, thresholds) if adjusted_xp <= limit), "beyond high")
+    tiers = zip(("easy", "medium", "hard", "deadly"), thresholds)
     return next((name for name, limit in reversed(list(tiers)) if adjusted_xp >= limit), "trivial")
 
 
@@ -285,7 +297,7 @@ def cmd_calc(args: argparse.Namespace) -> None:
         raw_xp, mult, adj_xp = _calc_monster_xp(monsters, players, ruleset)
         total_count = sum(c for _, _, c in monsters)
         per_player  = raw_xp // players
-        diff        = classify_difficulty(adj_xp, party_xp_thresholds([level] * players, ruleset))
+        diff        = classify_difficulty(adj_xp, party_xp_thresholds([level] * players, ruleset), ruleset)
 
         print(f"\n  Combat encounter — CR-based calculation")
         for name, cr, count in monsters:
@@ -300,7 +312,7 @@ def cmd_calc(args: argparse.Namespace) -> None:
     elif args.difficulty:
         per_player = _xp_per_player(args.difficulty, level, ruleset)
         enc_type   = (args.type or "combat").upper()
-        print(f"\n  {args.difficulty.upper()} {enc_type} — Level {level} party of {players}")
+        print(f"\n  {band_name(args.difficulty, ruleset).upper()} {enc_type} — Level {level} party of {players}")
         print(f"  Per player:  {per_player:,} XP")
         print(f"  Total:       {per_player * players:,} XP")
 
@@ -444,7 +456,7 @@ def cmd_award(args: argparse.Namespace) -> None:
         total_count = sum(c for _, _, c in monsters)
         per_player  = raw_xp // players
         awards = [per_player] * players
-        diff = classify_difficulty(adj_xp, party_xp_thresholds((c["level"] for c in chars), ruleset))
+        diff = classify_difficulty(adj_xp, party_xp_thresholds((c["level"] for c in chars), ruleset), ruleset)
 
         print(f"\n  Combat — CR-based  [{total_count} monsters, ×{mult} multiplier]")
         for name, cr, count in monsters:
@@ -456,7 +468,7 @@ def cmd_award(args: argparse.Namespace) -> None:
         if not args.difficulty:
             print("Provide --difficulty or --monsters.", file=sys.stderr)
             sys.exit(1)
-        diff       = args.difficulty.lower()
+        diff       = band_name(args.difficulty, ruleset)
         awards = [_xp_per_player(diff, c["level"], ruleset) for c in chars]
         type_label = f"  [{enc_type}]" if enc_type == "noncombat" else ""
         print(f"\n  {diff.upper()} {enc_type.upper()}{type_label} — Party of {players}")
@@ -508,7 +520,7 @@ def main() -> None:
                         help="Average party level (default: 1)")
     calc_p.add_argument("--players",    type=int, default=4, metavar="N",
                         help="Number of players (default: 4)")
-    calc_p.add_argument("--difficulty", choices=["easy", "medium", "hard", "deadly"],
+    calc_p.add_argument("--difficulty", choices=["easy", "medium", "hard", "deadly", "low", "moderate", "high"],
                         help="Encounter difficulty tier")
     calc_p.add_argument("--type",       choices=["combat", "noncombat"], default="combat",
                         help="Encounter type (default: combat)")
@@ -523,7 +535,7 @@ def main() -> None:
                          help="Campaign folder name (e.g. my-campaign)")
     award_p.add_argument("--characters", required=True, metavar="NAMES",
                          help="Comma-separated character names matching campaign files")
-    award_p.add_argument("--difficulty", choices=["easy", "medium", "hard", "deadly"],
+    award_p.add_argument("--difficulty", choices=["easy", "medium", "hard", "deadly", "low", "moderate", "high"],
                          help="Encounter difficulty tier (required unless --monsters provided)")
     award_p.add_argument("--type",       choices=["combat", "noncombat"],
                          help="Encounter type (default: combat if --monsters, else noncombat)")
