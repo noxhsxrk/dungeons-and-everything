@@ -301,7 +301,7 @@ def active_modifiers(campaign: str, entity_name: str, roll_type: str) -> list:
         if mod and roll_type in mod.get("applies", []):
             out.append((e["name"], mod["value"]))
     exhaustion = ent.get("exhaustion", int("exhausted" in ent.get("conditions", [])))
-    if exhaustion > 0 and roll_type in ("attack", "save", "check") and campaign_ruleset(campaign) == "2024":
+    if exhaustion > 0 and roll_type in ("attack", "save", "check", "death") and campaign_ruleset(campaign) == "2024":
         out.append((f"Exhaustion {exhaustion}", str(-2 * exhaustion)))
     return out
 
@@ -818,11 +818,23 @@ def _is_dead(ent: dict) -> bool:
     return ent.get("death_saves", {}).get("failures", 0) >= 3 or ent.get("exhaustion", 0) >= 6
 
 
-def _is_down(ent: dict) -> bool:
-    """At 0 HP as far as the tracker can tell: dying, stable, or unconscious."""
+def _sheet_hp(campaign: str, name: str):
+    """Current HP from the character sheet, or None when there is no sheet."""
+    try:
+        from paths import find_character_file
+        text = find_character_file(campaign, name).read_text(encoding="utf-8")
+    except (OSError, ValueError, FileNotFoundError):
+        return None
+    m = re.search(r"\*\*HP:\*\*\s*(\d+)\s*/", text)
+    return int(m.group(1)) if m else None
+
+
+def _is_down(ent: dict, campaign: str | None = None) -> bool:
+    """At 0 HP: dying, stable, unconscious — or a character sheet that reads 0 HP."""
     s = ent.get("death_saves", {})
-    return (_is_dead(ent) or s.get("stable") or s.get("successes", 0) or s.get("failures", 0)
-            or "unconscious" in ent.get("conditions", []))
+    return bool(_is_dead(ent) or s.get("stable") or s.get("successes", 0) or s.get("failures", 0)
+                or "unconscious" in ent.get("conditions", [])
+                or (campaign and _sheet_hp(campaign, ent["name"]) == 0))
 
 
 def cmd_clear(campaign: str, clear_all: bool = False) -> None:
@@ -845,7 +857,8 @@ def cmd_clear(campaign: str, clear_all: bool = False) -> None:
             continue
         _entity(state, ent["name"])
         saves = ent.get("death_saves", {})
-        dying = any(saves.get(k) for k in ("successes", "failures", "stable"))
+        dying = (any(saves.get(k) for k in ("successes", "failures", "stable"))
+                 or _sheet_hp(campaign, ent["name"]) == 0)   # at 0 HP before any death save
         ent["conditions"] = [c for c in ent["conditions"]
                              if c in LASTING_CONDITIONS or (c == "unconscious" and dying)]
         ent["effects"] = [e for e in ent["effects"] if e.get("duration_type") != "rounds"]
@@ -894,7 +907,7 @@ def cmd_rest(campaign: str, rest_type: str, advance_time: bool = True) -> None:
             print(f"  {name}: concentration on {spell} ends")
         if _is_dead(ent):
             continue
-        if _is_down(ent):
+        if _is_down(ent, campaign):
             print(f"  {name}: at 0 HP — no long-rest benefit until they have at least 1 HP")
             continue
         if ent.get("exhaustion", 0) > 0:

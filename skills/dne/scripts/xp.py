@@ -311,6 +311,8 @@ def cmd_calc(args: argparse.Namespace) -> None:
 
     elif args.difficulty:
         per_player = _xp_per_player(args.difficulty, level, ruleset)
+        if ruleset == "2024" and args.difficulty == "deadly":
+            print("  note: 2024 has no Deadly tier — rated as High")
         enc_type   = (args.type or "combat").upper()
         print(f"\n  {band_name(args.difficulty, ruleset).upper()} {enc_type} — Level {level} party of {players}")
         print(f"  Per player:  {per_player:,} XP")
@@ -469,6 +471,8 @@ def cmd_award(args: argparse.Namespace) -> None:
             print("Provide --difficulty or --monsters.", file=sys.stderr)
             sys.exit(1)
         diff       = band_name(args.difficulty, ruleset)
+        if ruleset == "2024" and args.difficulty == "deadly":
+            print("  note: 2024 has no Deadly tier — rated as High")
         awards = [_xp_per_player(diff, c["level"], ruleset) for c in chars]
         type_label = f"  [{enc_type}]" if enc_type == "noncombat" else ""
         print(f"\n  {diff.upper()} {enc_type.upper()}{type_label} — Party of {players}")

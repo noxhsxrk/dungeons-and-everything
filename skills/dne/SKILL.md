@@ -493,7 +493,7 @@ player whether it should become a companion — unless `companion_agents: off` i
 
 ## XP Awards
 
-**Never calculate XP in context.** Use `scripts/xp.py` — it holds all tables and handles character file updates and display pushes. The DM's only decision is the difficulty tier and encounter type.
+**Never calculate XP in context.** Use `scripts/xp.py` — it holds all tables and handles character file updates and display pushes. The DM's only decision is the difficulty tier and encounter type. Tiers follow the campaign's ruleset: 2014 Easy / Medium / Hard / Deadly with the group multiplier; 2024 Low / Moderate / High, no multiplier (`easy`/`medium`/`hard` map to them, `deadly` becomes High). Always pass the campaign (`-c`/`--campaign`) so the right table is used.
 
 ### When to award XP
 

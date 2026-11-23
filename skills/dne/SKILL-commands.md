@@ -586,7 +586,7 @@ Default to `Step by step` if the question is dismissed. Either path lands in the
 
 1. Ask: name, **species** (2024) or **race** (2014) — called *origin* in World Kit campaigns — class, background.
 
-   **Name uniqueness check:** run `python3 ${CLAUDE_SKILL_DIR}/scripts/name_registry.py check "<name>"`. Exit 1 (duplicate) → surface prior use; player confirms or changes. Record after step 9.
+   **Name uniqueness check:** run `python3 ${CLAUDE_SKILL_DIR}/scripts/name_registry.py check "<name>"`. Exit 1 (duplicate) → surface prior use; player confirms or changes. After step 9 record it: `name_registry.py add --name "<name>" --type pc --campaign <campaign> --session <N>`.
 
    **2014 (race-as-ASI):** the species/race grants ability score increases (e.g. Wood Elf: +2 DEX, +1 WIS). Apply to abilities at step 4.
    **2024 (background-as-ASI):** the **background** grants the +2/+1 ability score increase OR three +1s, AND a free **Origin Feat** (SRD 5.2: Alert, Magic Initiate, Savage Attacker, Skilled — `lookup.py feat <name> --ruleset 2024`). Species grants traits but no ability scores. Players in 2024 must pick background BEFORE rolling abilities — the background's ASI pattern dictates which scores benefit.

@@ -97,7 +97,7 @@
 **Armour:**
 -
 
-**Adventuring Gear:**
+**Adventuring Gear:** *(one item per bullet; quantities as `- Item ×2` — economy.py reads this list)*
 -
 
 **Currency:** 0   *(classic: `0gp 0sp 0cp`; World Kit: `0 <currency abbreviation>`)*

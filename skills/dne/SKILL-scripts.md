@@ -68,8 +68,9 @@ Awards XP for combat and qualifying non-combat encounters. Reads character files
 
 ```bash
 # Preview — no files modified:
-python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py calc --level 3 --players 2 --difficulty hard --type combat
-python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py calc --level 3 --players 2 --monsters "goblin:1/4:3,hobgoblin:1:1"
+python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py calc -c <campaign> --level 3 --players 2 --difficulty hard --type combat
+python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py calc -c <campaign> --level 3 --players 2 --monsters "goblin:1/4:3,hobgoblin:1:1"
+# (-c reads the campaign's ruleset; without it, or --ruleset 2014|2024, the preview uses 2014)
 
 # Award after a combat encounter — difficulty-rated (use when full monster list is unavailable):
 python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py award \
@@ -86,11 +87,11 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py award \
   --note "guild informant interrogation"
 ```
 
-**Difficulty tiers:** `easy` `medium` `hard` `deadly`
+**Difficulty tiers:** 2014 `easy` `medium` `hard` `deadly`; 2024 `low` `moderate` `high` (`easy`/`medium`/`hard` are accepted and mapped; `deadly` becomes `high` with a note)
 **Encounter types:** `combat` `noncombat` (both use the same difficulty threshold table)
 **Monster CR formats:** `1/4`, `0.25`, `1/2`, `0.5`, `1/8`, `0.125`, or integer (`1`, `5`, `10`)
 **Monster count:** omit for 1 (e.g. `"dragon:10"`); explicit for groups (e.g. `"goblin:1/4:3"`)
-**Monster multiplier** (applied automatically): ×1 (1), ×1.5 (2), ×2 (3–6), ×2.5 (7–10), ×3 (11–14), ×4 (15+) — rates difficulty only (each PC is awarded raw monster XP ÷ party size). Parties of fewer than 3 use the next step up, 6+ the next step down (DMG).
+**Monster multiplier** (applied automatically): ×1 (1), ×1.5 (2), ×2 (3–6), ×2.5 (7–10), ×3 (11–14), ×4 (15+) — rates difficulty only (each PC is awarded raw monster XP ÷ party size). Parties of fewer than 3 use the next step up, 6+ the next step down (DMG). **2024 has no multiplier** — the per-character budget is a ceiling.
 
 `award` updates the character file XP field, flags LEVEL UP PENDING if a threshold is crossed, and pushes XP to the display via `push_stats.py`. The `--note` label prints to terminal only — not stored.
 

@@ -251,3 +251,26 @@ class FinalRestCalendarTests(_Camp):
         self.assertIn("อาทิตย์, 14 พฤศจิกายน 2077", r.stdout)
         r = self.run_py("calendar.py", "-c", "eden", "advance", "17", "days")
         self.assertIn("1 ธันวาคม 2077", r.stdout)
+
+
+class ZeroHpTrackerTests(_Camp):
+    ruleset = "2024"
+
+    def test_long_rest_keeps_exhaustion_at_zero_hp_and_death_saves_take_penalty(self):
+        (self.camp / "characters" / "tamsin-vey.md").write_text(
+            "# Tamsin Vey\n## Combat Stats\n- **HP:** 0 / 17 | **Temp HP:** 0\n", encoding="utf-8")
+        t = lambda *a: self.run_py("tracker.py", "-c", "eden", *a)
+        t("condition", "add", "Tamsin Vey", "exhausted")
+        t("condition", "add", "Tamsin Vey", "unconscious")
+        t("clear")
+        self.assertIn("nconscious", t("status").stdout)                  # still down after combat
+        self.run_py("calendar.py", "-c", "eden", "init", "--date", "1 Alpha 1", "--months", "Alpha")
+        r = self.run_py("calendar.py", "-c", "eden", "rest", "long")
+        self.assertNotIn("exhaustion 1 → 0", r.stdout)
+        import tracker
+        os.environ["DNE_CAMPAIGN_ROOT"] = str(self.root)
+        try:
+            mods = tracker.active_modifiers("eden", "Tamsin Vey", "death")
+        finally:
+            os.environ.pop("DNE_CAMPAIGN_ROOT", None)
+        self.assertIn(("Exhaustion 1", "-2"), mods)
