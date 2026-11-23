@@ -189,6 +189,16 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/character.py xp --level 1 --gained 150
 
 ---
 
+## World version — `scripts/campaign_version.py`
+
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_version.py -c $CAMP stamp            # /dne new: record the engine version
+python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_version.py -c $CAMP check            # /dne load: up to date, or UPDATE AVAILABLE + what's new
+python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_version.py -c $CAMP audit            # checklist to bring the whole world up to the engine
+python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_version.py -c $CAMP mark [--declined] # after updating (or the players said no)
+```
+Stored in `<campaign>/dne-version.json` (created_with, world_version, declined, history). Procedure: SKILL-commands.md → "Update a world to the engine version".
+
 ## Table Rules Scripts — optional layers (`SKILL-table-rules.md`)
 
 ```bash
@@ -219,6 +229,24 @@ python3 $S/character.py focus reset --max 2 --char "Mira" -c $CAMP    # then: us
 
 # Valued conditions: a number that comes off d20 rolls and fades each turn
 python3 $S/tracker.py -c $CAMP condition add "Mira" static 2 --decay --penalty check,save
+
+# Faction turns (one per in-world week; safe at every /dne load: it says when none is due)
+python3 $S/faction.py -c $CAMP add "Jade Guild" --force 2 --wealth 4 --influence 3 \
+    --goal "Take the Khlong Toei docks" --clock 6 --goal-stat wealth --rivals "Iron Syndicate"
+python3 $S/faction.py -c $CAMP turn                      # prints lines for ## Faction Moves
+python3 $S/faction.py -c $CAMP adjust "Jade Guild" --stability -2 --progress -1   # the party's doing
+python3 $S/faction.py -c $CAMP set "Jade Guild" --goal "…" --clock 4 --goal-stat influence
+python3 $S/faction.py -c $CAMP act "Iron Syndicate" attack --target "Jade Guild"
+python3 $S/faction.py -c $CAMP status
+
+# Morale and Instinct for enemies (World Kit monsters may carry morale / instinct / instincts)
+python3 $S/tracker.py -c $CAMP enemy set "Scav Raider" --kit "Scav Raider"      # or --morale-score 7 --instinct 4
+python3 $S/tracker.py -c $CAMP enemy morale "Scav Raider" [--mod 1]             # 2d6 above morale = BREAKS
+python3 $S/tracker.py -c $CAMP enemy instinct "Scav Raider"                     # d10 ≤ instinct = acts on instinct
+
+# Place tags: a ready seed for a town, district, ruin or court (World Kit place_tags first)
+python3 $S/tags.py -c $CAMP roll [--n 2] [--all]
+python3 $S/tags.py -c $CAMP list | show "Old Debt"
 ```
 
 Buying a World Kit item marked `rare` or `unique` needs `economy.py buy … --force` (the GM decided it's available). `economy.py rest` restores 1 Focus Point on a short rest and all on a long rest.
@@ -774,7 +802,12 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c <camp> enemy set "Goblin Shama
 python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c <camp> enemy spend "Goblin Shaman" --slot 1
 python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c <camp> enemy recharge "Young Dragon" --ability "Fire Breath"
 python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c <camp> enemy advise "Goblin Shaman" --hp-pct 40 --distance-ft 25
+python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c <camp> enemy morale "Goblin Shaman" [--mod N]
+python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c <camp> enemy instinct "Goblin Shaman"
 ```
+`--morale 30` is the HP % at which `advise` says a morale check is due; `--morale-score` (2–12) and
+`--instinct` (0–10) are what `enemy morale` / `enemy instinct` roll against (SKILL-table-rules.md §10).
+`set` changes only the options you pass.
 
 ### Biome-Aware CR Encounter Generator — `scripts/encounter_gen.py`
 ```bash

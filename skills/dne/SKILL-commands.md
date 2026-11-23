@@ -27,6 +27,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
    If 2024 was chosen: verify the dataset exists with `ls ${CLAUDE_SKILL_DIR}/data/dnd5e_srd_2024.json`. If missing, offer to run `python3 ${CLAUDE_SKILL_DIR}/scripts/build_srd.py --ruleset 2024` (one-time, ~3 min, needs network). Until it exists, `lookup.py` uses the 2014 SRD automatically (it prints a one-line notice) — World Kit content is unaffected.
 3. `mkdir -p "${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/characters"`
 4. Copy templates from `${CLAUDE_SKILL_DIR}/templates/` — state.md, world.md, npcs.md, npcs-full.md, session-log.md (worldkit.json is written in step 7) — and replace every `<campaign-name>`/`<date>` placeholder in them. The state.md header keeps the `**Ruleset:**` field from step 2 and the Session Flags from step 1. Template wording is fantasy-neutral but generic — rewrite any placeholder that doesn't fit the world once step 6 has defined it.
+   Then stamp the engine version on the new world: `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_version.py -c <campaign> stamp` (writes `dne-version.json`, so later versions know what this world was built with).
 5. Ask: **party size** and **starting level**. Write them to the state.md header (`**Party size:**`, `**Starting level:**`).
 6. **World Wizard — the players define the world.** Ask one open question (prose, not a menu): *"What world are we playing in? Describe it however you like — genre, era, what happened to it, who the players are, how it starts. Or say **classic fantasy** for traditional D&D."* Accept anything from one word (*"cyberpunk"*) to a full setting document. If `[theme]` was supplied, treat it as the start of this description and ask only what's missing.
 
@@ -34,7 +35,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
    - **Genre tags:** free-form, 1–4 (e.g. `sci-fi · post-apocalyptic · survival · mystery`)
    - **Tone:** `grimdark / dark / heroic / horror / political / swashbuckling / cosmic / noir / hopeful` (or the player's own word) — random: d10, 1–9 in that order, 10 = re-roll
    - **Power level:** how common and strong the world's supernatural or advanced powers are (magic, tech, psionics, mutation) — `none / low / medium / high` (random: d4 in that order). It shapes the kit in step 7: `none` → no casting chassis at all; `low` → at most 2 casting classes, spells to level 3; `medium` → up to half the classes cast; `high` → most classes may cast.
-   - **Danger level:** `lethal / gritty / standard / heroic` (random: d4 in that order). Also set the matching Table Dial `difficulty` in Session Flags: lethal → `deadly`, gritty → `hard`, standard → `standard`, heroic → `easy`. Mention the other Table Dials (`spotlight`, `pacing`, and the table rules `success_at_cost`, `degrees`, `hero_points` — SKILL.md, SKILL-table-rules.md) in the same message; leave them at their defaults unless the player picks.
+   - **Danger level:** `lethal / gritty / standard / heroic` (random: d4 in that order). Also set the matching Table Dial `difficulty` in Session Flags: lethal → `deadly`, gritty → `hard`, standard → `standard`, heroic → `easy`. Then ask about **content** in the same message: *"How hard should it hit? `standard`, `18` (everyone at the table is 18+) or `20` (everyone is 20+). Anything that must never appear (lines), or that should happen only off-screen (veils)?"* Choosing 18 or 20 is the players confirming their age; if anyone at the table is younger, use `standard`. Ask about **romance** in the same breath: *"Romance and sex in the story: `off`, `fade` (it happens, the scene cuts away) or `open` (intimate scenes on screen, 18+ only)?"* Write `content:`, `romance:`, `lines:` and `veils:` to Session Flags (SKILL.md → Table Dials). Mention the other Table Dials (`spotlight`, `pacing`, and the table rules `success_at_cost`, `degrees`, `hero_points` — SKILL.md, SKILL-table-rules.md) in the same message; leave them at their defaults unless the player picks.
 
    **Classic fantasy** → skip step 7; the bundled SRD is the world's content (no `worldkit.json`). Continue at step 7b.
 
@@ -52,7 +53,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
    - **`equipment`** — signature weapons (5e damage dice/properties; in 2024 a `mastery` property from `lookup.py mastery <name> --ruleset 2024`), 3–4 armors with valid `ac` strings, key gear and consumables, priced in the world currency. 1 world coin = 1 gp mechanically, so set prices on the 5e scale (a revolver ≈ a crossbow ≈ 25–50, plate-grade armor ≈ 1,500) and starting funds per the chassis's 5e starting gold; in a realistic modern world, say in the lexicon what one coin is ("1 = about $10"). A shield is an armor record with `ac: "AC +2"` and is worn with `calc --shield`.
    - **`monsters`** — 8–15 threats spanning CR 1/8 → the campaign's endgame CR, full 5e stat blocks (`cr`, `xp` matching the CR, `hp`, `hp_dice`, `ac`, six scores, `speed`, `type`, `description` with actions), `biomes` (the world's own location types, e.g. `tunnels`, `ruins`, `surface`) and a tactical `role` (`brute|skirmisher|ranged|caster|support`). Give every biome a spread of CRs (at least one low, one mid) so `encounter_gen.py` can fill a budget there. The player's named enemies are mandatory entries; scale "unbeatable" ones (a Titan) as set-piece CRs the party should avoid, not fight.
 
-   - **Table-rules fields** (optional; `SKILL-table-rules.md` §8) — `_meta.tech_level` (0–12) and `status_levels` (social ranks, lowest first); 1–3 playbook `moves` per class in the world's voice (`{name, level, trigger, description}`); a `template` quick build on each class (`{abilities, skills, equipment}`); 4–8 `disadvantages` (mix of `disadvantage` and `quirk`) players can take; world `conditions` the setting needs (valued ones with `valued`, `decay`, `penalty_on`); `rarity`/`traits`/`tl` on gear (anything above the world's tech level is `rare` or `unique`); `focus: true` on signature powers. Before writing each monster, check `worldkit.py monster-stats --cr <CR>` and keep it near the typical numbers; `validate` warns when one is far off.
+   - **Table-rules fields** (optional; `SKILL-table-rules.md` §8) — `_meta.tech_level` (0–12) and `status_levels` (social ranks, lowest first); 1–3 playbook `moves` per class in the world's voice (`{name, level, trigger, description}`); a `template` quick build on each class (`{abilities, skills, equipment}`); 4–8 `disadvantages` (mix of `disadvantage` and `quirk`) players can take; world `conditions` the setting needs (valued ones with `valued`, `decay`, `penalty_on`); `rarity`/`traits`/`tl` on gear (anything above the world's tech level is `rare` or `unique`); `focus: true` on signature powers; `morale` (2–12), `instinct` (0–10) and 1–3 `instincts` on monsters; 3–6 `place_tags` in the world's voice (`{name, description, enemies, friends, complications, things, places}`, §11). Before writing each monster, check `worldkit.py monster-stats --cr <CR>` and keep it near the typical numbers; `validate` warns when one is far off.
 
    **No dangling references:** every spell, power, item or creature that a class, subclass, `class_options` record or power description names must exist in this kit — with `srd_fallback: false` the SRD versions are unreachable. A subclass that grants extra spells lists them as kit powers; a feature that needs an item (a 300-coin component) has that item in `equipment`.
 
@@ -61,7 +62,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
 7b. **World Foundations** — geography/biome/climate, power system (how the world's magic/tech/psionics works and what it costs), beliefs (gods, ideologies, AIs, cults — whatever this world worships or fears), calendar. Write to `## World Foundations` in world.md. Seed `state.md → ## World State → In-world date`, then `python3 ${CLAUDE_SKILL_DIR}/scripts/calendar.py -c <campaign> init --date "<day month year>" --time <label>` — a real-world setting uses `--gregorian` (real month lengths and weekdays; add `--months` with 12 local month names and `--day-names` with 7 local day names starting Monday to show them in the table's language); an invented one adds `--months "<names>" --month-length <N> --day-names "<names>"`. Time labels: dawn, morning, midday, afternoon, dusk, evening, night, midnight (or `set … --hour N`). Timed effects and the in-game clock work from session 1.
 8. **Three Truths** — one settlement, one nearby threat, one mystery (with clue trail). Write to respective sections in world.md.
 9. **Threat Escalation Arc** — fill the five-stage table in world.md immediately after threat generation. Set current stage to 1. Write `Threat arc stage: 1 — Now` to `state.md → ## World State`.
-10. **2 Factions** — archetype, all fields including current activity. Write to `## Factions` in world.md. Write one-line faction states to `state.md → ## World State`.
+10. **2 Factions** — archetype, all fields including current activity. Write to `## Factions` in world.md. Write one-line faction states to `state.md → ## World State`. Then track each one's numbers for off-screen turns: `python3 ${CLAUDE_SKILL_DIR}/scripts/faction.py -c <campaign> add "<name>" --force N --wealth N --influence N --goal "<current activity as a goal>" --clock 6 --goal-stat <stat> --rivals "<other>"` (1–5 each: Force = muscle, Wealth = money and goods, Influence = favours, secrets and reach). When you need a settlement, district or ruin later, `tags.py -c <campaign> roll` gives two place tags to build it from (SKILL-table-rules.md §11).
 11. **3 NPCs with relationship web** — for each proposed name run `python3 ${CLAUDE_SKILL_DIR}/scripts/name_registry.py check "<name>"` and regenerate duplicates. Write full entries (role, stats, demeanor, motivation, secret, speech quirk, faction, current goal, schedule, personality axes) to **`npcs-full.md`**, one `## <Name>` section each; write one index row per NPC to **`npcs.md`**. Generate all three first, then fill Relationships (every NPC needs ≥2 links to others). Then `name_registry.py add --name "<name>" --type npc --campaign <campaign> --session 0` for each.
 12. **3–5 Quest Seeds** from threat, factions, mystery, NPC motivations. Write to `## Quest Seed Bank` in world.md. Then turn the strongest 3 into `## Adventure Nodes` (situation, ways in, what happens if the party never arrives, connections).
 13. **Dynamic Campaign Arc** — auto-generate the arc from all world data just created. Use the Strongest tier for this step. Ask: *"Generate a committed narrative arc? [y/n — recommended]"*
@@ -140,6 +141,11 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
      ```
 
      Migrator is idempotent and creates a timestamped backup. On `skip`, do not migrate; `paths.campaign_ruleset()` will return `2014` as the safety default at read time, but the field stays unstamped (DM will be re-prompted next load).
+
+   **Engine version check.** Then run `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_version.py -c <campaign-name> check`.
+   - `World is up to date` or `the players chose not to update` → carry on.
+   - `UPDATE AVAILABLE` → show the players the version gap and the "New since then" list it prints, in their language, and **call `AskUserQuestion`**: *"This world was built with an older DnE. Bring the whole world up to v<engine> now?"* — `Update the world (Recommended)` / `Keep it as it is`. Update → follow **Update a world to the engine version** below, then continue loading. Keep → `campaign_version.py -c <campaign-name> mark --declined` (they are asked again only when a newer version arrives).
+   - `newer than the engine` → stop and tell them to run `/dne update` first.
    - Exit code `2` (`missing`) → state.md not found; do not proceed with /dne load. Surface error to DM.
 
    Future migrations (e.g. when 2026 ruleset arrives) follow the same pattern: a small migrator script under `scripts/migrate_<topic>.py` invoked here as a `--check` then `--yes` pair.
@@ -152,6 +158,8 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
    - **state.md contains `## Glossary`** (tables playing in a language other than English) — use exactly these translations for game terms all session; add a line the first time a new term comes up.
    - **state.md contains `## Pinned Facts`** — read and keep hot for the whole session. These are stable soft facts the table has chosen never to forget (a promise made, a dead relative's name, a house rule, a running joke, a detail the player flagged as mattering). Unlike Live State Flags, they don't change turn-to-turn — they are standing canon. Weave them in when relevant and never contradict one; if a pinned fact is now wrong, correct it via `/dne pin` rather than silently overriding it. If the section reads *(none pinned yet)*, there's nothing to load.
    - **Table rules:** if `## Session Flags` has `hero_points: on`, run `character.py hero reset --char <pc> -c <campaign>` for every PC (each session starts with 1). If any table-rules flag is set or the kit has `moves`/`disadvantages`/`focus` powers, read `SKILL-table-rules.md`.
+   - **Content level:** if Session Flags say `content: 18` or `content: 20`, or `romance: open`, read `${CLAUDE_SKILL_DIR}/SKILL-content.md` now and hold that level all session.
+   - **Faction turn:** run `python3 ${CLAUDE_SKILL_DIR}/scripts/faction.py -c <campaign> turn`. It plays one turn per in-world week since the last one (at most 4) and says so when none is due or no factions are tracked. Write each printed line into `state.md → ## Faction Moves` as something the party may now see or hear about, and fold a `GOAL COMPLETE` or `COLLAPSED` into the world (then give the faction a new goal with `faction.py set`).
    - **worldkit.json** (if present): read `_meta`, `lexicon`, `currency`, `skills`, and the names of `races`/`classes`/`monsters` — narrate in the world's language from the first sentence. Pass `-c <campaign>` to `lookup.py`, `character.py` and `encounter_gen.py` all session. Full records are looked up on demand, not held in context.
    - **world.md:** Load in full — World Foundations, Three Truths, and factions inform narration and faction moves. Do NOT read `world-seeds.md` at load (generation artifact, not live reference).
    - **world-nodes.md (imported campaigns only):** Do **NOT** load at session start. It holds the full Quest Seed Bank and Adventure Nodes for the whole module; read only the current act's nodes on demand when a scene needs them. If the file is absent (dynamic/sandbox, or an older import), there is nothing to lazy-load — `world.md` already carries the nodes, unchanged from prior behavior.
@@ -325,7 +333,7 @@ Proceed? [y/n]
 On confirmation:
 
 1. `mkdir -p ${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/characters`
-2. Copy templates from `${CLAUDE_SKILL_DIR}/templates/`
+2. Copy templates from `${CLAUDE_SKILL_DIR}/templates/`, then `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_version.py -c <name> stamp`, and ask the table the **content** question from `/dne new` step 6 (`content`, `romance`, `lines`, `veils` → Session Flags).
 3. Write **world.md** (load-time core — kept small so it can be read in full every load):
    - `## World Foundations` — setting, geography, tone, magic level, calendar if present
    - `## Three Truths` — one settlement, one threat, one mystery (drawn from source)
@@ -402,7 +410,7 @@ If nothing changed in a category this session, leave it as-is. If a fact was wro
 
 **Structured (imported) campaigns — keep the arc window and arc.md in sync.** Advancing the pointer is not optional bookkeeping — it is what keeps the campaign on its own rails, and a pointer that never moves is how an imported module quietly becomes an improvised one. Before you decide "no chapter advanced," check honestly: **if this session cleared the last of the current chapter's `outstanding_beats`, or the party has plainly moved into the next chapter's location or situation, the chapter advanced — treat it as such and move the pointer now.** When a chapter advances: mark the completed chapter `status: complete` in `arc.md`, set the new chapter `status: current`, and update `state.md → ## Campaign Arc` so its `current_chapter`, `current_chapter_detail`, `next_chapter`, and `outstanding_beats` reflect the new window. The full tree stays in `arc.md`; `state.md` carries only the current + next chapter so the load stays light. Only when the party is genuinely still mid-chapter, update `outstanding_beats`/`steering_notes` inline in `state.md` — no need to touch `arc.md`. (Dynamic/sandbox campaigns have no `arc.md`; update the inline arc in `state.md` as before.)
 
-Then update `## Faction Moves` in state.md: for each active faction, answer *"what did they do while the party was occupied?"* One line per faction — even if nothing visible yet. Confirm what was written.
+Then update `## Faction Moves` in state.md: for each active faction, answer *"what did they do while the party was occupied?"* One line per faction — even if nothing visible yet. For factions tracked in `factions.json`, the answer comes from `faction.py turn` (run at `/dne load`); first apply anything the party did to them this session with `faction.py adjust`. Confirm what was written.
 
 **Session tail archive:** `dne-display-app.py` continuously writes `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/session_tail.json` — campaign-specific path, atomic-write, skip-on-empty guarded (since 2026-05-01). At save time:
 
@@ -535,6 +543,21 @@ Persistence is via shell rc on macOS/Linux and via `setx` on Windows. Existing c
 
 ---
 
+## Update a world to the engine version
+
+Bring an existing world fully in line with the current skill: every file a new campaign would get today, in this world's own voice. Canon never changes; the update only adds.
+
+1. **Snapshot first:** `python3 ${CLAUDE_SKILL_DIR}/scripts/turn_snapshot.py -c <campaign> save --label "Before update to v<engine>"` (undo restores everything).
+2. **List the work:** `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_version.py -c <campaign> audit`. It compares the campaign with the current templates (state.md, world.md, npcs, session log, every character sheet), Session Flags, the World Kit (validation errors, balance warnings and every optional field), factions, calendar and graph.
+3. **Do every item.**
+   - Missing sections: add them with the template's heading and fill them from what this campaign already established (state.md, session log, world.md). Leave a section empty with a one-line note rather than inventing history.
+   - World Kit: write the new fields in the world's language and tone, fitting what already exists: playbook `moves` and a quick-build `template` per class, `disadvantages`, `place_tags`, `tech_level`, `status_levels`, `rarity`/`traits`/`tl` on special gear, `morale`/`instinct`/`instincts` on each monster. Fix any validation error; for a balance warning, adjust only monsters the party hasn't met yet, otherwise leave them and say so. Run `worldkit.py validate <campaign>` when done.
+   - Factions: `faction.py add` every faction in world.md `## Factions` with numbers that match how strong the story says it is and its current activity as the goal.
+   - Characters: add `## Moves` from their class, then ask each player their Bonds question (or leave Bonds for the next scene they share), and offer Flaws & Quirks.
+   - Items marked *ask the table* (content level, lines and veils, Hero Points): ask in one message.
+4. **Run `audit` again** until only items the table chose to skip remain.
+5. **Mark it:** `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_version.py -c <campaign> mark`. Tell the players in a few lines what their world gained.
+
 ## `/dne update [--check]`
 
 Pull the latest skill changes from `origin/main`.
@@ -542,7 +565,7 @@ Pull the latest skill changes from `origin/main`.
 - No args → `python3 ${CLAUDE_SKILL_DIR}/scripts/update_skill.py` and stream output (script prompts before pulling).
 - `--check` → `python3 ${CLAUDE_SKILL_DIR}/scripts/update_skill.py --check` — report status without pulling.
 - The script refuses to update if the working tree is dirty and uses `--ff-only` so it never silently merges divergent history.
-- After a successful pull, remind the user to restart their agent session so the new `SKILL.md` and `SKILL-commands.md` are reloaded.
+- After a successful pull, remind the user to restart their agent session so the new `SKILL.md` and `SKILL-commands.md` are reloaded. Each campaign is offered **Update a world to the engine version** the next time it is loaded.
 
 ---
 

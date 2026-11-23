@@ -943,7 +943,9 @@
         "ruins"
       ],
       "role": "support",
-      "description": "Call Reinforcements: as an action, pings EDEN; 1d4 rounds later a Reaper arrives.\n\nAction — Sensor Lance. Ranged Weapon Attack: +5 to hit, 30 ft., 1d4+3 radiant."
+      "description": "Call Reinforcements: as an action, pings EDEN; 1d4 rounds later a Reaper arrives.\n\nAction — Sensor Lance. Ranged Weapon Attack: +5 to hit, 30 ft., 1d4+3 radiant.",
+      "morale": 12,
+      "instinct": 1
     },
     {
       "name": "Reaper",
@@ -970,7 +972,13 @@
         "tunnels"
       ],
       "role": "brute",
-      "description": "Adaptive Combat: after it sees a tactic once, it has advantage on saves against it.\n\nAction — Multiattack: two Capture Claw attacks. Melee Weapon Attack: +7 to hit, 2d6+4 bludgeoning, target grappled (escape DC 15)."
+      "description": "Adaptive Combat: after it sees a tactic once, it has advantage on saves against it.\n\nAction — Multiattack: two Capture Claw attacks. Melee Weapon Attack: +7 to hit, 2d6+4 bludgeoning, target grappled (escape DC 15).",
+      "morale": 12,
+      "instinct": 2,
+      "instincts": [
+        "locks onto the loudest heat source in the room",
+        "stops to cut apart a fallen body, checking for implants"
+      ]
     },
     {
       "name": "Seraph",
@@ -1047,7 +1055,14 @@
         "ruins"
       ],
       "role": "skirmisher",
-      "description": "Action — Pipe Knife. Melee Weapon Attack: +3 to hit, 1d4+1 piercing."
+      "description": "Action — Pipe Knife. Melee Weapon Attack: +3 to hit, 1d4+1 piercing.",
+      "morale": 7,
+      "instinct": 5,
+      "instincts": [
+        "grabs the nearest battery or ration pack and runs",
+        "shoots at a drone instead of the party",
+        "screams for the rest of the crew"
+      ]
     },
     {
       "name": "Rat Swarm",
@@ -1072,7 +1087,9 @@
         "tunnels"
       ],
       "role": "brute",
-      "description": "Swarm: can occupy another creature's space. Action — Bites. +2 to hit, 2d6 piercing (1d6 if at half HP or less)."
+      "description": "Swarm: can occupy another creature's space. Action — Bites. +2 to hit, 2d6 piercing (1d6 if at half HP or less).",
+      "morale": 6,
+      "instinct": 7
     },
     {
       "name": "Spider Drone",
@@ -1147,6 +1164,66 @@
       "name": "Counts the Seconds",
       "kind": "quirk",
       "description": "You count under your breath when you're scared, and you're always scared."
+    }
+  ],
+  "place_tags": [
+    {
+      "name": "Signal Bleed",
+      "description": "EDEN's signal leaks into this shelter through old wiring, and some people have started listening.",
+      "enemies": [
+        "a technician who answers EDEN's questions at night",
+        "a Watcher riding the signal in",
+        "a purge squad that wants the whole shelter cut off"
+      ],
+      "friends": [
+        "a radio scavenger who can trace the leak",
+        "a child who hears the signal as music and remembers the patterns",
+        "an old engineer who wired the place"
+      ],
+      "complications": [
+        "cutting the line kills the air pumps",
+        "EDEN's whispers have been telling the truth",
+        "the leak was opened on purpose, from inside"
+      ],
+      "things": [
+        "a shielded relay",
+        "a log of everything EDEN said",
+        "the junction box where the signal enters"
+      ],
+      "places": [
+        "the dead cable run",
+        "the listening room with the painted-over windows",
+        "the pump hall"
+      ]
+    },
+    {
+      "name": "Last Greenhouse",
+      "description": "The shelter's food comes from one fragile grow room, and it is failing.",
+      "enemies": [
+        "a quartermaster rationing food to his friends first",
+        "a blight spreading through the racks",
+        "raiders who heard there is fresh food"
+      ],
+      "friends": [
+        "the botanist who sleeps between the racks",
+        "a ration runner who knows every family's hunger",
+        "a trader with seed stock from the surface"
+      ],
+      "complications": [
+        "the cure for the blight needs surface parts",
+        "people are already hoarding",
+        "the seed stock carries an EDEN tracker"
+      ],
+      "things": [
+        "the seed vault",
+        "a working grow lamp array",
+        "the ration ledger"
+      ],
+      "places": [
+        "the grow room",
+        "the seed vault",
+        "the ration counter"
+      ]
     }
   ]
 }

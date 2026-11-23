@@ -136,3 +136,62 @@ class FlagAndMarkerTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SessionGateTests(unittest.TestCase):
+    """The hook fires only in sessions that actually started /dne."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ac = _import("autosave_checkpoint", "autosave_checkpoint.py")
+        cls.inst = _import("install_autosave_hook", "install_autosave_hook.py")
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = pathlib.Path(self._tmp.name)
+        self._saved = os.environ.get("DNE_RUNTIME_DIR")
+        os.environ["DNE_RUNTIME_DIR"] = str(self.root / "rt")
+
+    def tearDown(self):
+        if self._saved is None:
+            os.environ.pop("DNE_RUNTIME_DIR", None)
+        else:
+            os.environ["DNE_RUNTIME_DIR"] = self._saved
+        self._tmp.cleanup()
+
+    def _transcript(self, *lines):
+        p = self.root / "t.jsonl"
+        p.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return str(p)
+
+    def test_coding_session_is_skipped(self):
+        code = 'signs = (b":<command-message>dne</command-message>", \'"name":"Skill","input":{"skill":"dne"\')'
+        path = self._transcript(json.dumps({"message": "talk about /dne load"}, separators=(",", ":")),
+                                json.dumps({"input": {"command": code}}, separators=(",", ":")))
+        self.assertFalse(self.ac.session_plays_dne({"session_id": "a", "transcript_path": path}))
+
+    def test_slash_command_or_skill_call_counts(self):
+        path = self._transcript(json.dumps({"message": "hi"}))
+        stdin = {"session_id": "b", "transcript_path": path}
+        self.assertFalse(self.ac.session_plays_dne(stdin))
+        with open(path, "a", encoding="utf-8") as f:              # the game starts later
+            f.write(json.dumps({"type": "tool_use", "name": "Skill", "input": {"skill": "dne", "args": "load x"}},
+                               separators=(",", ":")) + "\n")
+        self.assertTrue(self.ac.session_plays_dne(stdin))
+        path2 = self._transcript(json.dumps({"message": {"role": "user", "content":
+            "<command-message>dne</command-message>\n<command-name>/dne</command-name>"}}, separators=(",", ":")))
+        self.assertTrue(self.ac.session_plays_dne({"session_id": "c", "transcript_path": path2}))
+
+    def test_no_transcript_keeps_old_behaviour(self):
+        self.assertTrue(self.ac.session_plays_dne({}))
+
+    def test_installer_replaces_a_stale_path(self):
+        settings = self.root / "settings.json"
+        settings.write_text(json.dumps({"hooks": {"Stop": [{"matcher": "", "hooks": [
+            {"type": "command", "command": 'python3 "/gone/skills/dne/scripts/autosave_checkpoint.py"'}]}]}}),
+            encoding="utf-8")
+        self.inst.install(str(settings))
+        cmds = self.inst._installed_commands(json.loads(settings.read_text(encoding="utf-8")))
+        self.assertEqual(cmds, [self.inst.checkpoint_command()])
+        self.inst.install(str(settings))                          # idempotent now
+        self.assertEqual(len(self.inst._installed_commands(json.loads(settings.read_text(encoding="utf-8")))), 1)

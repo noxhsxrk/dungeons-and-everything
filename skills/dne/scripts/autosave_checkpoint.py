@@ -17,6 +17,9 @@ Designed to run as a Claude Code **Stop hook** (install with
      context-usage percentage.
 
 The hook is a no-op (exit 0, no output) when:
+  - this agent session never started the game (no `/dne` command or dne skill
+    call in its transcript — e.g. a coding session while a campaign marker is
+    left over from an earlier game),
   - no campaign is active (no runtime marker — e.g. a non-D&D Claude session),
   - the active campaign has `autosave: off` in `state.md → ## Session Flags`,
   - `stop_hook_active` is set (we are already inside a continuation — never
@@ -66,6 +69,49 @@ def _read_stdin_json():
         return json.loads(raw)
     except (ValueError, TypeError):
         return {}
+
+
+#: Transcript JSON that only appears when this session really ran the game: the
+#: /dne slash command as a user message, or a Skill tool call naming dne. Matched
+#: with the JSON quotes unescaped, so a conversation that merely mentions /dne
+#: (or code containing these strings) does not count.
+_DNE_SIGNS = (b'":"<command-message>dne</command-message>',
+              b'"name":"Skill","input":{"skill":"dne"',
+              b'"name":"Skill","input":{"skill":"dne:')
+
+
+def session_plays_dne(stdin_obj: dict) -> bool:
+    """True when this session's transcript shows /dne was started.
+
+    No transcript_path (another agent, manual run) → True, the old behaviour.
+    Scans only bytes added since the last call; a positive answer is cached.
+    """
+    path = stdin_obj.get("transcript_path")
+    if not path or not os.path.isfile(path):
+        return True
+    key = "".join(c if c.isalnum() or c in "-_" else "_" for c in str(stdin_obj.get("session_id") or path))[-80:]
+    cache = paths.runtime_dir() / f"autosave-session-{key}.json"
+    try:
+        seen = json.loads(cache.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        seen = {"plays": False, "offset": 0}
+    if seen.get("plays"):
+        return True
+    overlap = max(len(s) for s in _DNE_SIGNS)
+    start = max(0, int(seen.get("offset", 0)) - overlap)
+    try:
+        with open(path, "rb") as f:
+            f.seek(start)
+            chunk = f.read()
+    except OSError:
+        return True
+    plays = any(s in chunk for s in _DNE_SIGNS)
+    try:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps({"plays": plays, "offset": start + len(chunk)}), encoding="utf-8")
+    except OSError:
+        pass
+    return plays
 
 
 def active_campaign() -> str | None:
@@ -206,8 +252,11 @@ def main() -> int:
         print(f"turns_since_checkpoint: {turns}")
         return 0
 
-    # Guard: nothing to do when no campaign is active (non-D&D session, etc.).
+    # Guard: nothing to do when no campaign is active (non-D&D session, etc.),
+    # or when this session never started the game (a stale marker from an old one).
     if not campaign:
+        return 0
+    if not args.campaign and not session_plays_dne(stdin_obj):
         return 0
     if not autosave_enabled(campaign):
         return 0

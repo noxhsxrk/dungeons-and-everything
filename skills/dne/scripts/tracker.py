@@ -721,21 +721,59 @@ def cmd_check(
 
 ENEMY_ROLES = ("brute", "skirmisher", "ranged", "caster", "support")
 
+#: Morale and Instinct (idea from Worlds Without Number, our own numbers).
+#: Morale 2–12: roll 2d6 (+ situation), above the score = the creature breaks.
+#: Instinct 0–10: roll d10, at or under the score = it acts on instinct this round.
+DEFAULT_MORALE, DEFAULT_INSTINCT = 8, 3
+GENERIC_INSTINCTS = {
+    "brute":      ["charges whoever hurt it last, ignoring better targets",
+                   "stands and bellows instead of pressing its advantage",
+                   "goes for the biggest, most armoured foe"],
+    "skirmisher": ["grabs something valuable and bolts",
+                   "chases a fleeing or badly wounded target",
+                   "breaks off to circle around and loses its turn"],
+    "ranged":     ["shoots at whatever moved last, even a poor target",
+                   "falls back to find a better angle",
+                   "pours everything into one foe"],
+    "caster":     ["throws its strongest power at once, even where it is wasted",
+                   "shields itself and backs away",
+                   "turns on whoever disrupted it"],
+    "support":    ["rushes to a fallen ally",
+                   "calls for help instead of fighting",
+                   "throws itself in front of its leader"],
+}
+
+
+def _kit_monster(campaign: str, name: str) -> "dict | None":
+    """The World Kit monster record, or None (missing kit, unknown name or a broken kit)."""
+    try:
+        import worldkit
+        kit = worldkit.load(campaign)
+        return worldkit.find(kit, "monsters", name) if kit else None
+    except (OSError, ValueError, SystemExit):
+        return None
+
 
 def cmd_enemy(
     campaign: str,
     action: str,
     entity: str,
-    role: str = "brute",
+    role: "str | None" = None,
     slots_spec: str = "",
     recharge_spec: str = "",
-    morale: int = 25,
+    morale: "int | None" = None,
     spend_slot: "int | None" = None,
     ability: str = "",
     hp_pct: int = 100,
     distance_ft: int = 30,
+    morale_score: "int | None" = None,
+    instinct: "int | None" = None,
+    instincts: str = "",
+    kit_name: str = "",
+    roll: "int | None" = None,
+    mod: int = 0,
 ) -> None:
-    """Role-aware enemy tactics & monster spell-slot / recharge tracker."""
+    """Role-aware enemy tactics, monster spell-slot / recharge tracker, morale and instinct."""
     state = _load(campaign)
     ent = _entity(state, entity)
     prof = ent.setdefault("enemy_profile", {
@@ -746,8 +784,29 @@ def cmd_enemy(
     })
 
     if action == "set":
-        prof["role"] = role
-        prof["morale_pct"] = max(0, min(100, int(morale)))
+        # Only what was passed changes, so a later `set --slots …` keeps the rest.
+        if kit_name:
+            rec = _kit_monster(campaign, kit_name)
+            if rec is None:
+                print(f"  ERROR: no World Kit monster {kit_name!r} (or the kit has errors).", file=sys.stderr)
+                sys.exit(1)
+            if rec.get("role") in ENEMY_ROLES and role is None:
+                prof["role"] = rec["role"]
+            for key in ("morale", "instinct"):
+                if key in rec:
+                    prof["morale_score" if key == "morale" else "instinct"] = rec[key]
+            if rec.get("instincts"):
+                prof["instincts"] = list(rec["instincts"])
+        if role is not None:
+            prof["role"] = role
+        if morale is not None:
+            prof["morale_pct"] = max(0, min(100, int(morale)))
+        if morale_score is not None:
+            prof["morale_score"] = morale_score
+        if instinct is not None:
+            prof["instinct"] = instinct
+        if instincts:
+            prof["instincts"] = [x.strip() for x in instincts.split(";") if x.strip()]
         if slots_spec:
             slots = {}
             for part in slots_spec.split(","):
@@ -767,8 +826,42 @@ def cmd_enemy(
             prof["recharges"] = rechs
         _save(campaign, state)
         slot_note = f"slots={len(prof['slots'])} tier(s), " if prof["slots"] else ""
-        print(f"  Enemy profile set: {ent['name']} [role={prof['role']}, morale<={prof['morale_pct']}%, "
-              f"{slot_note}recharges={list(prof['recharges'].keys())}]")
+        nerve = (f"morale {prof['morale_score']}" if "morale_score" in prof else f"morale {DEFAULT_MORALE} (default)")
+        nerve += f", instinct {prof.get('instinct', DEFAULT_INSTINCT)}"
+        print(f"  Enemy profile set: {ent['name']} [role={prof['role']}, check morale at <={prof['morale_pct']}% HP, "
+              f"{nerve}, {slot_note}recharges={list(prof['recharges'].keys())}]")
+        return
+
+    if action == "morale":
+        score = prof.get("morale_score", DEFAULT_MORALE)
+        label = "" if "morale_score" in prof else " (default)"
+        if score >= 12:
+            print(f"  {ent['name']} — morale {score}{label}: never breaks; it fights to the end.")
+            return
+        dice = [random.randint(1, 6), random.randint(1, 6)] if roll is None else None
+        raw = sum(dice) if dice else roll
+        total = raw + mod
+        shown = f"2d6 {dice[0]}+{dice[1]}" if dice else f"2d6 {raw}"
+        if mod:
+            shown += f" {mod:+d}"
+        if total > score:
+            print(f"  {ent['name']} — {shown} = {total} vs morale {score}{label} → BREAKS: it flees, "
+                  f"surrenders or begs to parley (pick what fits the creature).")
+        else:
+            print(f"  {ent['name']} — {shown} = {total} vs morale {score}{label} → HOLDS: it keeps fighting.")
+        return
+
+    if action == "instinct":
+        score = prof.get("instinct", DEFAULT_INSTINCT)
+        label = "" if "instinct" in prof else " (default)"
+        raw = random.randint(1, 10) if roll is None else roll
+        if raw <= score:
+            pool = prof.get("instincts") or GENERIC_INSTINCTS.get(prof.get("role", "brute"), GENERIC_INSTINCTS["brute"])
+            print(f"  {ent['name']} — d10 {raw} vs instinct {score}{label} → INSTINCT this round: "
+                  f"{random.choice(pool)}.")
+        else:
+            print(f"  {ent['name']} — d10 {raw} vs instinct {score}{label} → acts with its full cunning "
+                  f"(see `enemy advise`).")
         return
 
     if action == "spend":
@@ -822,8 +915,11 @@ def cmd_enemy(
         slots_left = {k: v["max"] - v["used"] for k, v in prof.get("slots", {}).items() if v["max"] > v["used"]}
         ready_rechs = [k for k, v in prof.get("recharges", {}).items() if v.get("ready")]
         tips = []
-        if hp_pct <= prof.get("morale_pct", 25):
-            tips.append("MORALE BREAK: consider Disengage + Flee, Dash to cover, or surrender rather than fighting blindly to 0 HP.")
+        if prof.get("morale_score", DEFAULT_MORALE) >= 12:
+            tips.append("FIGHTS TO THE END: morale 12, it never breaks or surrenders.")
+        elif hp_pct <= prof.get("morale_pct", 25):
+            tips.append(f"MORALE CHECK due: run `tracker.py enemy morale \"{ent['name']}\"`; on BREAKS it flees, "
+                        "surrenders or parleys instead of fighting to 0 HP.")
         if conc:
             tips.append(f"CONCENTRATING on '{conc}': avoid casting another concentration spell; protect position / stay behind cover.")
         if ready_rechs:
@@ -1015,12 +1111,18 @@ def main() -> None:
 
     # enemy (role-aware tactics + spell/recharge resource tracker)
     enm = sub.add_parser("enemy", help="Enemy tactical role, spell slots, recharge & advisory")
-    enm.add_argument("action", choices=["set", "spend", "recharge", "advise"])
+    enm.add_argument("action", choices=["set", "spend", "recharge", "advise", "morale", "instinct"])
     enm.add_argument("entity")
-    enm.add_argument("--role", choices=ENEMY_ROLES, default="brute")
+    enm.add_argument("--role", choices=ENEMY_ROLES, default=None)
     enm.add_argument("--slots", default="", help='Spell slots e.g. "1:3,2:2"')
     enm.add_argument("--recharge", default="", help='Recharge abilities e.g. "Fire Breath:5-6"')
-    enm.add_argument("--morale", type=int, default=25, help="HP%% threshold to consider retreat/surrender")
+    enm.add_argument("--morale", type=int, default=None, help="HP%% at which a morale check is due (default 25)")
+    enm.add_argument("--morale-score", type=int, default=None, help="2–12; 2d6 above it = breaks (12 = never)")
+    enm.add_argument("--instinct", type=int, default=None, help="0–10; d10 at or under it = acts on instinct")
+    enm.add_argument("--instincts", default="", help='its own instincts, ";"-separated')
+    enm.add_argument("--kit", default="", help="take role/morale/instinct from this World Kit monster")
+    enm.add_argument("--roll", type=int, default=None, help="a supplied roll (2d6 total for morale, d10 for instinct)")
+    enm.add_argument("--mod", type=int, default=0, help="situation modifier added to the morale roll")
     enm.add_argument("--slot", type=int, default=None, help="Spell slot level to spend")
     enm.add_argument("--ability", default="", help="Recharge ability name")
     enm.add_argument("--hp-pct", type=int, default=100, help="Current HP percentage for advise")
@@ -1063,11 +1165,19 @@ def main() -> None:
     elif args.cmd == "check":
         cmd_check(args.campaign, args.action, args.entity, args.skill, dc=args.dc, result=args.result)
     elif args.cmd == "enemy":
+        if args.morale_score is not None and not 2 <= args.morale_score <= 12:
+            enm.error("--morale-score must be 2–12")
+        if args.instinct is not None and not 0 <= args.instinct <= 10:
+            enm.error("--instinct must be 0–10")
+        if args.roll is not None and not (2 <= args.roll <= 12 if args.action == "morale" else 1 <= args.roll <= 10):
+            enm.error("--roll must be 2–12 for morale, 1–10 for instinct")
         cmd_enemy(
             args.campaign, args.action, args.entity,
             role=args.role, slots_spec=args.slots, recharge_spec=args.recharge,
             morale=args.morale, spend_slot=args.slot, ability=args.ability,
             hp_pct=args.hp_pct, distance_ft=args.distance_ft,
+            morale_score=args.morale_score, instinct=args.instinct, instincts=args.instincts,
+            kit_name=args.kit, roll=args.roll, mod=args.mod,
         )
     elif args.cmd == "status":
         cmd_status(args.campaign, args.entity)

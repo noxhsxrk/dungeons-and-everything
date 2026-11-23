@@ -54,6 +54,8 @@ CAMPAIGN_FILES = [
     ".economy_ledger.json",
     "calendar.json",
     "subsystems.json",
+    "factions.json",
+    "dne-version.json",
     "xp-ledger.jsonl",
     "worldkit.json",
     "session_tail.json",
@@ -62,7 +64,7 @@ CAMPAIGN_FILES = [
 
 #: What snapshots tracked before "tracked" was recorded in meta.json.
 _LEGACY_TRACKED = [f for f in CAMPAIGN_FILES if f not in (
-    "calendar.json", "subsystems.json", "xp-ledger.jsonl", "worldkit.json",
+    "calendar.json", "subsystems.json", "factions.json", "dne-version.json", "xp-ledger.jsonl", "worldkit.json",
     "session_tail.json", "session-tail.md",
 )]
 

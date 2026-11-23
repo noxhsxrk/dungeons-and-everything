@@ -4,7 +4,8 @@ Ideas borrowed from other games and rebuilt for 5e: the close-miss "success at a
 playbook moves and bonds (Powered by the Apocalypse); tech levels, disadvantages and quirks, reaction
 rolls, quick-build templates and social status (GURPS); degrees of success, monster stats by CR,
 Victory Points, Hero Points, valued conditions, Treat Wounds, Focus Points, rarity and traits, and a
-treasure curve (Pathfinder 2e). Only the ideas are used; every number and word here is our own.
+treasure curve (Pathfinder 2e); faction turns, enemy morale and instinct, and place tags (Worlds
+Without Number). Only the ideas are used; every number and word here is our own.
 Attacks, damage, spell slots, death saves and XP stay plain 5e.
 
 Read this file when a campaign uses any of these rules (see the flags below) or when the World Kit
@@ -168,8 +169,65 @@ unique items cost more than money.
 | `disadvantages` | top level | `{name, kind: disadvantage\|quirk, description}` (§5). |
 | `conditions` | top level | World conditions; `valued`, `decay`, `penalty_on` for valued ones (§7). |
 | `focus` | spells/powers | A Focus-Point power (§7). |
+| `morale` 2–12 · `instinct` 0–10 · `instincts` | monsters | Morale and Instinct (§10). 12 morale = never breaks (machines, the mindless, the fanatical). |
+| `place_tags` | top level | `{name, description, enemies, friends, complications, things, places}`: this world's own place tags (§11). |
 
 Tech levels (our labels): 0 stone tools · 1 bronze · 2 iron and early empires · 3 medieval ·
 4 gunpowder and sail · 5 steam and industry · 6 electricity and the early 1900s · 7 mid-1900s ·
 8 computers and the late 1900s · 9 today and the near future · 10 advanced near-future ·
 11 interplanetary · 12 interstellar and beyond.
+
+## 9. Faction turns (`faction.py`)
+
+The world moves on a clock: every in-world week, each tracked faction does one thing off-screen.
+world.md still says who a faction is and state.md how it feels about the party; `factions.json`
+holds only its numbers.
+
+- **Numbers.** Force (muscle), Wealth (money, goods), Influence (favours, secrets, reach), 1–5 each.
+  Stability = 4 + the three; at 0 the faction has COLLAPSED and stops acting.
+- **Goal.** One goal on a clock of 4, 6 or 8 segments, tied to the stat it is pursued with. Make it
+  concrete and visible when it lands: *take the docks*, *buy the council vote*, *finish the
+  machine*. A completed goal raises that stat by 1 (max 5); narrate it and set a new goal.
+- **A turn** (`faction.py turn`, run at `/dne load`; it plays one turn per week since the last, at most
+  4, and refuses when none is due). Each faction: regroups if Stability is at half or less; otherwise
+  about one turn in three it strikes a rival (d10 + Force or Influence against the rival's d10 + the
+  same; ties go to the defender; the loser loses 1 Stability, 2 if beaten by 5 or more); otherwise it
+  works on its goal (d10 + the goal's stat: 8+ one segment, 12+ two, 3 or less backfires for −1
+  Stability). A faction with no goal only regroups.
+- **Telling it.** Each line `turn` prints becomes one line under `## Faction Moves` as something the
+  party can notice: a rumour, a new face at the gate, a burned warehouse. Bring the biggest one in as
+  a bang (Standard 13).
+- **The party's hand.** When the party helps or hurts a faction, `faction.py adjust` its Stability or
+  goal progress (sabotaging a plan: progress −1 or −2; a raid that guts them: Stability −2 to −4).
+  `faction.py act` forces one chosen action when the fiction demands it.
+
+## 10. Morale and Instinct (`tracker.py enemy`)
+
+Creatures in 5e fight to the last hit point unless the GM decides otherwise. These two rolls decide
+it for you, so the AI's monsters behave like living things rather than perfect tacticians.
+
+- **Morale 2–12** (default 8). Roll `tracker.py enemy morale <name>` the first time any of these
+  happens: the first of them falls; half of them are down; their leader falls; they see something
+  overwhelming. Add `--mod 1` or `2` when things are especially bad, `--mod -1` when they have
+  somewhere to fall back to. 2d6 above the score = BREAKS: they flee, surrender or beg to parley,
+  whichever fits. Roll once per trigger for a group. 12 never breaks.
+  Rough guide: cowards and conscripts 5–6, ordinary fighters 7–8, veterans and zealots 9–10, the
+  mindless, machines and the undead 12.
+- **Instinct 0–10** (default 3). Each round a creature might act on instinct, roll
+  `tracker.py enemy instinct <name>`: d10 at or under the score means this round it follows its
+  nature instead of the best move. It uses the monster's `instincts` if the World Kit gives any,
+  otherwise one that fits its role. Animals and swarms 6–8, ordinary people 3–4, trained soldiers 1–2,
+  machines 0–2. Roll for the ones that matter, not every goblin every round.
+- `enemy set <name> --kit "<monster>"` copies role, morale, instinct and instincts from the World Kit.
+
+## 11. Place tags (`tags.py`)
+
+When the party reaches a town, district, ruin or court you haven't built, roll
+`tags.py -c <campaign> roll`: two tags, each with an enemy, a friend, a complication, a thing and a
+place drawn at random. `--all` shows every entry to choose from.
+
+- Join the two tags: let an enemy of one be tied to a friend of the other, and make the
+  complication something the party has to choose about.
+- Name everyone and everything you use, and write the place into world.md like any other.
+- The World Kit's `place_tags` (written in this world's voice) are drawn first; the 20 generic tags
+  in `data/place_tags.json` fill in.

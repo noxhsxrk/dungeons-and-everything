@@ -474,6 +474,10 @@ def _fmt_tags(r: dict) -> list:
         bits.append("traits: " + ", ".join(map(str, r["traits"])))
     if r.get("tl") is not None:
         bits.append(f"TL {r['tl']}")
+    if r.get("morale") is not None:
+        bits.append(f"morale {r['morale']}")
+    if r.get("instinct") is not None:
+        bits.append(f"instinct {r['instinct']}")
     return [" · ".join(bits)] if bits else []
 
 

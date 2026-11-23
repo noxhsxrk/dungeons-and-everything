@@ -20,6 +20,7 @@ CR_XP.update({0.125: 25, 0.25: 50, 0.5: 100})
 RARITIES = ('common', 'uncommon', 'rare', 'unique')
 ROLL_KINDS = ('attack', 'save', 'check')
 ABILITIES = ('STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA')
+PLACE_TAG_PARTS = ('enemies', 'friends', 'complications', 'things', 'places')
 MONSTER_TABLE = Path(__file__).resolve().parent.parent / 'data' / 'monster_stats_by_cr.json'
 
 
@@ -174,6 +175,15 @@ def validate(kit, campaign=None):
                             errors.append(f'{label}: template skill {skill!r} is not a skill of this world')
                     if isinstance(tpl, dict) and not isinstance(tpl.get('equipment', []), list):
                         errors.append(f'{label}: template.equipment must be a list')
+            if category == 'place_tags':
+                if not isinstance(record.get('description'), str) or not record['description'].strip():
+                    errors.append(f'{label}: description is required')
+                for part in PLACE_TAG_PARTS:
+                    items = record.get(part, [])
+                    if not isinstance(items, list) or not all(isinstance(x, str) and x.strip() for x in items):
+                        errors.append(f'{label}: {part} must be a list of strings')
+                if not any(record.get(part) for part in PLACE_TAG_PARTS):
+                    errors.append(f'{label}: needs at least one of {", ".join(PLACE_TAG_PARTS)}')
             if category == 'disadvantages':
                 if record.get('kind') not in ('disadvantage', 'quirk'):
                     errors.append(f'{label}: kind must be disadvantage or quirk')
@@ -225,6 +235,13 @@ def validate(kit, campaign=None):
                         if not isinstance(skill, str) or skill not in skills:
                             errors.append(f'{label}: unknown skill {skill!r}')
             elif category == 'monsters':
+                if 'morale' in record and not _int_in(record['morale'], 2, 12):
+                    errors.append(f'{label}: morale must be an integer 2–12 (12 = never breaks)')
+                if 'instinct' in record and not _int_in(record['instinct'], 0, 10):
+                    errors.append(f'{label}: instinct must be an integer 0–10')
+                if 'instincts' in record and (not isinstance(record['instincts'], list) or not all(
+                        isinstance(x, str) and x.strip() for x in record['instincts'])):
+                    errors.append(f'{label}: instincts must be a list of short behaviours')
                 if record.get('role') not in ('brute', 'skirmisher', 'ranged', 'caster', 'support'):
                     errors.append(f'{label}: invalid role {record.get("role")!r}')
                 biomes = record.get('biomes')
@@ -419,6 +436,8 @@ def show(kit):
     print('Threats:')
     for r in sorted(kit.get('monsters', []), key=lambda r: Fraction(str(r['cr']))):
         print(f"  {r['name']}: CR {format_cr(r['cr'])}; {r['role']}; {', '.join(r['biomes'])}")
+    if kit.get('place_tags'):
+        print('Place tags:', ', '.join(r['name'] for r in kit['place_tags']))
     print('Lexicon:')
     for key, value in kit.get('lexicon', {}).items():
         print(f'  {key} → {value}')

@@ -77,11 +77,20 @@ def is_installed(settings: dict) -> bool:
     return False
 
 
+def _installed_commands(settings: dict) -> list:
+    return [str(h.get("command", "")) for group in settings.get("hooks", {}).get(HOOK_EVENT, [])
+            for h in group.get("hooks", []) if _our_command_marker() in str(h.get("command", ""))]
+
+
 def install(path: str) -> None:
     settings = _load(path)
-    if is_installed(settings):
+    if _installed_commands(settings) == [checkpoint_command()]:
         print(f"Already installed in {path} — nothing to do.")
         return
+    if is_installed(settings):
+        # An old entry (moved skill, a path that no longer exists, a duplicate): replace it.
+        uninstall(path)
+        settings = _load(path)
     _stop_groups(settings).append({
         "matcher": "",
         "hooks": [{"type": "command", "command": checkpoint_command()}],

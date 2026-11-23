@@ -31,7 +31,7 @@ Tabletop rules engines are great. Being locked into elves and fireballs is not. 
 - **Any genre.** Sci-fi, post-apocalyptic, horror, mystery, cyberpunk, western, mythic — or classic fantasy.
 - **A real rulebook per world.** Origins, classes, subclasses, backgrounds, powers, weapons, armor, currency and monsters, all generated for the world and all mechanically sound on the engine's 5e SRD core.
 - **The world speaks its own language.** Mechanics "run protocols" instead of casting spells, the party "goes into lockdown" instead of taking a long rest, and the skill list says *Systems* instead of *Arcana*.
-- **The best ideas from other tables.** Close misses that succeed at a price, playbook moves and party bonds from Powered by the Apocalypse; tech levels, flaws and reaction rolls from GURPS; degrees of success, Hero Points and Victory Points from Pathfinder 2e — all rebuilt on the engine's d20 core, each one switchable per campaign.
+- **The best ideas from other tables.** Close misses that succeed at a price, playbook moves and party bonds from Powered by the Apocalypse; tech levels, flaws and reaction rolls from GURPS; degrees of success, Hero Points and Victory Points from Pathfinder 2e; faction turns, monster morale and place tags from Worlds Without Number — all rebuilt on the engine's d20 core, each one switchable per campaign.
 - **A Game Master who remembers.** Factions move between sessions, NPCs hold grudges, and a three-act story arc bends around what the players actually do.
 - **Built for the couch.** A cinematic TV display, phones as controllers, spoken narration, Thai and full Unicode support.
 
@@ -84,6 +84,8 @@ Optional layers borrowed from other games and rebuilt on the DnE engine's d20 co
 - **Characters with ties.** Playbook moves per class, a one-question **bond** with every other player character, and flaws and quirks that earn Inspiration — or **Hero Points** — when they bite.
 - **Bigger than one roll, smaller than a fight.** **Victory Points** run chases, heists, infiltrations and debates; **reaction rolls** decide how a stranger first treats you.
 - **Worlds without magic still work.** **Treat Wounds** heals with Medicine, **Focus Points** fuel signature powers, and a **tech level** keeps laser rifles out of the bronze age.
+- **A world that moves without you.** Factions take a turn every in-world week (chasing goals, striking rivals), monsters **break and flee** or act on instinct instead of fighting like robots to the last hit point, and **place tags** hand the Game Master a ready-made town or ruin: an enemy, a friend, a complication, a thing worth having.
+- **Your table, your limits.** Pick how hard the story hits when you start: `standard`, `18` or `20` (graphic violence, gore and horror on screen, for adult tables). A **romance** setting (`off`, `fade` or `open`) decides whether love and sex between adult characters cut away or play on screen, written for feeling rather than explicit detail. Set **lines** (never in the story) and **veils** (kept off-screen), and anyone can type `x` to skip a moment.
 - **Balanced by measurement.** Monster numbers by CR are measured from the 334 SRD monsters, and a treasure curve keeps the party's wealth on track.
 
 Rules reference: [`skills/dne/SKILL-table-rules.md`](skills/dne/SKILL-table-rules.md).
@@ -121,7 +123,7 @@ Pick agents explicitly with `python3 install.py codex gemini`; remove with `pyth
 cd ~/dungeons-and-everything && git pull     # every agent linked by install.py picks it up
 ```
 
-Or from inside a game: **`/dne update --check`** shows how far behind you are, **`/dne update`** pulls (fast-forward only; it refuses if you have local edits). Then start a new agent session so the new instructions load. Claude Code plugin users: `/plugin update dne`. Re-run `python3 install.py` only after adding a new agent to your machine, or on Windows if it made copies instead of links. Your campaigns in `~/.dne/` are never touched by an update.
+Or from inside a game: **`/dne update --check`** shows how far behind you are, **`/dne update`** pulls (fast-forward only; it refuses if you have local edits). Then start a new agent session so the new instructions load. Claude Code plugin users: `/plugin update dne`. Re-run `python3 install.py` only after adding a new agent to your machine, or on Windows if it made copies instead of links. Your campaigns in `~/.dne/` are never touched by an update. Each world remembers the version it was built with; the next time you load an older world, the Game Master shows what's new and asks whether to bring the whole world up to date (new sections, World Kit fields, factions), adding to it without changing what already happened.
 
 ### Where your games live
 
@@ -209,7 +211,7 @@ python3 -m venv .venv && .venv/bin/pip install pytest flask flask-cors pyyaml
 .venv/bin/python -m pytest tests/ -q
 ```
 
-- `skills/dne/SKILL.md` — the Game Master's core rules; `SKILL-commands.md` — every `/dne` procedure; `SKILL-scripts.md` — script reference; `SKILL-table-rules.md` — the optional table rules
+- `skills/dne/SKILL.md` — the Game Master's core rules; `SKILL-commands.md` — every `/dne` procedure; `SKILL-scripts.md` — script reference; `SKILL-table-rules.md` — the optional table rules; `SKILL-content.md` — running an `18` / `20` table
 - `skills/dne/scripts/` — the rules engine (`worldkit.py`, `character.py`, `lookup.py`, `encounter_gen.py`, `combat.py`, `dice.py`, …)
 - `skills/dne/display/` — the table display (Flask)
 - `skills/dne/data/` — bundled 5e SRD data
@@ -226,10 +228,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md).
 - สร้างตัวละคร: `/dne character new`
 - เล่นต่อ: `/dne load <ชื่อแคมเปญ>` แล้วพิมพ์สิ่งที่ตัวละครทำได้เลย
 - ข้อมูลเกมทั้งหมดเก็บอยู่ที่ `~/.dne/`
-- อัปเดต: `git pull` ในโฟลเดอร์ repo (ทุก agent อัปเดตพร้อมกัน) หรือพิมพ์ `/dne update` ในเกม — ข้อมูลแคมเปญไม่ถูกแตะ
+- อัปเดต: `git pull` ในโฟลเดอร์ repo (ทุก agent อัปเดตพร้อมกัน) หรือพิมพ์ `/dne update` ในเกม — ข้อมูลแคมเปญไม่ถูกแตะ; โลกแต่ละใบจำเวอร์ชันที่สร้างไว้ และตอนโหลดโลกเก่า GM จะถามว่าจะอัปเดตทั้งโลกให้ตรงกับเวอร์ชันปัจจุบันไหม
+- ระดับเนื้อหา: เลือกตอนสร้างโลกได้ว่า `standard`, `18` หรือ `20` (ความรุนแรง เลือด สยองขวัญแบบเต็ม) และ romance (`off` / `fade` ตัดฉาก / `open` มีฉากรักบนจอแบบไม่โจ่งแจ้ง เฉพาะโต๊ะ 18+) พร้อม lines/veils และพิมพ์ `x` เพื่อข้ามฉากได้ทุกเมื่อ
 - รองรับภาษาไทยเต็มรูปแบบ ทั้งชื่อในโลก การเล่าเรื่อง ปฏิทินและเวลาเป็นภาษาไทย และหน้าจอแสดงผลบนทีวีและมือถือ (ฟอนต์ไทย สระไม่ลอยไม่จม)
 - เล่นหลายคนได้: เครื่องเดียวรัน GM ผู้เล่นแต่ละคนเปิดลิงก์ `?char=<ชื่อตัวละคร>` บนมือถือตัวเอง อยู่ห้องเดียวกันใช้ `--lan` อยู่คนละที่ใช้ `--ngrok`
-- กฎเสริมจากเกมอื่น (เปิด/ปิดได้ต่อแคมเปญ): สำเร็จแบบมีราคา, ระดับความสำเร็จ 5 ขั้น, ท่าประจำอาชีพ, Bonds, ข้อเสียและนิสัยแปลก, Hero Points, Victory Points, ทอยปฏิกิริยา NPC, Treat Wounds, Focus Points, Tech Level, ตารางมอนสเตอร์ตาม CR
+- กฎเสริมจากเกมอื่น (เปิด/ปิดได้ต่อแคมเปญ): สำเร็จแบบมีราคา, ระดับความสำเร็จ 5 ขั้น, ท่าประจำอาชีพ, Bonds, ข้อเสียและนิสัยแปลก, Hero Points, Victory Points, ทอยปฏิกิริยา NPC, Treat Wounds, Focus Points, Tech Level, ตารางมอนสเตอร์ตาม CR, ฝ่ายต่าง ๆ เดินเทิร์นทุกสัปดาห์ในเกม, ขวัญและสัญชาตญาณของศัตรู, แท็กสร้างสถานที่
 
 ## License
 

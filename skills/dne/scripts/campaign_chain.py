@@ -33,6 +33,10 @@ CARRY_FILES = [
     "npcs-full.md",
     "graph.json",
     "lorebook.json",
+    "worldkit.json",     # the world's origins, classes, powers, gear and monsters
+    "factions.json",     # faction numbers and goals carry on in the same world
+    "calendar.json",     # the same world's date
+    "dne-version.json",  # the world is as old as its source
 ]
 
 

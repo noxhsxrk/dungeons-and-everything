@@ -164,8 +164,16 @@ revision_log: []
 - display: none
 - autorun: false
 - autorun_interval: 60
+- success_at_cost: on
+- degrees: on
+- hero_points: off
+- content: standard
+- romance: fade
+- lines: (none)
+- veils: (none)
 *(display: none|local|lan|ngrok — the mode chosen at /dne new or /dne load; autorun is only ever true with a display running. roll_mode: players|auto. tutor_mode, autorun, autorun_interval, tts_voice, sfx_languages, autosave — session-scoped flags set via /dne commands or by the display companion)*
 *(Table rules — success_at_cost: on|off (on), degrees: on|off (on), hero_points: on|off (off); see SKILL-table-rules.md.)*
+*(content: standard|18|20 (standard) · romance: off|fade|open (fade; open needs 18/20) · lines: things that never appear · veils: things kept off-screen — see SKILL.md → Table Dials. A player can pause any scene with `x`.)*
 *(autosave: on|off — default on. Governs the behind-the-scenes continuity checkpoint (Live State Flags + graph + session tail). Toggle with /dne autosave on|off.)*
 
 ## DM Notes (hidden from players)

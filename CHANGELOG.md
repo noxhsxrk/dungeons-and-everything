@@ -8,6 +8,41 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Added
+- **Ideas from Worlds Without Number** (our own numbers and text; `SKILL-table-rules.md` §9–11):
+  - **Faction turns** — `faction.py`: Force, Wealth and Influence (1–5), Stability, a goal on a 4/6/8
+    clock and rivals. `faction.py turn` at `/dne load` plays one turn per in-world week since the last
+    (at most 4): each faction regroups, strikes a rival or works on its goal, and the printed lines go
+    into `## Faction Moves`. `adjust` applies what the party did; `factions.json` is snapshotted with
+    the other campaign files.
+  - **Morale and Instinct** — `tracker.py enemy morale` (2d6 above the creature's morale = it flees,
+    surrenders or parleys; 12 never breaks) and `enemy instinct` (d10 at or under instinct = it acts on
+    its nature this round). World Kit monsters can carry `morale`, `instinct` and `instincts`;
+    `enemy set --kit` copies them. `enemy advise` now points at the morale roll.
+  - **Place tags** — `tags.py roll`: two tags for a town, district, ruin or court, each with an enemy,
+    a friend, a complication, a thing and a place. 20 generic tags ship in `data/place_tags.json`; a
+    World Kit's own `place_tags` come first.
+
+- **Every world knows its version.** `/dne new` writes `dne-version.json` with the engine version the
+  world was built with. At `/dne load`, `campaign_version.py check` compares it with the running engine
+  and, when the world is older, shows what's new and asks the players whether to update the whole world.
+  `campaign_version.py audit` lists everything to bring it in line: missing sections in state.md,
+  world.md and character sheets, new Session Flags, World Kit errors, warnings and new optional fields,
+  untracked factions, calendar and graph. Worlds made before this release count as older. Saying no
+  is remembered until a newer version arrives.
+- **Content level and safety tools.** A `content` Table Dial chosen at `/dne new`: `standard`, `18` or
+  `20` (graphic violence, gore, horror and dark themes on screen; the table confirms its age). Sex stays
+  off-screen at every level and hard limits never move. `lines` (never appears) and `veils` (off-screen
+  only) are asked at the same time, and any player can stop a scene with `x`. `SKILL-content.md`
+  tells the Game Master how to run `18` and `20` at full strength: concrete, consequential violence and
+  horror with no disclaimers or softening, and an in-fiction cut-away for any single detail it won't
+  write instead of stopping the game.
+- **Romance dial.** `romance: off | fade | open` (asked at `/dne new` with the content level). Romance,
+  attraction, jealousy and relationships become story threads; with `fade` a sexual scene cuts away
+  and picks up after, with `open` (18/20 tables only) it plays on screen in sensual, non-explicit
+  terms. Adults only, every partner willing, and a player character is involved only when its player
+  steers there.
+
 ### Changed
 - **Display, Plain look: a chat-style input box.** On the shared screen the input is docked under the
   story and always open (no Party drawer). On a phone (`?char=`) the tabs sit at the top and the input at
@@ -19,6 +54,16 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
   the full width and the scene name no longer hides behind Codex/Bubbles.
 
 ### Fixed
+- **Autosave hook only in game sessions.** The Stop hook now checks this session's transcript for a
+  real `/dne` command or dne skill call; a coding session no longer gets "continuity checkpoint"
+  prompts because an old game left its campaign marker behind. `install_autosave_hook.py` replaces an
+  entry whose path no longer exists (e.g. after the skill folder became a link) instead of saying
+  "already installed".
+- **Chained sequels keep their world.** `campaign_chain.py` now carries `worldkit.json`,
+  `factions.json`, `calendar.json` and `dne-version.json` into the new campaign; before, a sequel in a
+  custom world lost its classes, powers, gear and monsters.
+- `tracker.py enemy set` reset the role to brute and the morale threshold to 25% whenever it was
+  called again (e.g. to add spell slots); it now changes only the options passed.
 - Phone controller in the Plain look filled only the bottom half of the screen.
 - Phone controller, every look: the "Who are you playing?" picker and the settings button were hidden
   behind the input panel; Codex/Bubbles covered the tabs.
