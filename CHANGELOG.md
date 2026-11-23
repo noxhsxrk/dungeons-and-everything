@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-11-23 — Any agent, Thai tables, polish
+
 ### Added
 - **Thai tables, end to end:** `calendar.py init --lang th` prints the time of day in Thai
   (`กลางคืน (22:00 น.)`) and accepts Thai time words; the relationship graph's deterministic extractor
