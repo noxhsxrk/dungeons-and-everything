@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.6.0] — 2026-11-23 — Set the table your way
+
 ### Added
 - **Table Settings page.** `display/setup.html` (at `/setup` when the display runs, and under Settings → Table Settings): tick every dial, press copy and paste the text to the GM, who writes it to Session Flags. It works on phones and as a plain file, and takes current values as a query string.
 - **Four new dials:** `companions` (quiet/normal/chatty), `rolls` (few/normal/many), `show_dc` (on/off) and `turn_end` (open/options).
