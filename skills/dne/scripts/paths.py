@@ -125,6 +125,19 @@ def find_campaign(name: str) -> pathlib.Path:
     return campaign_dir(name)
 
 
+def _names_word(name: str, display: str) -> bool:
+    """True when `name` is one word of `display` or `display` minus a title (Thai or English)."""
+    want = norm_key(name)
+    words = [norm_key(w) for w in display.split()]
+    if want in words:
+        return True
+    try:
+        from name_registry import slug
+        return slug(name) in {slug(display), *(slug(w) for w in display.split())}
+    except Exception:
+        return False
+
+
 def find_character_file(campaign: str, name: str) -> pathlib.Path:
     """Resolve a sheet by filename, display name, slug, or unique given name."""
     cdir = find_campaign(campaign) / "characters"
@@ -141,7 +154,7 @@ def find_character_file(campaign: str, name: str) -> pathlib.Path:
         headings = [line[2:].strip() for line in lines if line.startswith("# ") and line[2:].strip()]
         if any(norm_key(display) == target for display in headings):
             return path
-        if headings and headings[0].split()[0].casefold() == name.strip().casefold():
+        if headings and _names_word(name, headings[0]):
             first_names.append((path, headings[0]))
     if len(first_names) == 1:
         return first_names[0][0]

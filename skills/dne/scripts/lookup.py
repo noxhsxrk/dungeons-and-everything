@@ -86,6 +86,8 @@ CATEGORY_MAP = {
     "weapon_mastery":     "weapon_mastery_properties",
     "weapon_mastery_properties": "weapon_mastery_properties",
     "species":     "species",
+    "subclass":    "subclasses_world",
+    "subclasses":  "subclasses_world",
     "subspecies":  "subspecies",
     "invocation":     "class_options",
     "invocations":    "class_options",
@@ -215,6 +217,11 @@ def _dataset_key(ruleset=None, campaign=None, category=None):
             merge = cat in _ALWAYS_MERGE or kit.get("_meta", {}).get("srd_fallback", False)
             base = data.get(cat, []) if merge else []
             data[cat] = [dict(r) for r in records] + [r for r in base if _norm(r["name"]) not in names]
+        # World subclasses live inside their class records; expose them for `lookup.py subclass`.
+        data["subclasses_world"] = [
+            {"name": s["name"], "index": _norm(s["name"]), "class": c.get("name", ""),
+             "label": c.get("subclass_label", "Subclass"), "description": s.get("description", "")}
+            for c in kit.get("classes", []) for s in c.get("subclasses", []) if s.get("name")]
         _data_by_rs[key] = data
         _index_by_rs[key] = {
             cat: {alias: r for r in records
@@ -412,7 +419,9 @@ def _fmt_feature(r: dict) -> str:
 
 def _fmt_class_option(r: dict) -> str:
     kind = r.get("kind", "").replace("_", " ").title()
-    head = f"## {r.get('name','?')}  [{r.get('class','')} {kind}, level {r.get('level','?')}]"
+    tag = " ".join(x for x in (r.get("class", ""), kind) if x)
+    level = f", level {r['level']}" if r.get("level") else ""
+    head = f"## {r.get('name','?')}  [{tag}{level}]"
     lines = [head]
     if r.get("prerequisites"):
         lines.append(f"Prerequisite: {', '.join(r['prerequisites'])}")
@@ -447,6 +456,7 @@ def _fmt_origin(r: dict) -> str:
 
 FORMATTERS = {
     "classes": _fmt_class,
+    "subclasses_world": lambda r: f"## {r['name']}  [{r['class']} — {r['label']}]\n\n{r.get('description', '')}",
     "backgrounds": _fmt_origin,
     "races": _fmt_origin,
     "subraces": _fmt_origin,

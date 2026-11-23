@@ -274,3 +274,32 @@ class ZeroHpTrackerTests(_Camp):
         finally:
             os.environ.pop("DNE_CAMPAIGN_ROOT", None)
         self.assertIn(("Exhaustion 1", "-2"), mods)
+
+
+class FinalPolishTests(_Camp):
+    def test_sell_prefix_quantity_and_note(self):
+        p = self.camp / "characters" / "klaa.md"
+        p.write_text("# จ่ากล้า เหล็กเพชร\n## Equipment & Inventory\n**Adventuring Gear:**\n- 2× เซลล์ไฟ\n- กระสุนเรล (20 นัด)\n\n"
+                     "**Currency:** 5\n", encoding="utf-8")
+        for item in ("เซลล์ไฟ", "กระสุนเรล"):
+            r = self.run_py("economy.py", "-c", "eden", "sell", "--char", "กล้า", "--item", item, "--value", "1")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        text = p.read_text(encoding="utf-8")
+        self.assertIn("เซลล์ไฟ ×1", text)
+        self.assertNotIn("กระสุนเรล", text)
+        ledger = json.loads((self.camp / ".economy_ledger.json").read_text(encoding="utf-8"))
+        self.assertEqual({e["character"] for e in ledger}, {"จ่ากล้า เหล็กเพชร"})
+
+    def test_world_subclass_lookup(self):
+        r = self.run_py("lookup.py", "subclass", "Line Guard", "-c", "eden")
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertIn("Champion", r.stdout)
+
+    def test_long_rest_reports_slots_and_temp_hp(self):
+        p = self.camp / "characters" / "mae.md"
+        p.write_text("# Mae\n## Combat Stats\n- **HP:** 10 / 10 | **Temp HP:** 2\n- **Hit Dice:** 1d8 (remaining: 1)\n"
+                     "## Spell Slots\n| Level | Total | Used |\n|---|---|---|\n| 1st | 2 | 2 |\n"
+                     "## Equipment & Inventory\n**Currency:** 5\n", encoding="utf-8")
+        r = self.run_py("economy.py", "-c", "eden", "rest", "--char", "mae", "--type", "long")
+        self.assertIn("spell_slots_restored=2", r.stdout)
+        self.assertIn("temp_hp=2->0", r.stdout)

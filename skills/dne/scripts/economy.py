@@ -67,6 +67,14 @@ def _units_pattern() -> str:
     return units
 
 
+def _display_name(path: pathlib.Path) -> str:
+    """The sheet's own name (its H1), so the ledger has one key per character."""
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if line.startswith("# ") and line[2:].strip():
+            return line[2:].strip()
+    return path.stem
+
+
 def _find_char_file(campaign: str, char_name: str) -> pathlib.Path:
     _use_world_currency(campaign)
     return find_character_file(campaign, char_name)
@@ -144,7 +152,8 @@ def _item_lines(text: str, item: str):
     span = _inventory_span(text)
     if not span:
         return []
-    pattern = r"^[ \t]*[-*][ \t]+" + re.escape(item.strip()) + r"(?:[ \t]*\(?[×x][ \t]*(\d+)\)?)?[ \t]*(?:\n|$)"
+    pattern = (r"^[ \t]*[-*][ \t]+(?:(?P<pre>\d+)[ \t]*[×x][ \t]*)?" + re.escape(item.strip())
+               + r"(?:[ \t]*\(?[×x][ \t]*(?P<post>\d+)\)?)?(?:[ \t]*\([^)\n]*\))?[ \t]*(?:\n|$)")
     return list(re.finditer(pattern, text[span.start():span.end()], re.M | re.I))
 
 
@@ -154,7 +163,7 @@ def _add_inventory_item(text: str, item: str, section: str) -> str:
     if span:
         body = span.group()
         matches = _item_lines(text, item)
-        count = 1 + sum(int(m.group(1) or 1) for m in matches)
+        count = 1 + sum(int(m.group("pre") or m.group("post") or 1) for m in matches)
         entry = f"- {item}" + (f" ×{count}" if count > 1 else "")
         for m in reversed(matches):
             body = body[:m.start()] + body[m.end():]
@@ -190,7 +199,7 @@ def _remove_inventory_item(text: str, item: str) -> tuple[str, bool]:
     if not matches:
         return text, False
     m = matches[0]
-    count = int(m.group(1) or 1)
+    count = int(m.group("pre") or m.group("post") or 1)
     replacement = f"- {item} ×{count - 1}\n" if count > 1 else ""
     return text[:span.start() + m.start()] + replacement + text[span.start() + m.end():], True
 
@@ -228,7 +237,7 @@ def adjust_gold(campaign: str, char_name: str, delta_spec: str, reason: str = ""
     cf.write_text(_write_currency_cp(text, new_cp), encoding="utf-8")
     rec = {
         "type": "gold",
-        "character": char_name,
+        "character": _display_name(cf),
         "before": format_cp(cur_cp),
         "delta": format_cp(delta_cp),
         "after": format_cp(new_cp),
@@ -254,7 +263,7 @@ def buy_item(campaign: str, char_name: str, item: str, cost_spec: str) -> dict:
     cf.write_text(text, encoding="utf-8")
     rec = {
         "type": "buy",
-        "character": char_name,
+        "character": _display_name(cf),
         "item": item,
         "cost": format_cp(cost_cp),
         "before": format_cp(cur_cp),
@@ -277,7 +286,7 @@ def sell_item(campaign: str, char_name: str, item: str, value_spec: str) -> dict
     cf.write_text(new_text, encoding="utf-8")
     rec = {
         "type": "sell",
-        "character": char_name,
+        "character": _display_name(cf),
         "item": item,
         "value": format_cp(val_cp),
         "before": format_cp(cur_cp),
@@ -337,16 +346,21 @@ def _apply_rest_to_sheet(text: str, rest_type: str, hit_dice_spent: int = 0, hea
         n_slots = 0
         def reset_section(section):
             nonlocal n_slots
-            updated, count = re.subn(
-                r"\|[ \t]*(\d+(?:st|nd|rd|th)[^|\n]*?)[ \t]*\|\s*(\d+)\s*\|\s*[1-9]\d*\s*\|",
-                _reset_slot_row, section.group())
-            n_slots += count
-            return updated
+            def reset_row(m):
+                nonlocal n_slots
+                n_slots += int(m.group(3))          # slots restored, not rows touched
+                return _reset_slot_row(m)
+            return re.sub(
+                r"\|[ \t]*(\d+(?:st|nd|rd|th)[^|\n]*?)[ \t]*\|\s*(\d+)\s*\|\s*([1-9]\d*)\s*\|",
+                reset_row, section.group())
         text = slot_sections.sub(reset_section, text)
         if n_slots:
             changes["spell_slots_restored"] = n_slots
 
     if rest_type == "long":
+        tmp = re.search(r"\*\*Temp HP:\*\*\s*(\d+)", text)
+        if tmp and int(tmp.group(1)):
+            changes["temp_hp"] = f"{tmp.group(1)}->0"
         text = re.sub(r"(\*\*Temp HP:\*\*\s*)\d+", r"\g<1>0", text)
         ds_pat = re.compile(r"(\*\*Death Saves:\*\*\s*)Successes:\s*\d+\s*\|\s*Failures:\s*\d+")
         if ds_pat.search(text):

@@ -33,6 +33,11 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
   bard 9; 2024 encounters and XP use Low/Moderate/High bands (the budget is a ceiling; no Deadly tier);
   a character at 0 HP gets nothing from any rest; a short rest can't heal past the Hit Dice left;
   `calendar.py init --gregorian` takes local month/day names (Thai); items written `- หอก (×2)` can be sold.
+- Re-verification polish: sell `- 2× item` and `- item (note)` lines; characters resolve by any word of their
+  name or without a Thai title (จ่า, สารวัตร, ผู้หมวด, ผู้การ added); the economy ledger records the sheet's own
+  name; `lookup.py subclass <name> -c` shows a world subclass; long-rest reports count restored slots and
+  cleared Temp HP; 0-HP characters stay down at combat end and gain nothing from `calendar.py rest long`;
+  2024 exhaustion applies to death saves.
 - `redo` refuses once play has continued after an undo (it used to roll the whole later session back);
   its message now says what it re-applied. Encounters label mixed-level parties by level (L4+L3).
 - Display: Thai character names open their sheet on phone/TV; the player codex no longer shows DM prep
