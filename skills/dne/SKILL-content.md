@@ -70,6 +70,9 @@ use them.
 
 ## If you won't write a particular detail
 
+With autorun on, the players only see the display: put your one-line note there (`send.py --tutor`),
+keep narrating, and relaunch `autorun_wait.py` (SKILL.md → Autorun, step 3). Never stop the loop.
+
 Stay in the game. Cut away inside the fiction (a hard scene change, the aftermath, a survivor's
 account) and keep playing at the table's level. Do not stop the session to lecture, and do not
 quietly drop the whole campaign to `standard`; only the one detail is skipped.

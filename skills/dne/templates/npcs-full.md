@@ -3,6 +3,7 @@
 *One `## <Name>` section per NPC, matching a row in `npcs.md`. Read the entry before voicing the NPC in a substantive scene.*
 
 ## <Name>
+- **Aliases:** <every name the story uses for them: nickname, title, the spelling in the table's language — e.g. รินะ, Rina>
 - **Role:** | **CR/Level:** | **Location:**
 - **HP:** | **AC:** | **Attack:** | **Notable abilities:**
 - **Demeanor:** | **Motivation:** | **Secret:**

@@ -4104,6 +4104,33 @@ body.dialogue-bubbles .npc-block {
 }
 #battlemap-svg-wrap { margin-top: 10px; }
 
+  /* Status panel (all looks) */
+  #doctor-panel{ position:fixed; inset:0; z-index:700; display:grid; place-items:end center; background:rgba(0,0,0,.45); }
+  #doctor-panel[hidden]{ display:none; }
+  #doctor-card{ width:min(480px, 100vw); max-height:85dvh; overflow-y:auto; box-sizing:border-box;
+    background:var(--e-canvas, #16130f); color:var(--e-ink, #ece3d2); border-radius:16px 16px 0 0;
+    padding:16px 16px max(16px, env(safe-area-inset-bottom)); font:15px/1.5 system-ui, 'Noto Sans Thai', sans-serif; }
+  @media (min-width: 769px){ #doctor-panel{ place-items:center; } #doctor-card{ border-radius:16px; } }
+  .dr-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .dr-head h2{ margin:0; font-size:18px; font-weight:600; }
+  #doctor-close{ width:40px; height:40px; border:0; border-radius:10px; background:transparent; color:inherit; font-size:18px; cursor:pointer; }
+  #doctor-list{ list-style:none; margin:0; padding:0; }
+  #doctor-list li{ display:grid; grid-template-columns:28px 1fr; gap:2px 8px; padding:10px 0; border-bottom:1px solid var(--e-hair, rgba(255,255,255,.1)); }
+  #doctor-list .dr-ic{ grid-row:span 2; width:22px; height:22px; border-radius:50%; display:grid; place-items:center;
+    font-size:13px; font-weight:700; margin-top:1px; }
+  #doctor-list .ok .dr-ic{ background:#2f7d4f; color:#fff; }
+  #doctor-list .bad .dr-ic{ background:#b4532a; color:#fff; }
+  #doctor-list .na .dr-ic{ background:var(--e-hair, rgba(255,255,255,.15)); color:inherit; }
+  #doctor-list .dr-label{ font-weight:600; }
+  #doctor-list .dr-hint{ font-size:14px; opacity:.8; }
+  #doctor-note{ font-size:14px; min-height:1.2em; margin:10px 0 4px; opacity:.85; }
+  .dr-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .dr-actions button{ flex:1 1 auto; min-height:44px; padding:0 14px; border-radius:10px; cursor:pointer; font:600 15px system-ui, 'Noto Sans Thai', sans-serif;
+    border:1px solid var(--e-hair, rgba(255,255,255,.2)); background:transparent; color:inherit; }
+  #doctor-retry{ background:var(--e-accent, #b48c3c); color:var(--e-dice-text, #111); border-color:transparent; }
+  .dr-actions button:disabled{ opacity:.5; }
+  body.input-only #phone-status.ps-stalled{ cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+
   /* "Show all" while text is still typing; sits just above the input panel */
   #skip-typing{
     position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--input-reserve, 24px) + 4px);
@@ -4560,6 +4587,10 @@ body.dialogue-bubbles .npc-block {
       <span id="vb-val" class="theme-label">500w</span>
     </span>
   </div>
+  <div class="audio-row" id="status-row" title="Is the game ready to take actions? Check and retry">
+    <span class="audio-label">Status</span>
+    <span class="theme-label" id="status-label">Check</span>
+  </div>
   <div class="audio-row" id="speed-row" title="Typing speed — click to cycle">
     <span class="audio-label">Type Speed</span>
     <span id="speed-label" class="speed-label">Normal</span>
@@ -4640,6 +4671,21 @@ body.dialogue-bubbles .npc-block {
     <button class="ph-set-opt" id="ph-theme-opt" type="button"><span>Theme</span><strong id="ph-theme-val">Dark</strong></button>
     <label class="ph-set-opt ph-set-row" id="ph-skin-opt"><span>Style</span><select id="ph-skin-select" class="ph-set-select" aria-label="Display style"><option value="vellum">Vellum</option><option value="editorial">Editorial</option></select></label>
     <button class="ph-set-opt" id="ph-roll-opt" type="button" hidden><span>Rolls</span><strong id="ph-roll-val">Players</strong></button>
+    <button class="ph-set-opt" id="ph-status-opt" type="button"><span>Status</span><strong>Check</strong></button>
+  </div>
+</div>
+
+<!-- Status ("doctor"): is the table ready to take actions; check again / resend -->
+<div id="doctor-panel" role="dialog" aria-modal="true" aria-labelledby="doctor-title" hidden>
+  <div id="doctor-card">
+    <div class="dr-head"><h2 id="doctor-title">Status</h2>
+      <button id="doctor-close" type="button" aria-label="Close status">✕</button></div>
+    <ul id="doctor-list"></ul>
+    <div id="doctor-note" aria-live="polite"></div>
+    <div class="dr-actions">
+      <button id="doctor-recheck" type="button">Check again</button>
+      <button id="doctor-retry" type="button">Resend waiting actions</button>
+    </div>
   </div>
 </div>
 
@@ -8154,6 +8200,91 @@ function _buildCharTabs(players) {
 }
 
 // ── Render staged queue ───────────────────────────────────────────
+// ── Status ("doctor") panel ───────────────────────────────────────
+// Asks the display server whether the table can take actions right now (campaign,
+// party, the GM's wait loop, stuck actions) and offers Check again / Resend.
+async function _doctorFetch(method) {
+  try {
+    const r = await fetch(method === 'POST' ? '/doctor/retry' : '/doctor',
+                          { method: method || 'GET', headers: _authHeaders() });
+    return r.ok ? await r.json() : null;
+  } catch (_) { return null; }
+}
+function _renderDoctor(d) {
+  const list = document.getElementById('doctor-list');
+  if (!list) return;
+  const checks = d ? d.checks : [{ ok: false, label: 'Display server',
+    hint: "Can't reach the game. The computer running it may have stopped the display or lost its connection." }];
+  list.innerHTML = '';
+  checks.forEach(c => {
+    const li = document.createElement('li');
+    li.className = c.ok === true ? 'ok' : c.ok === false ? 'bad' : 'na';
+    const ic = document.createElement('span'); ic.className = 'dr-ic';
+    ic.textContent = c.ok === true ? '✓' : c.ok === false ? '!' : '–';
+    const lb = document.createElement('span'); lb.className = 'dr-label'; lb.textContent = c.label;
+    const hn = document.createElement('span'); hn.className = 'dr-hint'; hn.textContent = c.hint || '';
+    li.append(ic, lb, hn);
+    list.appendChild(li);
+  });
+}
+async function _openDoctor() {
+  const panel = document.getElementById('doctor-panel');
+  if (!panel) return;
+  panel.hidden = false;
+  document.getElementById('doctor-note').textContent = 'Checking…';
+  _renderDoctor(await _doctorFetch());
+  document.getElementById('doctor-note').textContent = '';
+}
+(function _initDoctor() {
+  const panel = document.getElementById('doctor-panel');
+  if (!panel) return;
+  const close = () => { panel.hidden = true; };
+  document.getElementById('doctor-close').addEventListener('click', close);
+  panel.addEventListener('click', e => { if (e.target === panel) close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !panel.hidden) close(); });
+  document.getElementById('doctor-recheck').addEventListener('click', _openDoctor);
+  document.getElementById('doctor-retry').addEventListener('click', async e => {
+    const btn = e.currentTarget, note = document.getElementById('doctor-note');
+    btn.disabled = true;
+    note.textContent = 'Resending…';
+    // A failed send left text in the box: send it again first.
+    const ta = document.getElementById('player-input-text');
+    if (ta && ta.value.trim() && typeof _stageAction === 'function') await _stageAction();
+    const d = await _doctorFetch('POST');
+    _renderDoctor(d);
+    note.textContent = !d ? "Couldn't reach the game." :
+      (d.resent ? `Resent ${d.resent} action(s). ` : 'Nothing was stuck on the display. ') +
+      (d.autorun && !d.gm_listening ? 'The GM still has to start listening (see above).' : '');
+    btn.disabled = false;
+  });
+  ['status-row', 'ph-status-opt'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', e => { e.stopPropagation(); _openDoctor(); });
+  });
+  const ps = document.getElementById('phone-status');
+  if (ps) ps.addEventListener('click', () => { if (ps.dataset.state === 'stalled') _openDoctor(); });
+})();
+
+// After an action is sent, keep an eye on the GM's wait loop; if nothing is
+// listening, say so on the phone instead of "sit tight" forever.
+let _gmWatch = null;
+function _stopWatchGm() { if (_gmWatch) { clearInterval(_gmWatch); _gmWatch = null; } }
+function _watchGm() {
+  if (_gmWatch) return;
+  const tick = async () => {
+    const el = document.getElementById('phone-status');
+    if (!el || (el.dataset.state !== 'sent' && el.dataset.state !== 'stalled')) { _stopWatchGm(); return; }
+    const d = await _doctorFetch();
+    if (d && d.autorun && !d.gm_listening && d.queue_pending) {
+      el.className = 'ps-stalled'; el.dataset.state = 'stalled'; el.textContent = _PS_TEXT.stalled;
+    } else if (el.dataset.state === 'stalled') {
+      el.className = 'ps-sent'; el.dataset.state = 'sent'; el.textContent = _PS_TEXT.sent;
+    }
+  };
+  setTimeout(tick, 8000);
+  _gmWatch = setInterval(tick, 15000);
+}
+
 // ── Phone turn-status strip ───────────────────────────────────────
 // One plain line telling the player where the turn is: compose → sending →
 // sent (waiting for the DM) → (resolving). Transient states (sending/resolving)
@@ -8163,10 +8294,12 @@ const _PS_TEXT = {
   sending:   'Sending…',
   sent:      '✓ Sent to the DM. Sit tight.',
   resolving: 'The DM is narrating…',
+  stalled:   'Sent, but the GM isn\'t listening right now. Tap for Status.',
 };
 function _setPhoneStatus(state) {
   const el = document.getElementById('phone-status');
   if (!el || !document.body.classList.contains('input-only')) return;
+  if (state === 'sent') _watchGm(); else _stopWatchGm();
   el.className = 'ps-' + state;
   el.dataset.state = state;
   el.textContent = _PS_TEXT[state] || _PS_TEXT.compose;
@@ -9829,21 +9962,36 @@ function _refreshQuickChips() {
     });
   }
 
+  let codexSig = '';
   function loadCodex() {
     fetch('/codex')
       .then(r => r.ok ? r.json() : null)
-      .then(data => { codexCache = data; renderCodexTab(activeTab); })
+      .then(data => {
+        const sig = JSON.stringify(data);
+        if (sig === codexSig) return;            // unchanged: keep the reader's scroll position
+        const keep = bodyEl ? bodyEl.scrollTop : 0;
+        codexSig = sig; codexCache = data; renderCodexTab(activeTab);
+        if (bodyEl) bodyEl.scrollTop = keep;
+      })
       .catch(() => {});
+  }
+  // Live while open: re-read every few seconds, so what the GM writes to npcs.md,
+  // state.md or the graph shows up without closing and reopening.
+  let codexTimer = null;
+  function codexLive(on) {
+    clearInterval(codexTimer); codexTimer = null;
+    if (on) codexTimer = setInterval(() => { if (!document.hidden) loadCodex(); }, 6000);
   }
 
   if (openBtn && drawer) {
     openBtn.addEventListener('click', () => {
       const isOpen = drawer.classList.toggle('open');
       if (isOpen) loadCodex();
+      codexLive(isOpen);
     });
   }
   if (closeBtn && drawer) {
-    closeBtn.addEventListener('click', () => drawer.classList.remove('open'));
+    closeBtn.addEventListener('click', () => { drawer.classList.remove('open'); codexLive(false); });
   }
   document.querySelectorAll('.codex-tab').forEach(btn => {
     btn.addEventListener('click', () => renderCodexTab(btn.dataset.codex));

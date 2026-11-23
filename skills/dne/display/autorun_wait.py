@@ -49,25 +49,38 @@ try:
 except Exception:
     pass
 
+# Tell the display (Status panel) and the Stop hook that the GM is listening.
+WAITER_FILE = os.path.join(RT, ".autorun-waiter.json")
+with open(WAITER_FILE, "w", encoding="utf-8") as f:
+    json.dump({"pid": os.getpid(), "since": time.time(), "session": my_session}, f)
+
 subprocess.run([sys.executable, PUSH, "--autorun-waiting", "true", "--autorun-cycle", str(interval)],
                capture_output=True)
 
 # Poll loop — exit when queue appears, session changes, or timeout passes (4 hours)
 content = ""
-for _ in range(48000):  # 0.3s * 48000 = 4 hours
-    if os.path.exists(QFILE):
-        try:
-            content = open(QFILE, encoding="utf-8").read()
-            os.unlink(QFILE)
-        except Exception:
-            content = ""
-        break
-    try:
-        if open(SESSION_FILE, encoding="utf-8").read().strip() != my_session:
+try:
+    for _ in range(48000):  # 0.3s * 48000 = 4 hours
+        if os.path.exists(QFILE):
+            try:
+                content = open(QFILE, encoding="utf-8").read()
+                os.unlink(QFILE)
+            except Exception:
+                content = ""
             break
+        try:
+            if open(SESSION_FILE, encoding="utf-8").read().strip() != my_session:
+                break
+        except Exception:
+            break
+        time.sleep(0.3)
+finally:
+    try:
+        with open(WAITER_FILE, encoding="utf-8") as f:
+            if json.load(f).get("session") == my_session:
+                os.unlink(WAITER_FILE)
     except Exception:
-        break
-    time.sleep(0.3)
+        pass
 
 # Clean up our session file if it's still ours
 try:

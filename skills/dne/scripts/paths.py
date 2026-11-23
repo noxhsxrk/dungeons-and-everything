@@ -105,6 +105,34 @@ def runtime_dir() -> pathlib.Path:
     return d
 
 
+AUTORUN_WAITER = ".autorun-waiter.json"   # written by display/autorun_wait.py while it waits
+
+
+def autorun_waiter() -> "dict | None":
+    """The running autorun_wait.py ({pid, since, session}), or None when nothing is waiting.
+
+    A record whose process is gone (killed, crashed) counts as nothing waiting. On Windows,
+    where os.kill(pid, 0) would send Ctrl+C, the record is trusted for its 4-hour lifetime.
+    """
+    import json
+    import time
+    try:
+        rec = json.loads((runtime_dir() / AUTORUN_WAITER).read_text(encoding="utf-8"))
+        pid, since = int(rec["pid"]), float(rec["since"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    if time.time() - since > 4 * 3600:
+        return None
+    if os.name != "nt":
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return None
+        except OSError:
+            pass   # exists but not ours to signal
+    return rec
+
+
 def campaigns_dir() -> pathlib.Path:
     """Return the campaigns directory under the configured root."""
     return _root() / "campaigns"

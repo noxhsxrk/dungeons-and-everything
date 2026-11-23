@@ -35,6 +35,26 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 - **iPhone: text and buttons no longer run past the screen edge.** Closed drawers were parked just off
   the right edge, and iOS widened the page to include them; on phones they are now clipped in place.
 - The input field re-measures once the Thai webfont loads, so it no longer keeps a blank extra line.
+- **`/dne save` works from a checklist.** `save_check.py` lists every part of a save, ticks what was
+  already written this session (file times since `/dne load`) and names the NPCs who appeared in this
+  session's narration, so relationships (npcs.md Attitude, state.md NPC dispositions, the graph) are no
+  longer the part that gets skipped. The save procedure runs it at the start and the end, and the save
+  summary must explain every unticked item. NPC entries gain `**Aliases:**` (the names used in play,
+  e.g. a Thai spelling) so the check recognises them.
+- **The Codex updates live** while it is open (every few seconds, without losing your scroll), and the
+  Game Master now writes relationship changes and new NPCs during play rather than only at save.
+- **The game doesn't stop.** `autorun_wait.py` registers itself while it waits
+  (`.autorun-waiter.json`). In Claude Code the Stop hook now refuses to end an autorun turn while the
+  display is up and nothing is waiting for players, and tells the Game Master to relaunch the loop.
+  On every agent, the display has a **Status** panel (Settings → Status; on a phone ⚙ → Status) that
+  checks the display, campaign, party and whether the GM is listening, explains what to do, and
+  **resends** actions that got stuck (`GET /doctor`, `POST /doctor/retry`). A phone whose sent action
+  isn't being picked up now says so ("the GM isn't listening right now — tap for Status") instead of
+  "sit tight" forever.
+- **Autorun no longer stalls after a declined request.** The Game Master is told that every autorun
+  turn ends by relaunching `autorun_wait.py`, and that a refusal or redirect goes to the display as one
+  short out-of-character line (`send.py --tutor`) before the scene continues, never only to the chat
+  the players can't see.
 - Codex NPCs: a table's header and `| --- |` separator rows were listed as people (`------ — ------`),
   and player characters appeared among the NPCs. Long entries are cut at a line break, not mid-word.
 

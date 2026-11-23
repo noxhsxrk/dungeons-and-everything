@@ -114,6 +114,66 @@ def session_plays_dne(stdin_obj: dict) -> bool:
     return plays
 
 
+def autorun_on(campaign: str) -> bool:
+    """`autorun: true` in the campaign's state.md → ## Session Flags."""
+    try:
+        text = (paths.find_campaign(campaign) / "state.md").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    flags = _section(text, "## Session Flags") or ""
+    for line in flags.splitlines():
+        key, _, val = line.strip().lstrip("-").strip().partition(":")
+        if key.strip().lower() == "autorun":
+            return val.strip().lower() in ("true", "on", "yes")
+    return False
+
+
+def display_up() -> bool:
+    """The display server answers /health (so players are actually waiting on it)."""
+    import urllib.request
+    import ssl
+    host = os.environ.get("DNE_DISPLAY_HOST", "localhost:5001")
+    scheme_file = paths.skill_root() / "display" / ".scheme"
+    try:
+        scheme = scheme_file.read_text(encoding="utf-8").strip() or "http"
+    except OSError:
+        scheme = "http"
+    ctx = None
+    if scheme == "https":
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+    try:
+        with urllib.request.urlopen(f"{scheme}://{host}/health", timeout=0.8, context=ctx) as r:
+            return r.status == 200
+    except Exception:
+        return False
+
+
+def autorun_stall_reason(stdin_obj: dict, campaign: str, wait_s: float = 2.0) -> "str | None":
+    """Block ending the turn when autorun is on, the display is up and nothing waits for players.
+
+    Gives a just-launched autorun_wait.py `wait_s` to register itself. Never blocks twice in a row
+    (stop_hook_active), so a model that can't comply is not looped forever.
+    """
+    import time
+    if stdin_obj.get("stop_hook_active") or not autorun_on(campaign) or not display_up():
+        return None
+    deadline = time.time() + wait_s
+    while True:
+        if paths.autorun_waiter():
+            return None
+        if time.time() >= deadline:
+            break
+        time.sleep(0.2)
+    waiter = paths.skill_root() / "display" / "autorun_wait.py"
+    return ("Autorun is on but nothing is waiting for the players' next action, so the game has stopped. "
+            "Before ending this turn: if you declined or redirected a request, send one short line to the "
+            "display with send.py --tutor (the players can't see this chat), continue the scene, and then "
+            f"relaunch `python3 \"{waiter}\"` as a background task (SKILL.md → Autorun, step 3). "
+            "An autorun turn never ends without the wait loop running.")
+
+
 def active_campaign() -> str | None:
     """Return the name of the campaign marked active by the last /dne load."""
     marker = paths.runtime_dir() / ACTIVE_MARKER
@@ -258,6 +318,13 @@ def main() -> int:
         return 0
     if not args.campaign and not session_plays_dne(stdin_obj):
         return 0
+
+    # The game must not stop: with autorun on, a turn may not end without the wait loop.
+    if not args.campaign and not args.snapshot_only:
+        stall = autorun_stall_reason(stdin_obj, campaign)
+        if stall:
+            _emit_block(stall)
+            return 0
     if not autosave_enabled(campaign):
         return 0
 

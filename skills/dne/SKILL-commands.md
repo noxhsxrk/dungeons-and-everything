@@ -63,7 +63,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
 8. **Three Truths** — one settlement, one nearby threat, one mystery (with clue trail). Write to respective sections in world.md.
 9. **Threat Escalation Arc** — fill the five-stage table in world.md immediately after threat generation. Set current stage to 1. Write `Threat arc stage: 1 — Now` to `state.md → ## World State`.
 10. **2 Factions** — archetype, all fields including current activity. Write to `## Factions` in world.md. Write one-line faction states to `state.md → ## World State`. Then track each one's numbers for off-screen turns: `python3 ${CLAUDE_SKILL_DIR}/scripts/faction.py -c <campaign> add "<name>" --force N --wealth N --influence N --goal "<current activity as a goal>" --clock 6 --goal-stat <stat> --rivals "<other>"` (1–5 each: Force = muscle, Wealth = money and goods, Influence = favours, secrets and reach). When you need a settlement, district or ruin later, `tags.py -c <campaign> roll` gives two place tags to build it from (SKILL-table-rules.md §11).
-11. **3 NPCs with relationship web** — for each proposed name run `python3 ${CLAUDE_SKILL_DIR}/scripts/name_registry.py check "<name>"` and regenerate duplicates. Write full entries (role, stats, demeanor, motivation, secret, speech quirk, faction, current goal, schedule, personality axes) to **`npcs-full.md`**, one `## <Name>` section each; write one index row per NPC to **`npcs.md`**. Generate all three first, then fill Relationships (every NPC needs ≥2 links to others). Then `name_registry.py add --name "<name>" --type npc --campaign <campaign> --session 0` for each.
+11. **3 NPCs with relationship web** — for each proposed name run `python3 ${CLAUDE_SKILL_DIR}/scripts/name_registry.py check "<name>"` and regenerate duplicates. Write full entries (aliases — every name the story will use for them, including the spelling in the table's language — role, stats, demeanor, motivation, secret, speech quirk, faction, current goal, schedule, personality axes) to **`npcs-full.md`**, one `## <Name>` section each; write one index row per NPC to **`npcs.md`**. Generate all three first, then fill Relationships (every NPC needs ≥2 links to others). Then `name_registry.py add --name "<name>" --type npc --campaign <campaign> --session 0` for each.
 12. **3–5 Quest Seeds** from threat, factions, mystery, NPC motivations. Write to `## Quest Seed Bank` in world.md. Then turn the strongest 3 into `## Adventure Nodes` (situation, ways in, what happens if the party never arrives, connections).
 13. **Dynamic Campaign Arc** — auto-generate the arc from all world data just created. Use the Strongest tier for this step. Ask: *"Generate a committed narrative arc? [y/n — recommended]"*
 
@@ -395,6 +395,8 @@ Campaign "<name>" created from <source title>.
 ---
 
 ## `/dne save`
+**Start and finish with the checklist.** Run `python3 ${CLAUDE_SKILL_DIR}/scripts/save_check.py -c <campaign>` first: it lists every part of the save, ticks what was already written this session, and names the NPCs who appeared in this session's narration (relationships live in three places: the Attitude column in npcs.md, `NPC dispositions` in state.md → Live State Flags, and the graph). Work through every ☐, run it again, and in your save summary to the players list each file you changed and, for every ☐ left, why nothing changed. Never report "saved everything" with a ☐ unexplained.
+
 Write session events to session-log.md, update state.md (location, active quests, party HP/resources, recent events), update any characters/*.md that changed. Mirror each updated character to the global roster (`<DNE_CAMPAIGN_ROOT>/characters/<file>.md`, default `~/.dne/characters/`).
 
 **Header bookkeeping:** on the first save of a session, increment `**Session count:**` and set `**Last session:**` to today's real date in the state.md header (later saves in the same session leave them alone). **NPC attitudes:** when an NPC's attitude changed, update its row in `npcs.md` and its `**Attitude toward party:**` line in `npcs-full.md` (and `campaign_graph.py set-disposition` if the graph is initialised), using the one scale everywhere: hostile → suspicious → neutral → friendly → allied.
@@ -983,6 +985,7 @@ Toggle autorun (taxi) mode — Antigravity drives the turn loop automatically wh
    python3 ${CLAUDE_SKILL_DIR}/display/autorun_wait.py
    ```
    When the player submits on the web, the host wakes you with the background task's completion containing the player's action.
+   Every turn after that ends by relaunching it, including turns where you decline a request (SKILL.md → Autorun, step 3).
 
 The display shows a pie-clock countdown draining from full to empty over the interval. Green pulse = actively waiting. Configurable via `autorun_interval: N` in state.md (default 60 seconds).
 

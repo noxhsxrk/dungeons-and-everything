@@ -1350,10 +1350,15 @@ def health():
     }, 200
 
 
+_last_chunk_ts: float = 0.0   # when the GM last sent narration (Status panel)
+
+
 @app.route("/chunk", methods=["POST"])
 def chunk():
+    global _last_chunk_ts
     if not _token_ok():
         return "Forbidden", 403
+    _last_chunk_ts = _time.time()
     data = request.get_json(silent=True) or {}
     raw = data.get("text", "")
     if not raw:
@@ -2764,6 +2769,97 @@ def _parse_codex_sections(filepath: str) -> list:
             cur_lines.append(line)
     _flush()
     return items
+
+
+def _doctor_state() -> dict:
+    """Readiness of the table, for the display's Status panel."""
+    camp = _active_campaign_name() or ""
+    autorun = None
+    waiter = None
+    try:
+        _scripts = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts"))
+        if _scripts not in sys.path:
+            sys.path.insert(0, _scripts)
+        import paths as _p
+        waiter = _p.autorun_waiter()
+        if camp:
+            txt = (_p.find_campaign(camp) / "state.md").read_text(encoding="utf-8", errors="replace")
+            flags = txt.split("## Session Flags", 1)[1].split("\n## ", 1)[0] if "## Session Flags" in txt else ""
+            m = re.search(r"^\s*-?\s*autorun:\s*(\w+)", flags, re.M)
+            autorun = bool(m and m.group(1).lower() in ("true", "on", "yes"))
+    except Exception:
+        pass
+    now = _time.time()
+    with _stats_lock:
+        players = [p.get("name") for p in _current_stats.get("players", []) if p.get("name")]
+    with _staged_lock:
+        staged = len(_staged)
+    try:
+        queue_age = now - os.path.getmtime(QUEUE_FILE)
+    except OSError:
+        queue_age = None
+    with _queue_status_lock:
+        queued_chars = list(_queue_status)
+    listening = waiter is not None
+    checks = [
+        {"id": "display", "ok": True, "label": "Display server", "hint": "Running."},
+        {"id": "campaign", "ok": bool(camp), "label": "Campaign loaded",
+         "hint": camp or "No game is loaded. On the computer running the game, use /dne load."},
+        {"id": "party", "ok": bool(players), "label": "Party on screen",
+         "hint": ", ".join(players) if players else "No characters yet. Ask the GM to push the party again (or /dne load)."},
+    ]
+    if autorun:
+        checks.append({"id": "gm", "ok": listening, "label": "GM listening for actions",
+                       "hint": ("Waiting for your actions." if listening else
+                                "The GM is not waiting for actions right now. On the computer running the game, "
+                                "tell the agent: \"continue autorun\" (or /dne load). Actions you send are kept "
+                                "and picked up as soon as it listens again.")})
+    else:
+        checks.append({"id": "gm", "ok": None, "label": "GM listening for actions",
+                       "hint": "Autorun is off: the GM reads actions when someone types to it."})
+    if queue_age is not None:
+        checks.append({"id": "queue", "ok": listening or not autorun, "label": "Actions waiting for the GM",
+                       "hint": f"{', '.join(queued_chars) or 'Actions'} sent {int(queue_age)}s ago."})
+    return {"campaign": camp, "autorun": autorun, "gm_listening": listening,
+            "listening_for": int(now - float(waiter["since"])) if waiter else None,
+            "queue_pending": queue_age is not None, "staged": staged, "players": players,
+            "last_narration_age": int(now - _last_chunk_ts) if _last_chunk_ts else None,
+            "checks": checks}
+
+
+@app.route("/doctor", methods=["GET"])
+def doctor():
+    """Status panel: is the game ready to take actions, and if not, why."""
+    return jsonify(_doctor_state()), 200
+
+
+@app.route("/doctor/retry", methods=["POST"])
+def doctor_retry():
+    """Push every staged action into the GM's queue now (as if all were Ready), then re-check."""
+    if not _token_ok():
+        return "Forbidden", 403
+    with _staged_lock:
+        for entry in _staged.values():
+            entry["ready"] = True
+        lines = [f'[{c}]: {e["text"]}' for c, e in _staged.items()]
+        names = list(_staged.keys())
+        _staged.clear()
+    if lines:
+        try:
+            existing = open(QUEUE_FILE, encoding="utf-8").read() if os.path.exists(QUEUE_FILE) else ""
+            with open(QUEUE_FILE, "w", encoding="utf-8") as f:
+                f.write((existing + "\n" if existing else "") + "\n".join(lines))
+        except OSError:
+            names = []
+        with _queue_status_lock:
+            for n in names:
+                if n not in _queue_status:
+                    _queue_status.append(n)
+            qs = list(_queue_status)
+        _broadcast({"staged_inputs": {}, "queue_status": qs})
+    state = _doctor_state()
+    state["resent"] = len(lines)
+    return jsonify(state), 200
 
 
 @app.route("/codex", methods=["GET"])

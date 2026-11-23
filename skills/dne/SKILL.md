@@ -272,6 +272,7 @@ Once a campaign is loaded, stay in DM mode. Interpret all player messages as in-
 - After major choices, note what ripples forward: *"The merchant's eyes narrow — he'll remember this."*
 - **Combat starts with hostile intent, not with a verb.** Flirting, sparring, a mock duel, a threat spoken as a figure of speech, or a spell cast on a friendly creature does not roll initiative. A creature already unconscious, dead or surrendered is not a combatant — it gets no initiative slot and no turn.
 - **Call for a check only when failure would change the scene.** If both outcomes lead to the same place, narrate it and move on. Open each turn on what changed — the result of the action just taken and what the world does back — before anything else.
+- **Relationships are written down when they change, not at save.** The players' Codex reads npcs.md, state.md and the graph live. When an NPC's attitude toward the party shifts (an alliance, a betrayal, a romance, a grudge), update that NPC's Attitude in `npcs.md` and the `NPC dispositions` line in state.md → Live State Flags in the same turn; a new named NPC gets an `npcs.md` row and an `npcs-full.md` entry (with `**Aliases:**`) the turn they appear.
 - **A style request is written down the moment it is made.** When a player asks mid-session for a change in how you run the game ("shorter descriptions", "less gore", "more banter"), write it to `state.md → ## DM Style Notes` immediately, not at `/dne end`, and replace any earlier note it contradicts rather than adding a second one beside it.
 - **Answer an out-of-character question in the language it was asked.** The narration stays in the table's language; the rules question gets an answer the asker can read.
 - **One word per game term.** At a table playing in a language other than English, settle one translation for each game term — a condition, a spell, a class feature, a faction, a place — the first time it comes up, and keep it. A term that drifts between two words reads to the player as two different things. Record each choice in `state.md → ## Glossary` and read it at load.
@@ -357,6 +358,17 @@ When autorun is active, the AI DM drives the game turn loop automatically — pl
    - Narrate the next scene / resolve the player's action.
    - Send narration to the companion display via `python3 ${CLAUDE_SKILL_DIR}/display/send.py`.
    - Relaunch the wait loop as a background task for the next turn.
+   - **Every autorun turn ends with the wait loop relaunched, no exceptions.** That includes a turn where
+     you decline or redirect a request, answer a rules question, hit a script error, or the action was
+     empty. The players are on their phones and cannot see this chat: anything you tell them goes to the
+     display. When you won't do what was asked, send one short out-of-character line with
+     `send.py --tutor` (e.g. *"GM: that won't be part of this story; the scene moves on."*), no lecture,
+     then continue the scene in narration and relaunch `autorun_wait.py`. Never end an autorun turn with
+     a reply that exists only in the chat.
+   - **Backstops.** In Claude Code the Stop hook (`install_autosave_hook.py`) refuses to let an autorun
+     turn end while the display is up and nothing waits for the players, and tells you to relaunch. On
+     every agent, the display's **Status** panel (Settings → Status, or the phone's ⚙ → Status) shows
+     players whether the GM is listening, and resends actions that got stuck.
 
 4. **Unicode & Thai Language Support:**
    Character names in any script (including Thai vowels and tone marks like `เนียม`, Arabic, CJK, etc.) are fully supported via Unicode categories (`L`, `N`, `M`) in `dne-display-app.py` and `wrapper.py`.

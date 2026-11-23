@@ -189,6 +189,14 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/character.py xp --level 1 --gained 150
 
 ---
 
+## Save checklist — `scripts/save_check.py`
+
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/save_check.py -c $CAMP     # at the start and the end of /dne save and /dne end
+```
+✓ = written this session (file time after /dne load), ☐ = still to do or to justify. Lists the NPCs found in
+this session's narration by name, first name or their npcs-full.md `**Aliases:**`.
+
 ## World version — `scripts/campaign_version.py`
 
 ```bash

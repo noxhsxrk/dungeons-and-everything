@@ -16,6 +16,10 @@ Usage:
   python3 install_autosave_hook.py --status
   python3 install_autosave_hook.py --settings <path>   # target a specific file
 
+The same hook keeps autorun alive: with `autorun: true` and the display up, it will not let a
+turn end until display/autorun_wait.py is waiting for the players again (it never blocks twice
+in a row, and only in sessions that ran /dne).
+
 Once installed, toggle it per-campaign with `/dne autosave on|off` — the hook
 reads the `autosave` flag from the active campaign's state.md and no-ops when off
 or when no D&D campaign is loaded.
