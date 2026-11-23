@@ -726,6 +726,12 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/turn.py -c <campaign> help [action]
 ```
 Every command prints one JSON object: `turn_id`, `status` (`open`, `waiting_for_player`, `finished`, `idle`), `completed`, `pending`, `next_input`, `waiting`, `revision`. `send.py --message-id <id>` gives a message a stable id: the display shows a repeated id once.
 
+### Scene Context — `scripts/scene_context.py`
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/scene_context.py -c <campaign> [--text "<input>"] [--for dm|player:<Name>|companion:<Name>] [--budget 1800] [--json]
+```
+What a turn starts from, filtered by who may know it. The engine builds it at `begin`; run it yourself after a compaction to see who the turn is waiting on. Set the scene with the engine action `{"action": "scene", "place": "…", "present": ["…"]}`.
+
 ### NPC Records — `scripts/npc.py`
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/npc.py -c <campaign> add --name "<Name>" --role "<role>" --cr <CR> --aliases "<names used in play>"

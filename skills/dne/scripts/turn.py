@@ -251,9 +251,11 @@ def begin(campaign: str, text: str, input_id: "str | None" = None, source: str =
     with wdb.reader(campaign) as db:
         turn = db.execute("SELECT * FROM turns WHERE turn_id=?", (turn_id,)).fetchone()
         view = _turn_view(db, turn, input_id=input_id, resumed=resumed, answered=answered)
-    try:                                          # PR 3: what the GM needs to know to run this turn
+    try:                                          # what the GM needs to know to run this turn
         import scene_context
         view["context"] = scene_context.build(campaign, text)
+        with wdb.writer(campaign) as db:          # after the context: "him" must not resolve to someone named just now
+            scene_context.remember_mentions(db, text, campaign, int(turn_id.split("-")[1]))
     except Exception:
         pass
     return view
@@ -431,6 +433,11 @@ def finish(campaign: str, narration: str, turn_id: "str | None" = None, already_
             _queue(db, turn["turn_id"], f"{turn['turn_id']}-final", narration.strip())
         db.execute("UPDATE turns SET status='finished', narration=? WHERE turn_id=?", (narration.strip(), turn["turn_id"]))
         turn_id = turn["turn_id"]
+        try:                                      # who the GM just talked about is who "she" means next turn
+            import scene_context
+            scene_context.remember_mentions(db, narration, campaign, turn["seq"])
+        except Exception:
+            pass
     wdb.crash_point("after_commit_before_send")
     sent = deliver(campaign)
     with wdb.reader(campaign) as db:
@@ -510,7 +517,7 @@ def main() -> int:
 
 def _load_modules() -> None:
     """Engine modules register their handlers on import (rest, travel, trade, …)."""
-    for name in ("scheduler", "journey", "trade", "knowledge", "routine", "stakes", "table", "skirmish", "upkeep", "story"):
+    for name in ("scene_context", "scheduler", "journey", "trade", "knowledge", "routine", "stakes", "table", "skirmish", "upkeep", "story"):
         try:
             __import__(name)
         except ImportError:

@@ -188,31 +188,72 @@ def _turns_unsaved(campaign: str, count: bool) -> int:
     return turns
 
 
-def engine_lines(campaign: str, view: "dict | None") -> list[str]:
-    """What the world engine needs the GM to know about the turn that just opened (world_engine: on)."""
+#: The whole note is capped. What is due is never cut; the rest goes in this order until the cap is reached.
+DUE, SCENE, RULE, DEPTH, NUDGE = 0, 1, 2, 3, 4
+NOTE_BUDGET = 3600
+
+
+def _engine_parts(campaign: str, view: "dict | None") -> list:
+    """(priority, line) pairs about the engine turn that just opened (world_engine: on)."""
     if not view or not view.get("turn_id"):
         return []
-    lines = []
+    parts = []
     for done in view.get("answered") or []:
         for res in done.get("results") or []:
             d = res.get("data") or {}
             if "total" in d:
                 verdict = f", {d['degree'] or ('pass' if d.get('passed') else 'fail')} against DC {d['dc']}" if "dc" in d else ""
-                lines.append(f"ROLL IN: {d.get('actor')} rolled {d.get('dice')} for {d.get('label') or 'the roll'}: "
-                             f"total {d['total']}{verdict}. Narrate from this result; do not ask again.")
-    for w in view.get("waiting") or []:
-        lines.append(f"WAITING ON A PLAYER: {w['question']} ({w['request_id']}). Do not decide it for them; "
-                     "their answer comes as their next message.")
+                parts.append((DUE, f"ROLL IN: {d.get('actor')} rolled {d.get('dice')} for {d.get('label') or 'the roll'}: "
+                                   f"total {d['total']}{verdict}. Narrate from this result; do not ask again."))
     if view.get("duplicate"):
-        lines.append(f"This input was already received as {view['turn_id']}: do not resolve it a second time.")
-    lines.append(f"World engine: {view['turn_id']} is open. Rolls, rests, travel and trade go through "
-                 f"`{_py('turn.py')} -c {campaign} resolve --intents '[...]'` (`{_py('turn.py')} -c {campaign} help` "
-                 "lists the actions); your plain send.py narration closes the turn.")
-    return lines
+        parts.append((DUE, f"This input was already received as {view['turn_id']}: do not resolve it a second time."))
+    context = view.get("context")
+    if context:
+        try:
+            import scene_context
+            parts += scene_context.render_parts(context)
+        except Exception:
+            pass
+    else:
+        for w in view.get("waiting") or []:
+            parts.append((DUE, f"STILL WAITING: {w['question']} ({w['request_id']}, from {w['expected']})."))
+    if view.get("waiting"):
+        parts.append((DUE, "Do not decide a waited-on roll or choice for the player; their answer comes as their next message."))
+    parts.append((RULE, f"World engine: {view['turn_id']} is open. Rolls, rests, travel and trade go through "
+                        f"`{_py('turn.py')} -c {campaign} resolve --intents '[...]'` (`{_py('turn.py')} -c {campaign} help` "
+                        "lists the actions); your plain send.py narration closes the turn."))
+    return parts
 
 
-def turn_notes(campaign: str, count: bool = True, text: str = "", turn: "dict | None" = None) -> list[str]:
-    """Lines for the GM, sent with every player action (`text`). Standing rules first, then what is due.
+def engine_lines(campaign: str, view: "dict | None") -> list[str]:
+    """What the world engine needs the GM to know about the turn that just opened, as plain lines."""
+    return fit(_engine_parts(campaign, view))
+
+
+def fit(parts: list, budget: "int | None" = None) -> list[str]:
+    """Order by priority and stop at the budget. Lines that are due always stay; at most one nudge is kept."""
+    if budget is None:
+        try:
+            budget = int(os.environ.get("DNE_NOTE_BUDGET", NOTE_BUDGET))
+        except ValueError:
+            budget = NOTE_BUDGET
+    kept, used, dropped, nudged = [], 0, 0, False
+    for prio, line in sorted(parts, key=lambda p: p[0]):   # stable: lines of one priority keep their order
+        if prio == NUDGE and nudged:
+            continue
+        if prio != DUE and used + len(line) > budget:
+            dropped += 1
+            continue
+        kept.append(line)
+        used += len(line)
+        nudged = nudged or prio == NUDGE
+    if dropped:
+        kept.append(f"({dropped} lower-priority line{'s' if dropped > 1 else ''} left out for length.)")
+    return kept
+
+
+def turn_parts(campaign: str, count: bool = True, text: str = "", turn: "dict | None" = None) -> list:
+    """Every (priority, line) the GM could be told with this player action, before the cap is applied.
 
     `engine: light` in Session Flags drops the fight and XP rules: that table lets the GM judge them.
     """
@@ -220,33 +261,35 @@ def turn_notes(campaign: str, count: bool = True, text: str = "", turn: "dict | 
         return []
     cmds = SKILL / "SKILL-commands.md"
     full = paths.session_flag(campaign, "engine", "full") != "light"
-    notes = engine_lines(campaign, turn) + ([] if not full else [
+    parts = _engine_parts(campaign, turn)
+    if full:
+        parts.append((RULE,
         "Fights and rests run on the engine, never on narration alone. Before the first blow run "
         f"`{_py('combat.py')} init '<JSON>'` so every enemy has HP and AC (`{_py('worldkit.py')} monster-stats "
         "--cr <CR>` prints fair numbers for its rank; a d20 the player typed goes in as \"roll\": N). Each attack is "
         "the same combat.py with `attack --atk <bonus> --ac <AC> --dmg <dice> --roll <the d20 before bonuses>`; take "
         "the damage off the target's HP. An enemy is beaten only at 0 HP or when its morale breaks. Full steps: "
         f"{section_lines('SKILL-commands.md', '/dne combat start')}; a rest: "
-        f"{section_lines('SKILL-commands.md', '/dne rest').replace(str(cmds) + ' ', '')} of that file."
-    ])
-    notes += _npc_notes(campaign, text)
+        f"{section_lines('SKILL-commands.md', '/dne rest').replace(str(cmds) + ' ', '')} of that file."))
+    for i, line in enumerate(_npc_notes(campaign, text)):
+        parts.append((RULE if i == 0 else DUE, line))
     clock = _clock_gap(campaign)
     if clock:
-        notes.append(
+        parts.append((DUE,
             f"IN-WORLD CLOCK OUT OF STEP: {clock[0]}. calendar.json is the clock: NPC growth, faction turns and timed "
             f"effects count from it. If the story is later than the calendar, move it: `{_py('calendar.py')} -c {campaign} "
             "advance <N> <hours|days>` (or `set \"<D Month YYYY>\"`), as after every rest, journey or time skip. If the "
             f"calendar is right, show its date: `python3 \"{SKILL / 'display' / 'push_stats.py'}\" --world-time "
-            f"'{{\"date\": \"{clock[1]}\", \"time\": \"<time of day>\"}}'`.")
+            f"'{{\"date\": \"{clock[1]}\", \"time\": \"<time of day>\"}}'`."))
     gaps = _xp_gaps(campaign) if full else []
     if gaps:
-        notes.append(
+        parts.append((DUE,
             "XP NOT AWARDED BY THE ENGINE (" + "; ".join(gaps) + "). XP counts only when xp.py award gave it; never "
             "write it into a sheet or set it with push_stats.py --xp yourself. Fix it now: put the **XP:** line in "
             "characters/<pc>.md back to the xp.py figure, then for each encounter won since run "
             f"`{_py('xp.py')} award --campaign {campaign} --characters \"<PC>\" --monsters \"<name>:<CR>:<count>\"` "
             "(or `--difficulty easy|medium|hard|deadly --type noncombat`). It works the amount out from the tables, "
-            "writes the sheet and sets the display to match.")
+            "writes the sheet and sets the display to match."))
     try:
         import autosave_checkpoint as ac
         every, on = ac._every_from_env(), ac.autosave_enabled(campaign)
@@ -255,12 +298,26 @@ def turn_notes(campaign: str, count: bool = True, text: str = "", turn: "dict | 
     turns = _turns_unsaved(campaign, count)
     if on and turns >= every:
         camp = paths.find_campaign(campaign)
-        notes.append(
+        parts.append((DUE,
             f"SAVE DUE: {turns} player turns since state.md was last written; all of it is lost if this chat ends. "
             f"Before you narrate, write to {camp}: state.md (Current Situation: place, time, HP and resources; Recent "
             "Events; Live State Flags) and characters/<pc>.md (HP, slots, inventory, allies and gear gained). "
-            "Quietly, no word to the players; this is not a full /dne save.")
-    return notes
+            "Quietly, no word to the players; this is not a full /dne save."))
+    for provider in PROVIDERS:                    # story.py and the engine modules add their own lines
+        try:
+            parts += provider(campaign, text, turn) or []
+        except Exception:
+            pass
+    return parts
+
+
+#: Functions `fn(campaign, text, turn) -> [(priority, line)]` that other modules register.
+PROVIDERS: list = []
+
+
+def turn_notes(campaign: str, count: bool = True, text: str = "", turn: "dict | None" = None) -> list[str]:
+    """Lines for the GM, sent with every player action (`text`): what is due, then the scene, then standing rules."""
+    return fit(turn_parts(campaign, count, text, turn))
 
 
 def main() -> int:
