@@ -8,6 +8,14 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.6.4] — 2026-11-24 — The game keeps going
+
+### Fixed
+- **Autorun froze after a declined or blocked reply on agents without hooks (Antigravity).** A turn that ended in a chat-only reply left no wait loop, and only Claude Code had a backstop (the Stop hook). New `display/autorun_watchdog.py` runs as a second background task and wakes the GM with `AUTORUN STALLED` when a player action has waited 90 seconds (`DNE_AUTORUN_STALL_S`) with nothing listening. `autorun_wait.py` now ends its output with a `[[GM note …]]`: how to end the turn, and to start the watchdog when it isn't running.
+- **`/dne save` skipped relationships unless the players asked.** `save_check.py` ticked the relationship rows as soon as `npcs.md` was touched for any reason. Those rows now never tick themselves: the GM answers them NPC by NPC, with each NPC's current attitude shown.
+- **Display jumped to the start of the story after switching tabs on a phone.** Each reconnect appended the replayed log under the transcript already on screen and smooth-scrolled across it. A replay now replaces the transcript and lands on the latest text in one step (or where the reader had scrolled to).
+- **Rules a GM never read.** An agent that read only the top of `SKILL.md` never saw the `/dne save` procedure, the relaunch rule or the adults-only rule. `SKILL.md` now opens with four rules for the whole session: read every file to the end, read a command's section before running it (`save_check.py` for saves), never end an autorun turn without the wait loop, and romance only between clearly adult characters.
+
 ## [1.6.3] — 2026-11-23 — Narration always reaches the display
 
 ### Fixed
