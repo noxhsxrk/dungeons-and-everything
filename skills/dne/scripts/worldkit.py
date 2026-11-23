@@ -130,6 +130,9 @@ def validate(kit, campaign=None):
             elif category == 'races':
                 if type(record.get('speed')) is not int:
                     errors.append(f'{label}: speed must be an integer')
+                for skill in record.get('skills', []) or []:   # optional: skills the origin grants
+                    if not isinstance(skill, str) or skill not in skills:
+                        errors.append(f'{label}: unknown skill {skill!r}')
                 bonuses = record.get('ability_bonuses')
                 if not isinstance(bonuses, dict):
                     errors.append(f'{label}: ability_bonuses must be a dict')

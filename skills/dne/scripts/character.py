@@ -404,6 +404,23 @@ def _subclass_from(args, world):
     return match["name"]
 
 
+#: SRD 5.1 races whose traits grant a skill proficiency (Keen Senses, Menacing).
+SRD_RACE_SKILLS = {"elf": ["Perception"], "half-orc": ["Intimidation"]}
+
+
+def _origin_skills(record: dict, kit: dict) -> list:
+    """Skills a World Kit origin grants: its `skills` list, or a trait that says proficiency/ชำนาญ + a skill."""
+    if record.get("skills"):
+        return list(record["skills"])
+    names = list(SKILLS) + list((kit or {}).get("skills", {}).values())
+    found = []
+    for trait in record.get("traits", []):
+        text = str(trait)
+        if re.search(r"proficien|ชำนาญ|เชี่ยวชาญ", text, re.I):
+            found += [n for n in names if n.lower() in text.lower() and n not in found]
+    return found
+
+
 def do_calc(args: list[str]):
     if "--help" in args or "-h" in args:
         print(__doc__)
@@ -447,6 +464,7 @@ def do_calc(args: list[str]):
             if match is None:
                 raise ValueError(f"Unknown fighting style {style!r}")
             style = match["name"]
+        origin_skills: list = []
         if kit is not None and "races" in kit and (race or subrace):
             record = worldkit.find(kit, "races", race)
             if not record:
@@ -454,6 +472,7 @@ def do_calc(args: list[str]):
             if subrace:
                 raise ValueError("--subrace is only valid for SRD races")
             race = record["name"]
+            origin_skills = _origin_skills(record, kit)
             racial = dict(record["ability_bonuses"])
             scores = dict(base_scores)
             for stat, bonus in racial.items():
@@ -461,6 +480,10 @@ def do_calc(args: list[str]):
             race_notes = []
         else:
             scores, racial, race_notes = apply_racial_bonuses(base_scores, race, subrace)
+            origin_skills = SRD_RACE_SKILLS.get(_race_key(race), [])
+        if origin_skills:
+            proficient.extend(s for s in origin_skills if s not in proficient)
+            print(f"  Origin skill proficiency: {', '.join(origin_skills)}")
         if origin_traits_only and (race or subrace):
             scores, racial = dict(base_scores), {}
             print("2024: origin grants traits only")
@@ -872,6 +895,15 @@ def do_levelup(args: list[str]):
     if features:
         print(f"  New features: {', '.join(dict.fromkeys(features))}")
 
+    # Powers already on the character's sheet are not offered again.
+    known_text = ""
+    if "--char" in args and _campaign_from(args):
+        try:
+            from paths import find_character_file
+            known_text = find_character_file(_campaign_from(args), args[args.index("--char") + 1]).read_text(encoding="utf-8")
+        except (OSError, FileNotFoundError, IndexError) as exc:
+            print(f"character.py: {exc}", file=sys.stderr)
+            sys.exit(2)
     before, after = spell_progression(cls, from_lvl), spell_progression(cls, to_lvl)
     powers = worldkit.class_powers(kit, world)
     highest = max((int(name[0]) for name, n in after.items()
@@ -882,9 +914,11 @@ def do_levelup(args: list[str]):
             print(f"  {name}: {old} → {value}")
         if value > old and name in ("Cantrips known", "Spells known", "Spells in spellbook"):
             names = [p["name"] for p in powers if (p["level"] == 0 if name == "Cantrips known"
-                                                   else 1 <= p["level"] <= highest)]
+                                                   else 1 <= p["level"] <= highest)
+                     and p["name"] not in known_text]
             if names:
-                print(f"    Learn {value - old}: {', '.join(names)}")
+                print(f"    Learn {value - old}: {', '.join(names)}"
+                      + ("" if known_text else "  (add --char <name> to hide ones already known)"))
     if subclass:
         print(f"  Subclass: {subclass}")
     pact_boons = [r["name"] for r in world_options if r.get("kind") == "pact_boon"]

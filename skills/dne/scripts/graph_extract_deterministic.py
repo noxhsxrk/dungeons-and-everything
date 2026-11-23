@@ -54,18 +54,31 @@ def load_verb_table(path: Optional[pathlib.Path] = None) -> dict:
     raise FileNotFoundError(f"verb table not found. tried:\n  {tried}")
 
 
+_THAI_TABLE = _SKILL_ROOT / "data" / "graph" / "verb_table_th.json"
+
+
+def with_thai(table: dict) -> dict:
+    """The English seed plus the Thai verb table (Thai session logs)."""
+    if _THAI_TABLE.exists():
+        thai = json.loads(_THAI_TABLE.read_text(encoding="utf-8"))
+        table = dict(table)
+        table["inclusion"] = list(table.get("inclusion") or []) + thai.get("inclusion", [])
+    return table
+
+
 # ── entity recognition ─────────────────────────────────────────────────────
 
 
 _NPC_TABLE_ROW_RE = re.compile(r"^\|\s*([^|]+?)\s*\|")
 _NPC_FULL_HEADING_RE = re.compile(r"^###\s+(.+?)\s*$")
-_FACTION_HEADING_RE = re.compile(r"^###\s+(?:The\s+)?([A-Z][\w\s'-]+?)\s*$")
-_PLACE_HEADING_RE = re.compile(r"^###?\s+([A-Z][\w\s'-]+?)\s*$")
+_FACTION_HEADING_RE = re.compile(r"^###\s+(?:The\s+)?((?:[A-Z][\w\s'-]+?)|(?:[^\x00-\x7F][^\n|*#<>]*?))\s*$")
+_PLACE_HEADING_RE = re.compile(r"^###?\s+((?:[A-Z][\w\s'-]+?)|(?:[^\x00-\x7F][^\n|*#<>]*?))\s*$")
 
 
 def _is_likely_name(s: str) -> bool:
     """Heuristic: entity names start with a capital and aren't pure header text."""
-    if not s or not s[0].isupper():
+    # Names start with a capital — or, in scripts without case (Thai), with any letter.
+    if not s or not (s[0].isupper() or (s[0].isalpha() and not s[0].islower() and not s[0].isascii())):
         return False
     if s.lower() in {"name", "npc", "faction", "place", "n/a", "none", "tbd", "---"}:
         return False
@@ -204,7 +217,8 @@ def _build_entity_alternation(entities: set) -> str:
 
 
 def build_pattern_regex(template: str, entity_alt: str,
-                        category_target: Optional[str] = None) -> Optional[re.Pattern]:
+                        category_target: Optional[str] = None,
+                        flexible_space: bool = False) -> Optional[re.Pattern]:
     """Convert a verb-table pattern template (e.g. 'X sent Y to Z') to a regex.
 
     Placeholders X, Y, Z become named capture groups matching any known entity.
@@ -248,7 +262,7 @@ def build_pattern_regex(template: str, entity_alt: str,
             rebuilt.append(r"(?-i:(?:[a-z\'\-]+\s+){0,3}[a-z\'\-]+)")
         else:
             tok_esc = re.escape(tok)
-            tok_esc = re.sub(r"(?:\\\s)+", r"\\s+", tok_esc)
+            tok_esc = re.sub(r"(?:\\\s)+", r"\\s*" if flexible_space else r"\\s+", tok_esc)
             rebuilt.append(tok_esc)
     pattern = "".join(rebuilt)
     try:
@@ -305,7 +319,7 @@ def extract_proposals(campaign_dir: pathlib.Path,
        "confidence": "high"|"medium"|"low",
        "note": str (optional)}
     """
-    verb_table = verb_table or load_verb_table()
+    verb_table = verb_table or with_thai(load_verb_table())
     entities = build_entity_set(campaign_dir)
     if not entities:
         return []
@@ -354,7 +368,8 @@ def extract_proposals(campaign_dir: pathlib.Path,
             # When category_object_ok is true, also try a category-target variant
             # for the verb's grammatical object — the LAST X/Y/Z placeholder in
             # the template (e.g. Y in "X is possessed by Y", Y in "X worships Y").
-            variants = [(build_pattern_regex(template, entity_alt), None)]
+            variants = [(build_pattern_regex(template, entity_alt,
+                                             flexible_space=bool(verb_entry.get("thai"))), None)]
             if cat_ok:
                 slot_order = re.findall(r"\b([XYZ])\b", template)
                 cat_slot = slot_order[-1] if slot_order else None

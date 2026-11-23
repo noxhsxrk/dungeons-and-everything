@@ -70,6 +70,12 @@ TIMES_OF_DAY = [
     ("night",       22, 23),
 ]
 
+#: Time-of-day words per table language (`init --lang`). English is the fallback.
+TIME_LABELS = {
+    "th": {"midnight": "เที่ยงคืน", "early morning": "ใกล้รุ่ง", "dawn": "รุ่งอรุณ", "morning": "เช้า",
+           "midday": "เที่ยง", "afternoon": "บ่าย", "evening": "เย็น", "night": "กลางคืน"},
+}
+
 HOURS_PER_TIME = {
     "midnight":      0,
     "early morning": 3,
@@ -142,6 +148,9 @@ def _format_date(cal: dict) -> str:
             break
 
     clock = f"{hour}:{minute:02d}" if minute else str(hour)
+    lang = TIME_LABELS.get(cal.get("lang", ""))
+    if lang:
+        return f"{day_str}, {day} {month_str} {year} — {lang.get(tod, tod)} ({hour:02d}:{minute:02d} น.)"
     return f"{day_str}, {day} {month_str} {year} — {tod} (hour {clock})"
 
 
@@ -202,6 +211,8 @@ def _set_date(cal: dict, date_str: str) -> None:
 
 
 def _time_hour(label: str) -> int:
+    for labels in TIME_LABELS.values():           # accept the table's own words too ("กลางคืน")
+        label = next((en for en, local in labels.items() if local == label.strip()), label)
     if label.lower() not in HOURS_PER_TIME:
         raise ValueError(f"Unknown time label: {label}. Valid labels: {', '.join(HOURS_PER_TIME)}")
     return HOURS_PER_TIME[label.lower()]
@@ -227,6 +238,8 @@ def cmd_init(campaign: str, args) -> None:
         raise ValueError("Month length must be positive")
     if gregorian:
         cal["gregorian"] = True
+    if getattr(args, "lang", ""):
+        cal["lang"] = args.lang.strip().lower()
     _set_date(cal, args.date)
     _save(campaign, cal)
     print(f"Calendar initialised: {_format_date(cal)}")
@@ -332,6 +345,7 @@ def main() -> None:
 
     ini = sub.add_parser("init", help="Initialise campaign calendar (run once)")
     ini.add_argument("--gregorian", action="store_true")
+    ini.add_argument("--lang", default="", help="table language for time-of-day words, e.g. th")
     ini.add_argument("--date",         default="1 Month 1",
                      help="Starting date, e.g. '15 Harvestmoon 1247'")
     ini.add_argument("--time",         default="morning",

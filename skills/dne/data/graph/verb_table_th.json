@@ -1,0 +1,70 @@
+{
+  "_note": "Thai verb table for graph_extract_deterministic.py. Same shape as verb_table_seed; templates marked thai match without spaces between words (Thai is written without them).",
+  "inclusion": [
+    {"edge_type": "met", "symmetric": true, "confidence": "high", "thai": true, "patterns": [
+      {"template": "X พบกับ Y", "emits": [{"from": "X", "to": "Y", "type": "met"}]},
+      {"template": "X เจอกับ Y", "emits": [{"from": "X", "to": "Y", "type": "met"}]},
+      {"template": "X พบ Y", "emits": [{"from": "X", "to": "Y", "type": "met"}]}]},
+    {"edge_type": "knows", "confidence": "medium", "thai": true, "patterns": [
+      {"template": "X รู้จักกับ Y", "emits": [{"from": "X", "to": "Y", "type": "knows"}]},
+      {"template": "X รู้จัก Y", "emits": [{"from": "X", "to": "Y", "type": "knows"}]}]},
+    {"edge_type": "works_for", "confidence": "high", "thai": true, "patterns": [
+      {"template": "X ทำงานให้ Y", "emits": [{"from": "X", "to": "Y", "type": "works_for"}]},
+      {"template": "X เป็นลูกน้องของ Y", "emits": [{"from": "X", "to": "Y", "type": "works_for"}]}]},
+    {"edge_type": "serves", "confidence": "high", "thai": true, "patterns": [
+      {"template": "X รับใช้ Y", "emits": [{"from": "X", "to": "Y", "type": "serves"}]}]},
+    {"edge_type": "leads", "confidence": "high", "thai": true, "patterns": [
+      {"template": "X เป็นผู้นำของ Y", "emits": [{"from": "X", "to": "Y", "type": "leads"}]},
+      {"template": "X เป็นหัวหน้าของ Y", "emits": [{"from": "X", "to": "Y", "type": "leads"}]}]},
+    {"edge_type": "commands", "confidence": "medium", "thai": true, "patterns": [
+      {"template": "X สั่งการ Y", "emits": [{"from": "X", "to": "Y", "type": "commands"}]}]},
+    {"edge_type": "helped", "confidence": "medium", "thai": true, "patterns": [
+      {"template": "X ช่วยเหลือ Y", "emits": [{"from": "X", "to": "Y", "type": "helped"}]},
+      {"template": "X ช่วย Y", "emits": [{"from": "X", "to": "Y", "type": "helped"}]}]},
+    {"edge_type": "saves", "confidence": "high", "thai": true, "patterns": [
+      {"template": "X ช่วยชีวิต Y", "emits": [{"from": "X", "to": "Y", "type": "saves"}]}]},
+    {"edge_type": "attacked", "confidence": "high", "thai": true, "patterns": [
+      {"template": "X โจมตี Y", "emits": [{"from": "X", "to": "Y", "type": "attacked"}]},
+      {"template": "X ทำร้าย Y", "emits": [{"from": "X", "to": "Y", "type": "attacked"}]}]},
+    {"edge_type": "killed", "confidence": "high", "thai": true, "patterns": [
+      {"template": "X สังหาร Y", "emits": [{"from": "X", "to": "Y", "type": "killed"}]},
+      {"template": "X ฆ่า Y", "emits": [{"from": "X", "to": "Y", "type": "killed"}]}]},
+    {"edge_type": "betrayed", "confidence": "high", "thai": true, "patterns": [
+      {"template": "X ทรยศ Y", "emits": [{"from": "X", "to": "Y", "type": "betrayed"}]},
+      {"template": "X หักหลัง Y", "emits": [{"from": "X", "to": "Y", "type": "betrayed"}]}]},
+    {"edge_type": "married_to", "symmetric": true, "confidence": "high", "thai": true, "patterns": [
+      {"template": "X แต่งงานกับ Y", "emits": [{"from": "X", "to": "Y", "type": "married_to"}]}]},
+    {"edge_type": "parent_of", "confidence": "high", "thai": true, "patterns": [
+      {"template": "X เป็นพ่อของ Y", "emits": [{"from": "X", "to": "Y", "type": "parent_of"}]},
+      {"template": "X เป็นแม่ของ Y", "emits": [{"from": "X", "to": "Y", "type": "parent_of"}]},
+      {"template": "X เป็นลูกของ Y", "emits": [{"from": "Y", "to": "X", "type": "parent_of"}]}]},
+    {"edge_type": "sibling_of", "symmetric": true, "confidence": "high", "thai": true, "patterns": [
+      {"template": "X เป็นพี่ของ Y", "emits": [{"from": "X", "to": "Y", "type": "sibling_of"}]},
+      {"template": "X เป็นน้องของ Y", "emits": [{"from": "X", "to": "Y", "type": "sibling_of"}]}]},
+    {"edge_type": "sworn_enemy_of", "confidence": "high", "thai": true, "patterns": [
+      {"template": "X เป็นศัตรูของ Y", "emits": [{"from": "X", "to": "Y", "type": "sworn_enemy_of"}]}]},
+    {"edge_type": "in_love_with", "confidence": "medium", "thai": true, "patterns": [
+      {"template": "X หลงรัก Y", "emits": [{"from": "X", "to": "Y", "type": "in_love_with"}]}]},
+    {"edge_type": "trained_by", "confidence": "high", "thai": true, "patterns": [
+      {"template": "X เป็นศิษย์ของ Y", "emits": [{"from": "X", "to": "Y", "type": "trained_by"}]}]},
+    {"edge_type": "watches", "confidence": "medium", "thai": true, "patterns": [
+      {"template": "X จับตาดู Y", "emits": [{"from": "X", "to": "Y", "type": "watches"}]},
+      {"template": "X เฝ้าดู Y", "emits": [{"from": "X", "to": "Y", "type": "watches"}]}]},
+    {"edge_type": "followed", "confidence": "medium", "thai": true, "patterns": [
+      {"template": "X สะกดรอยตาม Y", "emits": [{"from": "X", "to": "Y", "type": "followed"}]}]},
+    {"edge_type": "abducted", "confidence": "high", "thai": true, "patterns": [
+      {"template": "X ลักพาตัว Y", "emits": [{"from": "X", "to": "Y", "type": "abducted"}]}]},
+    {"edge_type": "imprisoned", "confidence": "high", "thai": true, "patterns": [
+      {"template": "X จับขัง Y", "emits": [{"from": "X", "to": "Y", "type": "imprisoned"}]},
+      {"template": "X ขัง Y", "emits": [{"from": "X", "to": "Y", "type": "imprisoned"}]}]},
+    {"edge_type": "shelters", "confidence": "medium", "thai": true, "patterns": [
+      {"template": "X ซ่อน Y", "emits": [{"from": "X", "to": "Y", "type": "shelters"}]}]},
+    {"edge_type": "based_at", "confidence": "medium", "thai": true, "patterns": [
+      {"template": "X ประจำอยู่ที่ Y", "emits": [{"from": "X", "to": "Y", "type": "based_at"}]},
+      {"template": "X อาศัยอยู่ที่ Y", "emits": [{"from": "X", "to": "Y", "type": "based_at"}]}]},
+    {"edge_type": "visited", "confidence": "medium", "thai": true, "patterns": [
+      {"template": "X ไปเยือน Y", "emits": [{"from": "X", "to": "Y", "type": "visited"}]}]},
+    {"edge_type": "arrived_at", "confidence": "medium", "thai": true, "patterns": [
+      {"template": "X มาถึง Y", "emits": [{"from": "X", "to": "Y", "type": "arrived_at"}]}]}
+  ]
+}

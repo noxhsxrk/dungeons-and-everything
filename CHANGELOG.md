@@ -9,6 +9,13 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 ## [Unreleased]
 
 ### Added
+- **Thai tables, end to end:** `calendar.py init --lang th` prints the time of day in Thai
+  (`กลางคืน (22:00 น.)`) and accepts Thai time words; the relationship graph's deterministic extractor
+  reads Thai session logs (new Thai verb table: พบกับ, จับตาดู, ทรยศ, ทำงานให้ …) and Thai NPC/place names.
+- `lookup.py subclass <name>` now finds SRD subclasses too (Champion, Life Domain …), with their features by level.
+- Origin skills are automatic: `character.py calc` adds a skill an origin grants — from the origin's
+  `skills` list or a trait that names one ("ชำนาญทักษะ Sleight of Hand", Elf Keen Senses, Half-Orc Menacing).
+- `character.py levelup … --char <name>` leaves powers the character already knows out of the list to learn.
 - **Works with any AI agent**, not just Claude: `python3 install.py` links the skill into every agent it finds
   (Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot, Crush, Droid, dsh) or writes a pointer
   into rules-file agents (Cursor, Kiro, Cline, Continue, Kilo Code, Amp, Qwen, Goose, Kimi); `--list`,

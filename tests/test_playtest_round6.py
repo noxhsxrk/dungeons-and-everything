@@ -303,3 +303,35 @@ class FinalPolishTests(_Camp):
         r = self.run_py("economy.py", "-c", "eden", "rest", "--char", "mae", "--type", "long")
         self.assertIn("spell_slots_restored=2", r.stdout)
         self.assertIn("temp_hp=2->0", r.stdout)
+
+
+class RoughEdgeTests(unittest.TestCase):
+    def test_thai_graph_extraction(self):
+        import graph_extract_deterministic as g
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            (d / "npcs.md").write_text("| Name | Role |\n|---|---|\n| เจ๊หงส์ | x |\n| หลวงพี่ไบต์ | y |\n| ผู้กองสายชล | z |\n",
+                                       encoding="utf-8")
+            (d / "session-log.md").write_text(
+                "## Session 1\n\nเจ๊หงส์พบกับหลวงพี่ไบต์ที่ท่าเรือ ผู้กองสายชลจับตาดูเจ๊หงส์ตลอดคืน.\n", encoding="utf-8")
+            got = {(p["from"], p["type"], p["to"]) for p in g.extract_proposals(d)}
+        self.assertTrue({("เจ๊หงส์", "met", "หลวงพี่ไบต์"), ("หลวงพี่ไบต์", "met", "เจ๊หงส์")} & got)  # symmetric
+        self.assertIn(("ผู้กองสายชล", "watches", "เจ๊หงส์"), got)
+
+    def test_srd_subclass_lookup(self):
+        r = subprocess.run([sys.executable, str(SCRIPTS / "lookup.py"), "subclass", "champion", "--ruleset", "2014"],
+                           capture_output=True, text=True)
+        self.assertIn("Improved Critical", r.stdout)
+
+    def test_origin_trait_skill_auto(self):
+        import character
+        kit = {"skills": {}}
+        self.assertEqual(character._origin_skills({"traits": ["หูตลาด: ชำนาญทักษะ Sleight of Hand"]}, kit),
+                         ["Sleight of Hand"])
+        self.assertEqual(character._origin_skills({"skills": ["Stealth"], "traits": []}, kit), ["Stealth"])
+
+    def test_thai_time_labels(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("dne_calendar", SCRIPTS / "calendar.py")
+        cal = importlib.util.module_from_spec(spec); spec.loader.exec_module(cal)
+        self.assertEqual(cal._time_hour("กลางคืน"), 22)

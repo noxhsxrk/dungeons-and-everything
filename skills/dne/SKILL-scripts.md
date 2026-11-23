@@ -396,6 +396,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/calendar.py -c $CAMP init \
     --months "Frostfall,Deepwinter,Thawmonth,Seedtime,Bloomtide,Highsun,Harvestmoon,Duskfall" \
     --month-length 30 \
     --day-names "Sunday,Moonday,Ironday,Windday,Earthday,Fireday,Starday"
+# A table playing in Thai adds --lang th: time of day prints as "กลางคืน (22:00 น.)" and Thai time words are accepted.
 
 # Time advancement
 python3 ${CLAUDE_SKILL_DIR}/scripts/calendar.py -c $CAMP advance 8 hours

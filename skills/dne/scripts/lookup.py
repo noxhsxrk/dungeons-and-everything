@@ -175,12 +175,40 @@ def _load_ruleset(ruleset: str) -> None:
                 idx[r["index"]] = r
         index[cat] = idx
 
+    if "subclasses_world" not in data and any(r.get("subclass") for r in data.get("features", [])):
+        data["subclasses_world"] = _srd_subclasses(data["features"])
+        index["subclasses_world"] = {_norm(r["name"]): r for r in data["subclasses_world"]}
+        index["subclasses_world"].update({r["index"]: r for r in data["subclasses_world"]})
     _data_by_rs[ruleset] = data
     _index_by_rs[ruleset] = index
     _meta_by_rs[ruleset] = meta
 
 
 _ALWAYS_MERGE = {"conditions", "features", "class_options", "feats", "weapon_mastery_properties"}
+
+
+#: SRD 5.1 subclass names by the index the features carry.
+SRD_SUBCLASS_NAMES = {
+    "berserker": ("Path of the Berserker", "Primal Path"), "champion": ("Champion", "Martial Archetype"),
+    "devotion": ("Oath of Devotion", "Sacred Oath"), "draconic": ("Draconic Bloodline", "Sorcerous Origin"),
+    "evocation": ("School of Evocation", "Arcane Tradition"), "fiend": ("The Fiend", "Otherworldly Patron"),
+    "hunter": ("Hunter", "Ranger Archetype"), "land": ("Circle of the Land", "Druid Circle"),
+    "life": ("Life Domain", "Divine Domain"), "lore": ("College of Lore", "Bard College"),
+    "open-hand": ("Way of the Open Hand", "Monastic Tradition"), "thief": ("Thief", "Roguish Archetype"),
+}
+
+
+def _srd_subclasses(features: list) -> list:
+    """One record per SRD subclass, its features listed by level (option sub-features left out)."""
+    out = []
+    for idx in sorted({f["subclass"] for f in features if f.get("subclass")}):
+        feats = sorted((f for f in features if f.get("subclass") == idx and not f.get("parent")),
+                       key=lambda f: (f.get("level_req") or 0, f["name"]))
+        name, label = SRD_SUBCLASS_NAMES.get(idx, (idx.replace("-", " ").title(), "Subclass"))
+        cls = feats[0]["class"].title() if feats else ""
+        desc = "\n".join(f"Level {f.get('level_req')}: {f['name']} — {f.get('description', '')[:240]}" for f in feats)
+        out.append({"name": name, "index": idx, "class": cls, "label": label, "description": desc})
+    return out
 
 
 def _dataset_key(ruleset=None, campaign=None, category=None):
