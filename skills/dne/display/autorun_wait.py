@@ -77,8 +77,9 @@ try:
 finally:
     try:
         with open(WAITER_FILE, encoding="utf-8") as f:
-            if json.load(f).get("session") == my_session:
-                os.unlink(WAITER_FILE)
+            mine = json.load(f).get("session") == my_session
+        if mine:   # unlink after closing: Windows can't delete an open file
+            os.unlink(WAITER_FILE)
     except Exception:
         pass
 

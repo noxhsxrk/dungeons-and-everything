@@ -9,6 +9,11 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 ## [Unreleased]
 
 ### Changed
+- **CI is quick on every push** (ubuntu + the ASCII-locale job, about a minute). macOS, Windows and
+  Python 3.10 run on release tags (`v*`) and on manual runs, so every release is still tested on all
+  of them.
+
+### Changed
 - **Display text is faster, with a "Show all" button.** Typing runs at 14 ms a character by default
   (was 36); Settings → Type Speed cycles Normal / Fast / Instant / Slow and is remembered per browser.
   While a long passage is still typing, a **Show all** button above the input shows the rest at once.
@@ -26,6 +31,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
   say what will appear there. In the Plain look it is a calm reading panel with underline tabs.
 
 ### Fixed
+- `autorun_wait.py` on Windows left `.autorun-waiter.json` behind (deleted the file while it was
+  still open), so the Status panel could report the GM as listening after the loop ended.
 - **Running the tests no longer touches a live game.** Tests posted to the display at
   `localhost:5001` and wrote the runtime `stats.json`, so a test run during play put test characters
   (Aldric, Bob, Reaper…) into the real party, and a phone that picked one got "error 403". Scripts
