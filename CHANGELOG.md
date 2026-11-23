@@ -8,7 +8,11 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
-### Added — Table rules (ideas from PbtA, GURPS and Pathfinder 2e, rebuilt for 5e)
+**The DnE engine.** From this release the rules engine is our own: a d20 engine whose core is the 5e
+SRD (5.1 and 5.2, still fully compatible — every new rule is optional and switched per campaign), with
+table rules layered on top that come from other games' ideas and our own numbers.
+
+### Added — Table rules (ideas from PbtA, GURPS and Pathfinder 2e, rebuilt on the 5e SRD core)
 - **One roll, five outcomes.** `dice.py --dc` on a check or save now prints critical success · success ·
   **success at a cost** (1–4 short) · failure · critical failure; a natural 20/1 shifts it a step.
   Attacks and death saves keep their 5e rules. New DM Standard 15, *Every Roll Moves the Story*:
@@ -32,6 +36,9 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 - Rules reference: `skills/dne/SKILL-table-rules.md`. No rules text from those games is copied.
 
 ### Changed
+- **Wording: the DnE engine.** The README now describes the rules as the DnE engine — a d20 engine
+  with the 5e SRD at its core — instead of "plain D&D 5e"; the cover reads *Any world. One d20 engine.*
+  The SRD credit (CC BY 4.0) is unchanged.
 - **README:** new Table rules and Play together sections, World Kit rows for moves, quick builds,
   flaws and tech level, the Plain display, and five new images (the five play-tested worlds on the cover
   and in the strip, the Plain table display, a table-rules spread).
@@ -42,6 +49,10 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
   input stays a compact bottom bar; the controller textarea no longer runs past the panel edge.
 
 ### Fixed
+- **`install.py` on Windows and non-UTF-8 consoles** no longer crashes printing `→` (cp1252 / ASCII);
+  it writes UTF-8 like the skill's scripts. On Windows the rules block it writes now uses native paths
+  (`D:\\…\\skills\\dne\\SKILL.md`) instead of mixing `\\` and `/`. CI: tests that need Thai file names or arguments skip only
+  where the OS can't represent them (the ASCII-locale job); the rest still run there.
 - **Thai on the display:** vowels and tone marks no longer float or sink. The fantasy faces (Cinzel,
   IM Fell, Syne, Newsreader) have no Thai, so every font stack now carries Noto Serif Thai / Noto Sans Thai
   for Thai text only (English keeps its fantasy face), and once Thai text appears the page turns

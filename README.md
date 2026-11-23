@@ -16,7 +16,7 @@
 
 ---
 
-**Dungeons & Everything** is a Game Master skill for **any AI coding agent** — Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot, Cursor and more. You tell it what world you want to play in — a survivor colony hiding from a rogue AI, a derelict starship, a noir megacity, a classic dungeon — and it builds that world's whole rulebook: who the people are, what jobs they can have, what powers exist, what the gear costs, and what hunts them in the dark. Underneath, every roll is plain **D&D 5e**, so combat, levelling and balance just work.
+**Dungeons & Everything** is a Game Master skill for **any AI coding agent** — Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot, Cursor and more. You tell it what world you want to play in — a survivor colony hiding from a rogue AI, a derelict starship, a noir megacity, a classic dungeon — and it builds that world's whole rulebook: who the people are, what jobs they can have, what powers exist, what the gear costs, and what hunts them in the dark. Underneath, every roll runs on the **DnE engine** — a d20 engine with the 5e SRD at its core — so combat, levelling and balance just work, and anything written for 5e still fits.
 
 Campaigns persist for as long as you keep playing. Your TV becomes the story screen; every player's phone becomes their controller.
 
@@ -26,12 +26,12 @@ Campaigns persist for as long as you keep playing. Your TV becomes the story scr
 
 ## Why
 
-Tabletop rules engines are great. Being locked into elves and fireballs is not. Dungeons & Everything keeps the part of 5e that makes a game fair — ability scores, proficiency, hit dice, spell slots, challenge ratings, XP budgets — and lets everything on top of it be whatever your table imagines.
+Tabletop rules engines are great. Being locked into elves and fireballs is not. The DnE engine keeps the part of the 5e SRD that makes a game fair — ability scores, proficiency, hit dice, spell slots, challenge ratings, XP budgets — adds optional rules from other great tables, and lets everything on top of it be whatever your table imagines.
 
 - **Any genre.** Sci-fi, post-apocalyptic, horror, mystery, cyberpunk, western, mythic — or classic fantasy.
-- **A real rulebook per world.** Origins, classes, subclasses, backgrounds, powers, weapons, armor, currency and monsters, all generated for the world and all mechanically legal 5e.
+- **A real rulebook per world.** Origins, classes, subclasses, backgrounds, powers, weapons, armor, currency and monsters, all generated for the world and all mechanically sound on the engine's 5e SRD core.
 - **The world speaks its own language.** Mechanics "run protocols" instead of casting spells, the party "goes into lockdown" instead of taking a long rest, and the skill list says *Systems* instead of *Arcana*.
-- **The best ideas from other tables.** Close misses that succeed at a price, playbook moves and party bonds from Powered by the Apocalypse; tech levels, flaws and reaction rolls from GURPS; degrees of success, Hero Points and Victory Points from Pathfinder 2e — all rebuilt on 5e maths.
+- **The best ideas from other tables.** Close misses that succeed at a price, playbook moves and party bonds from Powered by the Apocalypse; tech levels, flaws and reaction rolls from GURPS; degrees of success, Hero Points and Victory Points from Pathfinder 2e — all rebuilt on the engine's d20 core, each one switchable per campaign.
 - **A Game Master who remembers.** Factions move between sessions, NPCs hold grudges, and a three-act story arc bends around what the players actually do.
 - **Built for the couch.** A cinematic TV display, phones as controllers, spoken narration, Thai and full Unicode support.
 
@@ -62,7 +62,7 @@ The Game Master turns that into `worldkit.json` inside the campaign folder:
 
 Every kit is validated before play, so no monster has the wrong XP and no class has a broken chassis, and every monster is checked against what SRD monsters of its CR typically have. From then on the character builder, the rules lookup, the encounter generator and the table display all read from your world first. Names can be in any script — Thai included.
 
-Say **"classic fantasy"** instead and you get traditional D&D on the bundled 5e SRD.
+Say **"classic fantasy"** instead and you get traditional sword-and-sorcery on the bundled 5e SRD.
 
 The full EDEN kit is at [`skills/dne/templates/worldkit.example.json`](skills/dne/templates/worldkit.example.json).
 
@@ -70,7 +70,7 @@ The full EDEN kit is at [`skills/dne/templates/worldkit.example.json`](skills/dn
 
 <img src="docs/images/rules.jpg" alt="A game master's table: a d20 beside five glowing tokens from red to gold, a chase track, bond and flaw cards, a med kit, hero coins and a notebook of monster numbers" width="100%">
 
-Optional layers borrowed from other games and rebuilt for 5e. They're on the table, not in your way: switch them per campaign.
+Optional layers borrowed from other games and rebuilt on the DnE engine's d20 core. They're on the table, not in your way: switch them per campaign.
 
 | Roll vs DC | Outcome | What happens |
 |---|---|---|
@@ -200,7 +200,7 @@ More detail: [`skills/dne/display/README.md`](skills/dne/display/README.md).
 - **A story with a shape.** Each campaign commits to a three-act arc defined by consequences rather than scripted events, so the story bends to player choices without losing its direction.
 - **NPCs who are people.** Every named character has a motive, a secret, a voice and relationships, and they remember how they were treated.
 - **Fights that make sense.** Encounters are balanced from the world's own bestiary. Enemies fight to their role, retreat when broken, and never conjure resources they don't have. A tactical grid appears only when a fight needs one.
-- **5e 2014 or 2024.** Choose the rules edition per campaign.
+- **SRD 5.1 or 5.2 core.** Choose the 2014 or 2024 rules per campaign; the table rules sit on top of either.
 
 ## For developers
 
@@ -219,7 +219,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## ภาษาไทย
 
-**Dungeons & Everything** คือ AI Game Master ที่ใช้ได้กับ AI agent ทุกตัว (Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot, Cursor ฯลฯ) และไม่จำกัดอยู่แค่โลกแฟนตาซี — เล่าโลกที่อยากเล่นได้เลย จะเป็นไซไฟ หลังวันสิ้นโลก สยองขวัญ หรือสืบสวน แล้ว AI จะสร้างโครงสร้างของโลกใบนั้นให้ครบ ทั้งเผ่า อาชีพ สายย่อย พลังพิเศษ อุปกรณ์ สกุลเงิน และสัตว์ประหลาด โดยทุกอย่างยังอิงกฎ D&D 5e จึงต่อสู้ เลเวลอัป และบาลานซ์ได้ถูกต้อง
+**Dungeons & Everything** คือ AI Game Master ที่ใช้ได้กับ AI agent ทุกตัว (Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot, Cursor ฯลฯ) และไม่จำกัดอยู่แค่โลกแฟนตาซี — เล่าโลกที่อยากเล่นได้เลย จะเป็นไซไฟ หลังวันสิ้นโลก สยองขวัญ หรือสืบสวน แล้ว AI จะสร้างโครงสร้างของโลกใบนั้นให้ครบ ทั้งเผ่า อาชีพ สายย่อย พลังพิเศษ อุปกรณ์ สกุลเงิน และสัตว์ประหลาด โดยทุกอย่างรันบน DnE engine — เอนจิน d20 ที่มีแกนกฎจาก 5e SRD และมีกฎเสริมจากเกมอื่นให้เปิดใช้ได้ — จึงต่อสู้ เลเวลอัป และบาลานซ์ได้ถูกต้อง
 
 - ติดตั้ง: `git clone` repo แล้วรัน `python3 install.py` — ตั้งค่าให้ทุก agent ที่เจอในเครื่องในครั้งเดียว
 - เริ่มเกม: `/dne new <ชื่อแคมเปญ>` แล้วเล่าโลกของคุณ

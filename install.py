@@ -48,8 +48,8 @@ AGENTS = {
 def rules_block() -> str:
     return (f"{START}\n## Dungeons & Everything (tabletop Game Master)\n"
             f"When the user asks to play Dungeons & Everything, run a tabletop RPG campaign, or types `/dne …`,\n"
-            f"read `{SKILL}/SKILL.md` and follow it exactly. Wherever it writes `${{CLAUDE_SKILL_DIR}}`, use `{SKILL}`.\n"
-            f"Command procedures: `{SKILL}/SKILL-commands.md`; script reference: `{SKILL}/SKILL-scripts.md`.\n{END}\n")
+            f"read `{SKILL / 'SKILL.md'}` and follow it exactly. Wherever it writes `${{CLAUDE_SKILL_DIR}}`, use `{SKILL}`.\n"
+            f"Command procedures: `{SKILL / 'SKILL-commands.md'}`; script reference: `{SKILL / 'SKILL-scripts.md'}`.\n{END}\n")
 
 
 def _strip_block(text: str) -> str:
