@@ -376,6 +376,8 @@ The engine keeps each turn whole: the table's input is stored once, a roll happe
 
 **Who knows what.** Nobody knows a thing because you know it. Record what happened and who was there with `fact`; send word elsewhere with `news` (it arrives when the rider, rumour, phone or radio gets there, and `intercept` can stop or delay that one line); plant or correct a version with `belief`. Before an NPC, a faction or a town reacts to something, run `knows` for them and play them from that list only: a town a day's ride away has not heard today's news. A faction's `heat` in an area can rise only on something it has heard of.
 
+**NPCs with plans, factions that choose.** Give an important NPC somewhere to be: `appointment` (they travel there for real, and miss it or change their mind if the road is shut), `npc_schedule` for their ordinary day, `where` to ask where they are. Before a faction moves, `faction_brief` shows everything it knows and has; `faction_intent` submits its move for the coming week (yours, or a subagent's working from that brief only) and the engine refuses one the faction could not make. With no intent, rules decide from the same brief.
+
 After a restart or a compaction run `turn.py -c <campaign> status` before anything else, and `resume` if a turn is open. **Limits:** on a host with no hooks, a GM that answers without running these scripts skips the engine for that turn; Claude Code's Stop hook catches an open turn, other hosts rely on the `[[GM note]]`.
 
 **Autorun / taxi mode** (`autorun: true` in `state.md → ## Session Flags`):
