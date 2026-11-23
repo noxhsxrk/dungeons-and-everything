@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-11-23 — Living worlds, table limits, world versions
+
 ### Added
 - **Ideas from Worlds Without Number** (our own numbers and text; `SKILL-table-rules.md` §9–11):
   - **Faction turns** — `faction.py`: Force, Wealth and Influence (1–5), Stability, a goal on a 4/6/8
