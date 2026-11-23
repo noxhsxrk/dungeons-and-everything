@@ -322,8 +322,9 @@ def _run(campaign: str, turn_id: str) -> dict:
             out = HANDLERS[intent["action"]](ctx, intent) or {}
             status = out.get("status", "done")
             if status == "waiting_for_player":
-                for n, req in enumerate(out.get("requests") or [], 1):
-                    request_id = f"req-{turn_id.split('-')[1]}-{act['seq']}-{n}"
+                for req in out.get("requests") or []:
+                    # named after its key: a second question from the same action is a new request, not the first again
+                    request_id = f"req-{turn_id.split('-')[1]}-{act['seq']}-{req.get('key', 'choice')}"
                     db.execute("INSERT OR IGNORE INTO requests VALUES (?,?,?,?,?,?,?,?,?)",
                                (request_id, turn_id, act["action_id"], req.get("kind", "decision"), req.get("expected", "party"),
                                 json.dumps({"key": req.get("key", "choice"), "text": req.get("text", "")}, ensure_ascii=False),

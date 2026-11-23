@@ -179,6 +179,18 @@ class JourneyTests(unittest.TestCase):
         self.assertEqual(done["elapsed_minutes"], 1440 - 300)
         self.assertEqual(self.map()["party_location"], "market")
 
+    def test_a_second_interruption_on_the_same_journey_asks_again(self):
+        self.later(300, "a rider waves you down", "rider")
+        self.later(900, "the ford is in flood", "flood")
+        first = self.act("[Mira]: we go to the market", {"action": "travel", "to": "Market"})
+        second = self.answer(first, "continue")
+        self.assertEqual(second["status"], "waiting_for_player")       # a new question, not the first one again
+        self.assertNotEqual(second["next_input"]["request_id"], first["next_input"]["request_id"])
+        self.assertIn("the ford is in flood", second["next_input"]["question"])
+        done = self.answer(second, "continue")
+        self.assertEqual(self.map()["party_location"], "market")
+        self.assertEqual(len(done["results"][0]["data"]["stops"]), 2)
+
     def test_turning_back_returns_to_the_last_place(self):
         self.later(300, "a rider waves you down", "rider")
         waiting = self.act("[Mira]: we go to the market", {"action": "travel", "to": "Market"})

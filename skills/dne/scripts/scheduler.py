@@ -43,6 +43,7 @@ sys.modules.setdefault("scheduler", sys.modules[__name__])   # run as a script, 
 
 WEEK = 7 * 1440
 EFFECTS: dict = {}       # effect type -> fn(world, event_row, effect) -> list of visible events (or None)
+AFTER_CHANGE: list = []  # fn(world) -> list of visible events; run whenever world state may have changed
 
 
 def effect(name: str):
@@ -62,6 +63,7 @@ class World:
         self._dirty: set = set()
         self._start: "dict | None" = None
         self.expired: list = []
+        self.cause = ""                           # what the current action says made the change (for the record)
 
     def json(self, rel: str, default=None):
         if rel not in self._json:
@@ -208,6 +210,9 @@ def fire(world: World, kind: str, value: str = "") -> list:
             _apply(world, row, visible)
         elif kind == "when" and "when" in trig and _holds(world, trig["when"]):
             _apply(world, row, visible)
+    if kind == "when":
+        for hook in AFTER_CHANGE:
+            visible += hook(world) or []
     return visible
 
 
