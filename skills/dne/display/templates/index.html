@@ -1682,6 +1682,11 @@
   #player-input-text:focus { border-color: rgba(180,140,60,0.45); }
   #player-input-text::placeholder { color: rgba(180,140,60,0.28); }
   #input-footer { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+  #composer { display: flex; flex-direction: column; gap: 9px; }
+  body.input-only #input-body[data-active-tab="move"] #composer { flex: 1 1 auto; }
+  #stage-btn .send-ic { display: none; }
+  #send-note { font-size: 12px; opacity: .8; }
+  #send-note:empty { display: none; }
   #skip-turn-btn {
     font-family: 'Cinzel', 'Noto Serif Thai', serif; font-size: 8px;
     letter-spacing: 1.8px; text-transform: uppercase;
@@ -3506,7 +3511,7 @@
   /* ══ Phone display-settings popover (#phone-settings) — both skins, phone only ══ */
   #phone-settings{ display:none; }
   body.input-only #phone-settings{
-    display:block; position:fixed; z-index:60;
+    display:block; position:fixed; z-index:120;  /* above the full-screen input panel (110 on phones) */
     top:calc(env(safe-area-inset-top) + 8px); right:calc(env(safe-area-inset-right) + 10px); }
   #ph-set-toggle{
     width:42px; height:42px; border-radius:9px; background:rgba(0,0,0,.5); color:#ECE4D2;
@@ -3546,9 +3551,14 @@
         editorial vars with dark fallbacks (works in Vellum too) ══ */
   #char-select{ display:none; }
   body.input-only #char-select:not([hidden]){
-    display:flex; position:fixed; inset:0; z-index:70;
+    display:flex; position:fixed; inset:0; z-index:130;  /* above the full-screen input panel (110 on phones) */
     align-items:center; justify-content:center; padding:24px;
     background:var(--e-canvas, #14110C); }
+  body.input-only:has(#char-select:not([hidden])) #codex-btn{ display:none !important; }
+  /* phone controller header row: Codex (left) and settings (right) sit above the tabs */
+  body.input-only #bubble-mode-btn{ display:none !important; }
+  body.input-only #codex-btn{ top:calc(env(safe-area-inset-top) + 10px) !important; left:16px !important; }
+  body.input-only #dp-tabs{ margin-top:58px !important; }
   #cs-card{ width:100%; max-width:440px; display:flex; flex-direction:column; gap:6px; }
   #cs-kicker{ font-family:'Syne','Noto Sans Thai',sans-serif; font-weight:800; font-size:11px; letter-spacing:.3em; text-transform:uppercase; color:var(--e-accent, #FF7A2D); }
   #cs-title{ font-family:'Newsreader','Noto Serif Thai',serif; font-style:italic; font-size:30px; line-height:1.1; color:var(--e-ink, #F3EFE4); margin-bottom:18px; }
@@ -4122,23 +4132,191 @@ body.dialogue-bubbles .npc-block {
   :root[data-variant="plain"] #codex-btn:hover,
   :root[data-variant="plain"] #bubble-mode-btn:hover{ background: var(--e-hair); }
   :root[data-variant="plain"], :root[data-variant="plain"] body{ background: var(--e-canvas) !important; }
-  :root[data-variant="plain"] #input-panel textarea{ box-sizing: border-box; max-width: 100%; }
   :root[data-variant="plain"] #bottom-fade{ display: none; }
-  :root[data-variant="plain"] #input-panel{ box-shadow: none; }
-  :root[data-variant="plain"] body.ed-drawer-open:not(.input-only) #input-panel{ box-shadow: -1px 0 0 var(--e-hair); }
+
+  /* ── Plain: chat-style composer ──────────────────────────────────────
+     One input at the bottom like a messaging app: who is acting (chips),
+     suggested actions, then a growing text field with a round send button.
+     Shared screen: docked under the reading column, always open.
+     Phone controller (?char=): full screen, tabs on top, composer at the bottom. */
+  :root[data-variant="plain"]{
+    --p-field:#26282B; --p-field-line:rgba(218,219,221,.16); --p-hint:rgba(218,219,221,.66);
+    --p-ring:rgba(143,163,184,.35); --p-chip:rgba(218,219,221,.07);
+  }
+  :root[data-variant="plain"][data-theme="light"]{
+    --p-field:#FFFFFF; --p-field-line:rgba(35,36,39,.18); --p-hint:rgba(35,36,39,.68);
+    --p-ring:rgba(79,99,120,.25); --p-chip:rgba(35,36,39,.05);
+  }
+  @media (prefers-color-scheme: light){
+    :root[data-variant="plain"]:not([data-theme]){
+      --p-field:#FFFFFF; --p-field-line:rgba(35,36,39,.18); --p-hint:rgba(35,36,39,.68);
+      --p-ring:rgba(79,99,120,.25); --p-chip:rgba(35,36,39,.05);
+    }
+  }
+
+  /* panel shell: docked bar on the shared screen (overrides the editorial drawer) */
+  :root[data-variant="plain"] body:not(.input-only) #input-panel{
+    top: auto !important; bottom: 0 !important; left: 252px !important; right: auto !important;
+    width: min(1180px, calc(100vw - 384px)) !important; height: auto !important; max-height: 60vh !important;
+    transform: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+    background: var(--e-canvas) !important; color: var(--e-ink) !important; backdrop-filter: none !important;
+    padding: 10px 0 max(18px, env(safe-area-inset-bottom)) !important; box-sizing: border-box !important;
+    display: flex !important; flex-direction: column; z-index: 30 !important; transition: none !important;
+  }
+  :root[data-variant="plain"] body:not(.input-only):has(#text-scroll.sidebar-hidden) #input-panel{ left: 80px !important; width: min(1180px, calc(100vw - 212px)) !important; }
+  :root[data-variant="plain"] body:not(.input-only) #input-panel #input-body,
+  :root[data-variant="plain"] body:not(.input-only) #input-panel.collapsed #input-body{
+    display: flex !important; padding: 0 !important; gap: 10px !important; overflow-y: auto; max-height: none !important; }
+  :root[data-variant="plain"] body:not(.input-only) #ed-rail #ed-launch-input{ display: none !important; }
+  /* solid band behind the top buttons + scene name so scrolled text doesn't run under them */
+  :root[data-variant="plain"] body:not(.input-only)::before{
+    content: ""; position: fixed; top: 0; left: 0; right: 0; height: 70px; z-index: 5; pointer-events: none;
+    background: var(--e-canvas); }
+  /* Codex / Bubbles sit right of the corner logo instead of on top of it */
+  :root[data-variant="plain"] body:not(.input-only) #codex-btn{ left: 104px; top: 30px; }
+  :root[data-variant="plain"] body:not(.input-only) #bubble-mode-btn{ left: 188px; top: 30px; }
+  :root[data-variant="plain"] #corner-logo{ filter: none; }
+  /* header only carries the live badge + autorun countdown; no title, no toggle */
+  :root[data-variant="plain"] #input-panel #input-panel-header{
+    padding: 0 !important; border: 0 !important; cursor: default; gap: 8px; min-height: 0; }
+  :root[data-variant="plain"] #input-panel-label,
+  :root[data-variant="plain"] #input-toggle-arrow{ display: none !important; }
+  :root[data-variant="plain"] #input-badge{
+    font-size: 12px !important; font-weight: 600; padding: 2px 10px; border-radius: 999px;
+    background: var(--p-chip); color: var(--e-ink); border: 0; }
+  :root[data-variant="plain"] #autorun-indicator{ color: var(--p-hint); font-size: 12px; }
+
+  /* only the sent-actions list may shrink and scroll; the composer group keeps its size */
+  :root[data-variant="plain"] #input-body > :not(#character-pane):not(#dice-pad){ flex-shrink: 0; }
+  :root[data-variant="plain"] #input-body > #staged-queue{ flex: 0 1 auto; min-height: 0; overflow-y: auto; }
+  /* who is acting: one scrollable row of pills */
+  :root[data-variant="plain"] #char-tabs{
+    flex-wrap: nowrap !important; overflow-x: auto; gap: 6px !important; margin: 0 !important;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  :root[data-variant="plain"] #char-tabs::-webkit-scrollbar{ display: none; }
+  :root[data-variant="plain"] .char-tab,
+  :root[data-variant="plain"] .quick-chip{
+    flex: 0 0 auto; min-height: 36px !important; padding: 0 14px !important; border-radius: 999px !important;
+    font-size: 14px !important; font-weight: 500; line-height: 1 !important; opacity: 1 !important;
+    background: var(--p-chip) !important; color: var(--e-ink) !important; border: 1px solid transparent !important;
+    cursor: pointer; transition: background .15s, color .15s, border-color .15s; transform: none !important; }
+  :root[data-variant="plain"] .char-tab:hover,
+  :root[data-variant="plain"] .quick-chip:hover{ border-color: var(--p-field-line) !important; }
+  :root[data-variant="plain"] .char-tab.active{
+    background: var(--e-accent) !important; color: var(--e-dice-text) !important; font-weight: 600; }
+  :root[data-variant="plain"] #quick-chips{ gap: 6px; margin: 0; }
+  :root[data-variant="plain"] #quick-chips:empty{ display: none; }
+  :root[data-variant="plain"] .quick-chip{ background: transparent !important; border-color: var(--p-field-line) !important; }
+
+  /* the field + round send button */
+  :root[data-variant="plain"] #composer{
+    display: flex !important; flex-direction: row !important; align-items: flex-end; gap: 8px; flex: 0 0 auto !important; }
+  :root[data-variant="plain"] #input-panel #player-input-text{
+    flex: 1 1 auto !important; min-width: 0; width: auto !important; margin: 0 !important;
+    min-height: 46px !important; height: 46px; max-height: 168px !important; overflow-y: auto;
+    padding: 12px 18px !important; box-sizing: border-box !important; resize: none;
+    border-radius: 23px !important; border: 1px solid var(--p-field-line) !important;
+    background: var(--p-field) !important; color: var(--e-ink) !important;
+    font-size: 16px !important; line-height: 1.35 !important; outline: none;
+    transition: border-color .15s, box-shadow .15s; }
+  :root[data-variant="plain"] #input-panel #player-input-text::placeholder{ color: var(--p-hint) !important; opacity: 1 !important; }
+  :root[data-variant="plain"] #input-panel #player-input-text:focus{
+    border-color: var(--e-accent) !important; box-shadow: 0 0 0 3px var(--p-ring); }
+  :root[data-variant="plain"] #input-panel #input-footer{
+    display: flex !important; align-items: center; gap: 6px !important; padding: 0 !important; margin: 0 !important; flex: 0 0 auto; }
+  :root[data-variant="plain"] #input-panel #stage-btn{
+    display: grid; place-items: center; width: 46px; height: 46px; min-height: 46px !important; padding: 0 !important;
+    border-radius: 50% !important; border: 0 !important; background: var(--e-accent) !important; color: var(--e-dice-text) !important;
+    font-size: 0 !important; cursor: pointer; transition: background .15s, opacity .15s; }
+  :root[data-variant="plain"] #input-panel #stage-btn .send-ic{ display: block; width: 20px; height: 20px; }
+  :root[data-variant="plain"] #input-panel #stage-btn .send-lbl{ display: none; }
+  :root[data-variant="plain"] #input-panel #stage-btn:hover{ background: var(--e-accent-ink) !important; }
+  :root[data-variant="plain"] #input-panel #stage-btn:focus-visible,
+  :root[data-variant="plain"] #input-panel .char-tab:focus-visible,
+  :root[data-variant="plain"] #input-panel .quick-chip:focus-visible{ outline: 2px solid var(--e-accent); outline-offset: 2px; }
+  :root[data-variant="plain"] #composer:has(#player-input-text:placeholder-shown) #stage-btn{
+    background: var(--p-chip) !important; color: var(--p-hint) !important; }
+  :root[data-variant="plain"] #input-panel #stage-btn:disabled{ opacity: .5; }
+  :root[data-variant="plain"] #input-panel #skip-turn-btn{
+    min-height: 36px; padding: 0 12px !important; margin: 0 !important; border-radius: 999px !important;
+    border: 1px solid var(--p-field-line) !important; background: transparent !important; color: var(--e-ink) !important;
+    font-size: 13px !important; font-weight: 500; }
+  :root[data-variant="plain"] #send-note{ font-size: 13px; color: var(--p-hint); padding: 0 18px; }
+  :root[data-variant="plain"] #send-note:empty{ display: none; }
+
+  /* sent actions read like the last messages above the field */
+  :root[data-variant="plain"] #staged-queue{ gap: 6px; }
+  :root[data-variant="plain"] .staged-entry{
+    align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px;
+    border: 1px solid var(--e-hair) !important; background: var(--e-block); }
+  :root[data-variant="plain"] .staged-entry.is-ready{ border-color: var(--e-accent) !important; }
+  :root[data-variant="plain"] .staged-char{ font-size: 12px; font-weight: 600; color: var(--p-hint); margin-bottom: 2px; }
+  :root[data-variant="plain"] .staged-text{ font-size: 15px; line-height: 1.45; color: var(--e-ink); }
+  :root[data-variant="plain"] .ready-btn,
+  :root[data-variant="plain"] .skip-btn{
+    min-height: 32px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 500;
+    background: transparent; color: var(--e-ink); border: 1px solid var(--p-field-line); }
+  :root[data-variant="plain"] .ready-btn.is-ready{ background: var(--e-accent); color: var(--e-dice-text); border-color: var(--e-accent); }
+  :root[data-variant="plain"] .unstage-btn{
+    width: 32px; height: 32px; border-radius: 50%; font-size: 14px; color: var(--p-hint); }
+  :root[data-variant="plain"] .unstage-btn:hover{ background: var(--p-chip); color: var(--e-ink); }
+  :root[data-variant="plain"] #waiting-indicator{
+    font-size: 13px; color: var(--p-hint); text-align: left; padding: 0 4px;
+    flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+  :root[data-variant="plain"] #waiting-indicator .queue-label{ font-size: 13px; color: var(--p-hint); }
+  :root[data-variant="plain"] #waiting-indicator .queue-label::after{ content: " · waiting on"; }
+  :root[data-variant="plain"] #waiting-indicator .queue-check{ font-size: 13px; font-weight: 600; color: var(--e-ink); opacity: 1 !important; }
+
+  /* shared screen on a phone: full-width bar; rail turns into a row of icons at the top right */
   @media (max-width: 768px){
-    /* Phones keep the compact bottom bar, not the desktop drawer. */
-    :root[data-variant="plain"] body:not(.input-only) #input-panel{
-      left: 10px !important; right: 104px !important; width: auto !important; transform: none !important;
-    }
-    :root[data-variant="plain"] body:not(.input-only) #text-scroll{ padding-right: 104px !important; }
-    :root[data-variant="plain"] body:not(.input-only) #ed-rail #phone-mode-btn{
-      background: var(--e-accent) !important; color: var(--e-dice-text) !important; }
-    :root[data-variant="plain"] #input-panel{
-      top: auto !important; height: auto !important; max-height: 55vh !important;
-      background: var(--e-block) !important; color: var(--e-on-block) !important;
-      border: 1px solid var(--e-hair) !important;
-    }
+    :root[data-variant="plain"] body:not(.input-only) #input-panel,
+    :root[data-variant="plain"] body:not(.input-only):has(#text-scroll.sidebar-hidden) #input-panel{
+      left: 12px !important; width: calc(100vw - 24px) !important; min-width: 0 !important; }
+    :root[data-variant="plain"] body:not(.input-only) #text-scroll{ padding: 92px 16px 140px !important; }
+    :root[data-variant="plain"] body:not(.input-only) #codex-btn{ left: 12px; top: max(16px, calc(env(safe-area-inset-top) + 6px)); }
+    :root[data-variant="plain"] body:not(.input-only) #bubble-mode-btn{ left: 94px; top: max(16px, calc(env(safe-area-inset-top) + 6px)); }
+    :root[data-variant="plain"] body:not(.input-only)::before{ height: calc(max(10px, env(safe-area-inset-top)) + 48px); }
+    :root[data-variant="plain"] body:not(.input-only) #scene-indicator{ top: 62px !important; max-width: calc(100vw - 32px) !important; }
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail{
+      flex-direction: row !important; top: max(10px, env(safe-area-inset-top)) !important; bottom: auto !important;
+      right: 8px !important; padding: 0 !important; gap: 4px !important; }
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail > *{
+      width: 40px !important; min-height: 40px !important; height: 40px; padding: 0 !important; gap: 0 !important;
+      font-size: 0 !important; border-radius: 10px !important; }
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail .ed-launch > span:not(.ed-ic),
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail .ed-lbl{ display: none; }
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail .ed-ic{ font-size: 18px !important; }
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail #phone-mode-btn .ed-ic svg{ width: 20px !important; height: 20px !important; }
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail #dm-help-btn::before{ content: "◈"; font-size: 18px; }
+  }
+
+  /* phone controller: whole screen, header row, tabs, then the conversation */
+  :root[data-variant="plain"] body.input-only #input-panel{ background: var(--e-canvas) !important; color: var(--e-ink) !important; }
+  :root[data-variant="plain"] body.input-only #input-body{
+    padding: 0 16px max(14px, env(safe-area-inset-bottom)) !important; gap: 10px !important; }
+  :root[data-variant="plain"] body.input-only #ph-set-toggle{
+    width: 40px; height: 40px; border-radius: 10px; background: var(--e-block); color: var(--e-ink); border: 1px solid var(--e-hair); }
+  :root[data-variant="plain"] body.input-only #dp-tabs{
+    margin: 58px -16px 4px !important; padding: 0 8px; background: transparent !important;
+    border-bottom: 1px solid var(--e-hair) !important; }
+  :root[data-variant="plain"] body.input-only .dp-tab{
+    font-size: 15px !important; font-weight: 600 !important; padding: 12px 8px !important; min-height: 46px;
+    color: var(--p-hint) !important; opacity: 1 !important; background: transparent !important;
+    border-bottom: 2px solid transparent !important; }
+  :root[data-variant="plain"] body.input-only .dp-tab.active{ color: var(--e-ink) !important; border-bottom-color: var(--e-accent) !important; }
+  :root[data-variant="plain"] body.input-only #phone-status{
+    margin: 4px 0 0 !important; padding: 0 !important; border: 0 !important; background: none !important;
+    font-size: 14px !important; font-weight: 500 !important; color: var(--p-hint) !important; opacity: 1 !important; }
+  :root[data-variant="plain"] body.input-only #phone-status.ps-sent,
+  :root[data-variant="plain"] body.input-only #phone-status.ps-resolving{ color: var(--e-accent-ink) !important; }
+  /* push the composer group to the bottom, like a chat */
+  :root[data-variant="plain"] body.input-only #input-body[data-active-tab="move"] #char-tabs{ margin-top: auto !important; }
+  :root[data-variant="plain"] body.input-only #input-body #player-input-text{ max-height: 40vh !important; }
+  :root[data-variant="plain"] body.input-only .char-tab,
+  :root[data-variant="plain"] body.input-only .quick-chip{ min-height: 40px !important; }
+
+  @media (prefers-reduced-motion: reduce){
+    :root[data-variant="plain"] #input-panel *{ transition: none !important; }
   }
 
   /* Thai: letter-spacing stops WebKit/Blink shaping a Thai cluster, so upper and
@@ -4353,12 +4531,18 @@ body.dialogue-bubbles .npc-block {
       <button class="char-tab active" data-char="Everybody">Everybody</button>
     </div>
     <div id="quick-chips" data-tab-section="move" aria-label="Suggested actions"></div>
-    <textarea id="player-input-text" rows="2" placeholder="Enter action or dialogue…" maxlength="500"
-              data-tab-section="move"></textarea>
-    <div id="input-footer" data-tab-section="move">
-      <button id="skip-turn-btn" style="display:none" title="Skip this character's turn">Skip Turn</button>
-      <button id="stage-btn">ส่งแอ็กชัน (Send)</button>
+    <div id="composer" data-tab-section="move">
+      <textarea id="player-input-text" rows="2" placeholder="What do you do or say?" maxlength="500"
+                aria-label="Your action or dialogue"></textarea>
+      <div id="input-footer">
+        <button id="skip-turn-btn" type="button" style="display:none" title="Skip this character's turn">Skip turn</button>
+        <button id="stage-btn" type="button" aria-label="Send" title="Send">
+          <svg class="send-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          <span class="send-lbl">ส่งแอ็กชัน (Send)</span>
+        </button>
+      </div>
     </div>
+    <div id="send-note" data-tab-section="move" aria-live="polite"></div>
     <!-- Phone-only dice pad (shown by ?view=input) -->
     <div id="dice-pad" data-tab-section="roll">
       <div id="dp-bound" style="display:none"></div>
@@ -7710,6 +7894,24 @@ const _stageBtn        = document.getElementById('stage-btn');
 const _skipTurnBtn     = document.getElementById('skip-turn-btn');
 const _stagedQueueEl   = document.getElementById('staged-queue');
 const _waitingEl       = document.getElementById('waiting-indicator');
+const _sendNote        = document.getElementById('send-note');
+
+// Send state (sending, retrying, awaiting approval, failed) shows as a line under
+// the field; the send button itself keeps its icon/label. '' = idle.
+function _setSendNote(text) {
+  if (_sendNote) _sendNote.textContent = text || '';
+}
+
+// Plain skin: the field grows with its text (1 line up to its CSS max-height).
+function _autoGrowInput() {
+  if (document.documentElement.dataset.variant !== 'plain') { _inputText.style.height = ''; _inputText.rows = 2; return; }
+  _inputText.rows = 1;
+  _inputText.style.height = 'auto';
+  _inputText.style.height = _inputText.scrollHeight + 2 + 'px';
+}
+_inputText.addEventListener('input', _autoGrowInput);
+window.addEventListener('resize', _autoGrowInput);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(_autoGrowInput);   // Thai webfont changes line metrics
 
 let _selectedChar     = 'Everybody';
 let _stagedData       = {};   // {char: {text, ready, timestamp}} — mirror of server state
@@ -7737,6 +7939,7 @@ function _buildCharTabs(players) {
         b.classList.toggle('active', b.dataset.char === name)
       );
       _skipTurnBtn.style.display = name === 'Everybody' ? 'none' : '';
+      _autoGrowInput();   // the field narrows/widens with the Skip button
     });
     _charTabs.appendChild(btn);
   });
@@ -7748,10 +7951,10 @@ function _buildCharTabs(players) {
 // sent (waiting for the DM) → (resolving). Transient states (sending/resolving)
 // hold until cleared; otherwise the state is derived from the staged queue.
 const _PS_TEXT = {
-  compose:   '✎ Your move — type your action below',
-  sending:   '↑ Sending…',
-  sent:      '✓ Sent to the DM — sit tight',
-  resolving: '⟳ The DM is narrating…',
+  compose:   'Your move. Type it below.',
+  sending:   'Sending…',
+  sent:      '✓ Sent to the DM. Sit tight.',
+  resolving: 'The DM is narrating…',
 };
 function _setPhoneStatus(state) {
   const el = document.getElementById('phone-status');
@@ -7935,7 +8138,7 @@ async function _stageAction() {
   const text = _inputText.value.trim();
   if (!text) return;
   _stageBtn.disabled = true;
-  _stageBtn.textContent = '…';
+  _setSendNote('Sending…');
   _setPhoneStatus('sending');
 
   // Cache submission in localStorage so text survives page reload
@@ -7957,13 +8160,14 @@ async function _stageAction() {
         // Device pending approval — persist state so it survives page reload
         localStorage.setItem('dnd_awaiting_approval', _deviceId);
         _stageBtn.disabled = false;
-        _stageBtn.textContent = 'Awaiting approval…';
+        _setSendNote('Waiting for the DM to approve this device…');
         return;  // leave text in box; auto-retry once approved via _onDeviceApproved
       }
       if (res.ok) {
         localStorage.removeItem('dnd_staged_input');
         localStorage.removeItem('dnd_awaiting_approval');
         _inputText.value = '';
+        _autoGrowInput();
         _toggleReady(_selectedChar);   // one-tap: staging immediately sends to the DM
         _setPhoneStatus('sent');
         _sent = true;
@@ -7973,21 +8177,21 @@ async function _stageAction() {
       break;
     } catch (_) {
       if (attempts < 3) {
-        _stageBtn.textContent = `Retrying (${attempts})…`;
+        _setSendNote(`Retrying (${attempts})…`);
         await new Promise(r => setTimeout(r, 2000));
       }
     }
   }
   _stageBtn.disabled = false;
   if (_sent) {
-    _stageBtn.textContent = 'ส่งแอ็กชัน (Send)';
+    _setSendNote('');
   } else {
     // Honest failure: the text + the dnd_staged_input cache are preserved, so a
     // tap re-sends without retyping. Never silently reset to 'Stage' on failure —
     // that's what read as "submitted but not acknowledged, gone forever".
-    _stageBtn.textContent = _lastStatus
-      ? `Send failed (${_lastStatus}) — tap to retry`
-      : 'Send failed — tap to retry';
+    _setSendNote(_lastStatus
+      ? `Not sent (error ${_lastStatus}). Your text is kept; press send to retry.`
+      : 'Not sent: no connection. Your text is kept; press send to retry.');
   }
 }
 
@@ -8027,9 +8231,13 @@ async function _skipTurn(char) {
 _stageBtn.addEventListener('click', _stageAction);
 _skipTurnBtn.addEventListener('click', () => _skipTurn(_selectedChar));
 
-// Ctrl/Cmd+Enter stages from textarea
+// Enter sends on a keyboard device (Shift+Enter = new line); on touch screens
+// Enter is a new line and the send button sends. Ctrl/Cmd+Enter always sends.
+// isComposing/229 guard: never send mid-IME composition.
+const _enterSends = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 _inputText.addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+  if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
+  if ((e.ctrlKey || e.metaKey) || (_enterSends && !e.shiftKey && !e.altKey)) {
     e.preventDefault();
     _stageAction();
   }
@@ -8045,13 +8253,14 @@ function _reserveInputSpace() {
   const scroll = document.getElementById('text-scroll');
   if (!panel || !scroll) return;
   // Phone input-only mode: #text-scroll isn't the reading surface there.
-  if (document.body.classList.contains('input-only')) { scroll.style.paddingBottom = ''; return; }
+  if (document.body.classList.contains('input-only')) { scroll.style.removeProperty('padding-bottom'); return; }
   // Panel hidden (display:none → 0 rect) or fully below the fold (closed drawer) → CSS baseline stands.
   // NB: don't use offsetParent for visibility here — it is always null for position:fixed elements.
   const rect = panel.getBoundingClientRect();
-  if (rect.height === 0 || rect.top >= window.innerHeight) { scroll.style.paddingBottom = ''; return; }
+  if (rect.height === 0 || rect.top >= window.innerHeight) { scroll.style.removeProperty('padding-bottom'); return; }
   const reserve = Math.round(window.innerHeight - rect.top) + 16;
-  scroll.style.paddingBottom = Math.max(40, reserve) + 'px';
+  // 'important': the phone layout pins #text-scroll padding with !important.
+  scroll.style.setProperty('padding-bottom', Math.max(40, reserve) + 'px', 'important');
 }
 
 (function _initReserveInputSpace() {
@@ -8079,12 +8288,13 @@ _buildCharTabs([]);
     }
     if (cached.text && !_inputText.value.trim()) {
       _inputText.value = cached.text;
+      _autoGrowInput();
     }
     // If we were awaiting approval for this device, restore the button state;
     // the SSE device_request replay will confirm and keep it, or clear it if approved.
     if (localStorage.getItem('dnd_awaiting_approval') === _deviceId) {
       _stageBtn.disabled = false;
-      _stageBtn.textContent = 'Awaiting approval…';
+      _setSendNote('Waiting for the DM to approve this device…');
     }
   } catch (_) {
     localStorage.removeItem('dnd_staged_input');
@@ -8105,7 +8315,7 @@ function _showDeviceRequest(dev) {
   // If it's our own device replayed on SSE reconnect, restore the awaiting state
   if (dev.id === _deviceId) {
     _stageBtn.disabled = false;
-    _stageBtn.textContent = 'Awaiting approval…';
+    _setSendNote('Waiting for the DM to approve this device…');
     // Restore cached input text if available
     try {
       const cached = JSON.parse(localStorage.getItem('dnd_staged_input') || 'null');
@@ -8161,7 +8371,7 @@ function _onDeviceApproved(deviceId) {
   if (deviceId === _deviceId) {
     localStorage.removeItem('dnd_awaiting_approval');
     _stageBtn.disabled = false;
-    _stageBtn.textContent = 'Stage';
+    _setSendNote('');
     if (_inputText.value.trim()) {
       _stageAction();  // auto-retry with cached text
     }
@@ -8174,7 +8384,7 @@ function _onDeviceDenied(deviceId) {
     localStorage.removeItem('dnd_awaiting_approval');
     localStorage.removeItem('dnd_staged_input');
     _stageBtn.disabled = true;
-    _stageBtn.textContent = 'Access denied';
+    _setSendNote('The DM declined this device.');
   }
 }
 
@@ -9291,6 +9501,7 @@ function _renderQuickChips(chips) {
       const ta = document.getElementById('player-input-text');
       if (ta) {
         ta.value = c.action || c.label || '';
+        ta.dispatchEvent(new Event('input'));
         ta.focus();
       }
     });

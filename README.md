@@ -179,7 +179,7 @@ One computer runs the Game Master; everyone else just needs a phone.
 
 ## The table display
 
-<img src="docs/images/table.jpg" alt="Friends on a couch holding phones while a TV shows the story, a d20 roll and character portraits" width="100%">
+<img src="docs/images/table.jpg" alt="Friends on a couch holding phones while a TV shows the story with a chat-style input bar at the bottom" width="100%">
 
 Open the display on a TV, laptop or tablet and the story types itself out on screen, with dice results, a live party sidebar and optional spoken narration with sound effects. The default **Plain** look is quiet and easy to read in light or dark, with full Thai typography; the more theatrical skins are one tap away in Settings. Each player opens the same link on their phone to see their character sheet, roll dice and send actions.
 

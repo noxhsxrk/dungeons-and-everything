@@ -8,6 +8,24 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Changed
+- **Display, Plain look: a chat-style input box.** On the shared screen the input is docked under the
+  story and always open (no Party drawer). On a phone (`?char=`) the tabs sit at the top and the input at
+  the bottom, like a messaging app. Character chips and suggested actions are one scrollable row each; the
+  text field grows as you type; the round button sends. On a keyboard, Enter sends and Shift+Enter starts a
+  new line (Ctrl/Cmd+Enter still works); on a touch screen Enter is a new line. Sending, retrying, waiting
+  for approval and errors now show as a line under the field instead of replacing the button's label.
+- Shared screen on a phone: the side buttons become a row of icons at the top right, so the story uses
+  the full width and the scene name no longer hides behind Codex/Bubbles.
+
+### Fixed
+- Phone controller in the Plain look filled only the bottom half of the screen.
+- Phone controller, every look: the "Who are you playing?" picker and the settings button were hidden
+  behind the input panel; Codex/Bubbles covered the tabs.
+- The last lines of the story could sit under the input panel on phones (the space reserved for the
+  panel was overridden).
+- On a desktop, the Codex button sat on top of the corner logo; text scrolled under the top buttons.
+
 ## [1.3.0] — 2026-11-23 — Table rules and the DnE engine
 
 **The DnE engine.** From this release the rules engine is our own: a d20 engine whose core is the 5e
