@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.6.1] — 2026-11-23 — Table Settings in English
+
 ### Changed
 - **Table Settings page is in English**, matching the rest of the display.
 
