@@ -463,6 +463,39 @@
   }
 
   /* ── Tutor / learning mode hint blocks ── */
+  /* ── Handouts: an object from the world, shown as itself ── */
+  .handout { margin: 0 0 2em; padding: 18px 22px; border-radius: 4px; position: relative; white-space: pre-wrap;
+             line-height: 1.6; box-shadow: 0 6px 22px rgba(0,0,0,0.45); max-width: 46em; }
+  .handout-title { font-weight: 700; margin-bottom: 10px; letter-spacing: 0.02em; }
+  .handout-kind { position: absolute; top: 6px; right: 10px; font-size: 0.62em; letter-spacing: 0.14em;
+                  text-transform: uppercase; opacity: 0.55; }
+  .handout.letter   { background: #efe3c2; color: #3a2a12; font-family: Georgia, 'Noto Serif Thai', serif; font-style: italic;
+                      transform: rotate(-0.4deg); }
+  .handout.news     { background: #e9e6dc; color: #1c1c1c; font-family: Georgia, 'Noto Serif Thai', serif; }
+  .handout.news .handout-title { font-size: 1.5em; border-bottom: 3px double #1c1c1c; padding-bottom: 6px; text-transform: uppercase; }
+  .handout.poster   { background: #d9c08a; color: #2b1a08; text-align: center; border: 3px solid #2b1a08;
+                      font-family: Georgia, 'Noto Serif Thai', serif; }
+  .handout.poster .handout-title { font-size: 1.7em; text-transform: uppercase; }
+  .handout.terminal, .handout.intercept { background: #06120a; color: #7cf7a0; border: 1px solid #1f5a33;
+                      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 0.92em; }
+  .handout.intercept { color: #f2c46b; border-color: #6b4d12; background: #120d04; }
+  .handout.terminal .handout-title::before { content: '> '; }
+  .handout.artifact { background: #2a2118; color: #d8c7a3; border: 1px solid #6b5636; letter-spacing: 0.04em;
+                      font-family: Georgia, 'Noto Serif Thai', serif; }
+
+  /* ── Progress clocks ── */
+  #clocks { position: fixed; right: 32px; bottom: 96px; z-index: 6; display: flex; flex-direction: column; gap: 8px;
+            align-items: flex-end; pointer-events: none; }
+  #clocks:empty { display: none; }
+  .pclock { display: flex; align-items: center; gap: 8px; background: rgba(10,8,6,0.72); border: 1px solid rgba(200,170,110,0.35);
+            border-radius: 999px; padding: 5px 12px 5px 6px; color: #e3d2a8; font-size: 0.82em; }
+  .pclock svg { width: 30px; height: 30px; flex: none; }
+  .pclock .seg { fill: rgba(200,170,110,0.14); stroke: rgba(200,170,110,0.55); stroke-width: 1; }
+  .pclock .seg.on { fill: #c8a96e; }
+  .pclock.full { border-color: #e0633f; color: #ffd9c8; }
+  .pclock.full .seg.on { fill: #e0633f; }
+  @media (max-width: 720px) { #clocks { right: 10px; bottom: 150px; } .pclock { font-size: 0.74em; } }
+
   .tutor-block {
     margin-bottom: 2em;
     opacity: 0;
@@ -4563,6 +4596,7 @@ body.dialogue-bubbles .npc-block {
 <div id="flash-overlay"></div>
 
 <!-- World time clock (top-right) -->
+<div id="clocks" aria-live="polite"></div>
 <div id="world-clock">
   <div id="wc-icon">☀</div>
   <div id="wc-date"></div>
@@ -6052,6 +6086,7 @@ function _renderNPCBlockNow(name, text, isReplay, meta) {
   const block = document.createElement('div');
   block.className = 'npc-block';
   if (meta && meta.speaker_id) block.dataset.speakerId = meta.speaker_id;
+  if (meta && meta.voice) block.dataset.voice = meta.voice;       // this NPC's own voice for the listen button
   if (isReplay) block.style.opacity = '0.65';
 
   const headerRow = document.createElement('div');
@@ -6180,6 +6215,59 @@ function _renderDiceBlockNow(text, isReplay) {
 // ── Tutor / learning hint block ──────────────────────────────────────
 function renderTutorBlock(text, isReplay) {
   _deferBlock(() => _renderTutorBlockNow(text, isReplay), isReplay);
+}
+
+// ── Handouts: a letter, a headline, a terminal log — shown as the object itself ──
+const _HANDOUT_LABEL = { letter: 'Letter', news: 'News', poster: 'Notice', terminal: 'Terminal', intercept: 'Intercepted', artifact: 'Artefact' };
+function renderHandoutBlock(handout, text, isReplay) {
+  _deferBlock(() => {
+    _flushForBlock();
+    const kind = _HANDOUT_LABEL[handout && handout.type] ? handout.type : 'letter';
+    const block = document.createElement('div');
+    block.className = 'handout ' + kind;
+    if (isReplay) block.style.opacity = '0.8';
+    const tag = document.createElement('div');
+    tag.className = 'handout-kind';
+    tag.textContent = _HANDOUT_LABEL[kind];
+    block.appendChild(tag);
+    if (handout && handout.title) {
+      const title = document.createElement('div');
+      title.className = 'handout-title';
+      title.textContent = handout.title;
+      block.appendChild(title);
+    }
+    const body = document.createElement('div');
+    body.className = 'handout-body';
+    body.textContent = text;                      // plain text: a handout is read as written, never parsed
+    block.appendChild(body);
+    _addTtsBar(block);
+    textContent.appendChild(block);
+    _reanchorCursor();
+  }, isReplay);
+}
+
+// ── Progress clocks: segmented circles for anything the table is racing or building ──
+function renderClocks(clocks) {
+  const host = document.getElementById('clocks');
+  if (!host) return;
+  host.innerHTML = '';
+  (Array.isArray(clocks) ? clocks : []).forEach(c => {
+    const size = Math.max(2, Math.min(12, Number(c.size) || 6));
+    const filled = Math.max(0, Math.min(size, Number(c.filled) || 0));
+    const el = document.createElement('div');
+    el.className = 'pclock' + (filled >= size ? ' full' : '');
+    let segs = '';
+    for (let i = 0; i < size; i++) {
+      const a0 = (i / size) * 2 * Math.PI - Math.PI / 2, a1 = ((i + 1) / size) * 2 * Math.PI - Math.PI / 2;
+      const p = (a) => (16 + 14 * Math.cos(a)).toFixed(2) + ',' + (16 + 14 * Math.sin(a)).toFixed(2);
+      segs += `<path class="seg${i < filled ? ' on' : ''}" d="M16,16 L${p(a0)} A14,14 0 0 1 ${p(a1)} Z"/>`;
+    }
+    el.innerHTML = `<svg viewBox="0 0 32 32" aria-hidden="true">${segs}</svg>`;
+    const label = document.createElement('span');
+    label.textContent = `${c.name || ''} ${filled}/${size}`;
+    el.appendChild(label);
+    host.appendChild(el);
+  });
 }
 
 function _renderTutorBlockNow(text, isReplay) {
@@ -6355,6 +6443,8 @@ function renderReplayBatch(items) {
     if (!item.text) return;
     if (item.whisper || item.whisper_redacted) {
       renderWhisperBlock(item.text, item.whisper_to, Boolean(item.whisper_redacted), true);
+    } else if (item.handout) {
+      renderHandoutBlock(item.handout, item.text, true);
     } else if (item.action) {
       renderActionBlock(item.action, item.text, true);
     } else if (item.player) {
@@ -6364,6 +6454,7 @@ function renderReplayBatch(items) {
         speaker_id: item.speaker_id,
         portrait: item.portrait,
         concealed: item.concealed,
+        voice: item.voice,
       });
     } else if (item.dice) {
       renderDiceBlock(item.text, true);
@@ -7799,7 +7890,7 @@ async function _ttsPlayBlock(btn, blockEl) {
     const resp = await fetch('/tts', {
       method: 'POST',
       headers: _authHeaders(),
-      body: JSON.stringify({ text, voice: _ttsVoice }),
+      body: JSON.stringify({ text, voice: (blockEl.dataset && blockEl.dataset.voice) || _ttsVoice }),
     });
     if (!resp.ok) throw new Error('TTS ' + resp.status);
     const pcm = await resp.arrayBuffer();
@@ -8929,6 +9020,7 @@ function connect() {
     try { payload = JSON.parse(e.data); } catch { return; }
 
     if (typeof payload.timeline === 'number') _timelineEpoch = payload.timeline;
+    if (Array.isArray(payload.clocks)) renderClocks(payload.clocks);
 
     if (payload.dice_request && typeof window._onDiceRequest === 'function') {
       window._onDiceRequest(payload.dice_request);
@@ -9066,6 +9158,8 @@ function connect() {
     if (payload.text && !payload.inspiration_award && !payload.milestone_award && !payload.milestone_spend && !payload.xp_award) {
       if (payload.whisper || payload.whisper_redacted) {
         renderWhisperBlock(payload.text, payload.whisper_to, Boolean(payload.whisper_redacted), false);
+      } else if (payload.handout) {
+        renderHandoutBlock(payload.handout, payload.text, false);
       } else if (payload.action) {
         renderActionBlock(payload.action, payload.text);
       } else if (payload.player) {
@@ -9075,6 +9169,7 @@ function connect() {
           speaker_id: payload.speaker_id,
           portrait: payload.portrait,
           concealed: payload.concealed,
+          voice: payload.voice,
         });
       } else if (payload.dice) {
         renderDiceBlock(payload.text);

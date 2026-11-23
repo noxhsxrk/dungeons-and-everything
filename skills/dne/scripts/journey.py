@@ -154,9 +154,17 @@ def _rest(ctx, intent: dict) -> dict:
     st["status"] = "complete"
     world.put("rest", ctx.action_id, st)
     visible.append({"type": "rest", "recipient": "party", "text": f"The {st['type']} rest is complete."})
+    campfire = None
+    if ctx.flag("campfire", "on") != "off":       # a rest is when characters talk: one question from their own sheets
+        try:
+            import story
+            import world_db
+            campfire = story.campfire(ctx.campaign, world_db.rng(ctx.db, f"campfire-{ctx.action_id}"))
+        except Exception:
+            campfire = None
     return {"status": "done", "elapsed_minutes": elapsed, "writes": {**world.writes(), **writes}, "visible_events": visible,
             "data": {"rest": "complete", "benefit": gained, "ruleset": ruleset, "start_minute": st["start_minute"],
-                     "interruptions": st["log"]}}
+                     "interruptions": st["log"], "campfire": campfire}}
 
 
 # ── travel ────────────────────────────────────────────────────────────────────

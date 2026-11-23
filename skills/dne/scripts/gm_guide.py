@@ -88,6 +88,20 @@ def session_start(campaign: str) -> list[str]:
     steps.append(f'{_py("campaign_graph.py")} scene-context --campaign {campaign} --place "<current location>"')
     steps.append(f"{_py('npc.py')} -c {campaign} check   (NPC records that are unfinished, incomplete or due to grow: "
                  "fix the ones in the opening scene before the recap, the rest by the end of the session)")
+    try:
+        import story
+        teller = story.STORYTELLERS.get(paths.session_flag(campaign, "storyteller", "none"))
+        dna = story._dna(campaign)
+        voice = [teller] if teller else []
+        if dna:
+            voice.append("this world's telling: " + "; ".join(
+                f"{k.replace('_', ' ')}: {', '.join(v) if isinstance(v, list) else v}" for k, v in dna.items() if v))
+        if voice:
+            steps.append("Tell it this table's way. " + " ".join(voice))
+        steps.append("Open the session in the middle of something (a cold open) when the last one ended at rest: one "
+                     "urgent image first, how they got there in a line afterwards.")
+    except Exception:
+        pass
     return ([f"SESSION START: {campaign} is now the active campaign. The session is not ready until every line "
              "below is done, in order:"] + [f"{i}. {s}" for i, s in enumerate(steps, 1)])
 
@@ -236,8 +250,13 @@ def engine_lines(campaign: str, view: "dict | None") -> list[str]:
     return fit(_engine_parts(campaign, view))
 
 
-def fit(parts: list, budget: "int | None" = None) -> list[str]:
-    """Order by priority and stop at the budget. Lines that are due always stay; at most one nudge is kept."""
+def fit(parts: list, budget: "int | None" = None, rotate: int = 0) -> list[str]:
+    """Order by priority and stop at the budget. Lines that are due always stay; at most one nudge is kept
+    (`rotate` picks which, so the same kind of nudge does not win every turn)."""
+    nudges = [p for p in parts if p[0] == NUDGE]
+    if len(nudges) > 1:
+        keep = nudges[rotate % len(nudges)]
+        parts = [p for p in parts if p[0] != NUDGE] + [keep]
     if budget is None:
         try:
             budget = int(os.environ.get("DNE_NOTE_BUDGET", NOTE_BUDGET))
@@ -333,6 +352,12 @@ def turn_parts(campaign: str, count: bool = True, text: str = "", turn: "dict | 
             parts.append((DEPTH, "(world engine, shadow) It would have told you: " + " ".join(scene_context.render(view)[:4])))
         except Exception:
             pass
+    global COUNTING
+    COUNTING = count
+    try:
+        import story  # noqa: F401  (sparks, pacing, style guard: for every campaign, engine or not)
+    except Exception:
+        pass
     for provider in PROVIDERS:                    # story.py and the engine modules add their own lines
         try:
             parts += provider(campaign, text, turn) or []
@@ -343,11 +368,19 @@ def turn_parts(campaign: str, count: bool = True, text: str = "", turn: "dict | 
 
 #: Functions `fn(campaign, text, turn) -> [(priority, line)]` that other modules register.
 PROVIDERS: list = []
+COUNTING = True          # False while the note is only being previewed (the CLI): providers must not advance state
 
 
 def turn_notes(campaign: str, count: bool = True, text: str = "", turn: "dict | None" = None) -> list[str]:
     """Lines for the GM, sent with every player action (`text`): what is due, then the scene, then standing rules."""
-    return fit(turn_parts(campaign, count, text, turn))
+    parts = turn_parts(campaign, count, text, turn)
+    rotate = 0
+    try:
+        import story
+        rotate = int(story.load(campaign).get("turn", 0))
+    except Exception:
+        pass
+    return fit(parts, rotate=rotate)
 
 
 def main() -> int:

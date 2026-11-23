@@ -4,6 +4,7 @@
 
 ## <Name>
 - **Aliases:** <every name the story uses for them: nickname, title, the spelling in the table's language — e.g. รินะ, Rina>
+- **Voice:** <display TTS voice: Charon, Enceladus, Fenrir, Umbriel, Aoede, Gacrux, Kore, Vindemiatrix or Zephyr> | <how they talk: what they call themselves and others, pace, a pet phrase>
 - **Role:** | **CR/Level:** | **Location:**
 - **HP:** | **AC:** | **Attack:** | **Notable abilities:**
 - **Demeanor:** | **Motivation:** | **Secret:**

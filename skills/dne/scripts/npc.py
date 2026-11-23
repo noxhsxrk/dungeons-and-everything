@@ -21,6 +21,7 @@ off | slow (120 days a step) | normal (60, default) | fast (30).
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -32,6 +33,8 @@ import paths  # noqa: E402
 import worldkit  # noqa: E402
 
 GROWTH_DAYS = {"off": 0, "slow": 120, "normal": 60, "fast": 30}
+#: The display's TTS voices (display/tts.py). An NPC keeps one, so the table hears who is speaking.
+VOICES = ("Charon", "Enceladus", "Fenrir", "Umbriel", "Aoede", "Gacrux", "Kore", "Vindemiatrix", "Zephyr")
 TIMELINE = "npc-timeline.json"   # {name: {"grown": <absolute in-world day of the last growth>}}
 FILL = re.compile(r"<fill: ([^>]*)>")
 INDEX_HEAD = ("| Name | Role | Faction | Location | Attitude | Notes |\n"
@@ -218,6 +221,7 @@ def cmd_add(campaign: str, args) -> int:
         return 1
     now = today(camp)
     when = now[1] if now else "session start"
+    voice = args.voice or VOICES[int(hashlib.sha256(name.encode("utf-8")).hexdigest(), 16) % len(VOICES)]
     cell = lambda s: (s or "").replace("|", "/").strip()  # noqa: E731
     row = "| " + " | ".join(cell(c) for c in (name, args.role, args.faction, args.location, args.attitude, args.notes)) + " |\n"
     index = camp / "npcs.md"
@@ -237,6 +241,7 @@ def cmd_add(campaign: str, args) -> int:
     entry = (
         f"## {name}\n"
         f"- **Aliases:** {cell(args.aliases) or name}\n"
+        f"- **Voice:** {voice} | <fill: how they talk: what they call themselves and others, pace, a pet phrase>\n"
         f"- **Role:** {cell(args.role)} | **CR/Level:** CR {worldkit.format_cr(key)} | **Location:** {cell(args.location)}\n"
         f"- **HP:** {stats['hp']} | **AC:** {stats['ac']} | **Attack:** <fill: name of their main attack> "
         f"+{stats['attack']} ({stats['damage']} damage) | **Save DC:** {stats['dc']} | "
@@ -372,6 +377,8 @@ def main() -> int:
     a.add_argument("--location", default="")
     a.add_argument("--attitude", default="neutral")
     a.add_argument("--notes", default="")
+    a.add_argument("--voice", default="", choices=("",) + VOICES,
+                   help="their TTS voice on the display (default: one is picked for them and kept)")
     sub.add_parser("check")
     g = sub.add_parser("advance")
     g.add_argument("name")

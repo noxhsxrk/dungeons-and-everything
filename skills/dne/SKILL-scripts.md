@@ -726,6 +726,15 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/turn.py -c <campaign> help [action]
 ```
 Every command prints one JSON object: `turn_id`, `status` (`open`, `waiting_for_player`, `finished`, `idle`), `completed`, `pending`, `next_input`, `waiting`, `revision`. `send.py --message-id <id>` gives a message a stable id: the display shows a repeated id once.
 
+### Storytelling — `scripts/story.py`
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/story.py -c <campaign> guard       # what the last narrations repeat or over-explain
+python3 ${CLAUDE_SKILL_DIR}/scripts/story.py -c <campaign> spark       # one creative prompt (use it or drop it)
+python3 ${CLAUDE_SKILL_DIR}/scripts/story.py -c <campaign> campfire    # a question for a rest, from the PCs' Bonds and Flaws
+python3 ${CLAUDE_SKILL_DIR}/scripts/story.py -c <campaign> tone <tone> # note a scene's tone (send.py --tone does it)
+```
+Runs for every campaign; its lines reach the GM through the `[[GM note]]`. Display additions: `send.py --handout <kind> [--title T]`, `send.py --npc N [--voice V]`, `send.py --tone T`, `push_stats.py --clock NAME FILLED SIZE | --clock-remove NAME | --clocks-json '[…]'`. Engine actions: `flashback`, `bargain`, `place_rule`, `clock`. `turn.py -c <campaign> metrics` prints playtest numbers; `turn.py … log` / `replay` record and replay a session's engine turns.
+
 ### World Engine Migration — `scripts/world_migrate.py`
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/world_migrate.py -c <campaign> inspect

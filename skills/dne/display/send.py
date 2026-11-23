@@ -116,6 +116,47 @@ def _endpoint_label(url: str) -> str:
     return url.rsplit("/", 1)[-1] or url
 
 
+def _scripts_on_path() -> None:
+    scripts = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts"))
+    if scripts not in sys.path:
+        sys.path.insert(0, scripts)
+
+
+def _active_campaign() -> str:
+    try:
+        _scripts_on_path()
+        import paths
+        return (paths.runtime_dir() / ".campaign").read_text(encoding="utf-8").strip()
+    except Exception:
+        return ""
+
+
+_VOICE_CACHE: dict = {}
+
+
+def _npc_voice(name: str) -> str:
+    """The voice written on this NPC's record (`- **Voice:** Kore …`), or '' when they have none."""
+    if name in _VOICE_CACHE:
+        return _VOICE_CACHE[name]
+    voice = ""
+    try:
+        _scripts_on_path()
+        import npc
+        import paths
+        import re as _re
+        camp = paths.find_campaign(_active_campaign())
+        low = name.strip().casefold()
+        for entry_name, entry in npc.entries(camp).items():
+            if low in [a.casefold() for a in npc.aliases(entry_name, entry)]:
+                m = _re.search(r"\*\*Voice:\*\*\s*([A-Za-z]+)", entry)
+                voice = m.group(1) if m else ""
+                break
+    except Exception:
+        voice = ""
+    _VOICE_CACHE[name] = voice
+    return voice
+
+
 def _post(url: str, data: bytes, token: str) -> bool:
     """POST data with retries. Logs every send (success or failure) to _SEND_LOG.
 
@@ -408,6 +449,15 @@ def main() -> None:
         help="Send as a dice result (inline gold styling)",
     )
     parser.add_argument(
+        "--handout", choices=["letter", "news", "poster", "terminal", "intercept", "artifact"],
+        help="Show the text as an object from the world: a letter, a newspaper, a wanted poster, a terminal log, "
+             "an intercepted message, an old artefact. Add --title for its heading.")
+    parser.add_argument("--title", default="", help="Heading for --handout (a masthead, a sender, a file name)")
+    parser.add_argument("--voice", default="", help="TTS voice for this --npc line (default: the **Voice:** on their npcs-full.md entry)")
+    parser.add_argument(
+        "--tone", choices=["tension", "combat", "relief", "humor", "wonder", "moral", "quiet", "mystery"],
+        help="The tone of the scene this narration belongs to (story.py uses it to vary the pacing)")
+    parser.add_argument(
         "--message-id", default="",
         help="Stable id for this message (world engine outbox): the display shows a repeated id once")
     parser.add_argument(
@@ -668,6 +718,10 @@ def main() -> None:
         chunks = _split_paragraphs(text)
         for chunk in chunks:
             payload: dict = {"text": chunk}
+            if args.handout:
+                payload["handout"] = {"type": args.handout, "title": args.title}
+            elif args.npc and (args.voice or _npc_voice(args.npc)):
+                payload["voice"] = args.voice or _npc_voice(args.npc)
             if args.action:
                 payload["action"] = args.action
             elif args.player:
@@ -731,15 +785,23 @@ def main() -> None:
             print(f"send.py: PARTIAL FAILURE — {summary}", file=sys.stderr)
             sys.exit(3)
 
+    if getattr(args, "tone", None):                # the storyteller's pacing memory
+        try:
+            _scripts_on_path()
+            import story
+            if _active_campaign():
+                story.note_tone(_active_campaign(), args.tone)
+        except Exception:
+            pass
+
     # ── World engine: a plain narration is the end of the open turn ───────────
-    if text.strip() and not _has_content_flag and not args.message_id:
+    if text.strip() and not _has_content_flag and not args.message_id and not args.handout:
         try:
             _scripts = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts"))
             if _scripts not in sys.path:
                 sys.path.insert(0, _scripts)
             import turn
-            from runtime_paths import rt as _rt
-            _camp = open(_rt(".campaign"), encoding="utf-8").read().strip()
+            _camp = _active_campaign()
             closed = turn.narration_sent(_camp, text) if _camp else None
             if closed and closed.get("finished") is False:
                 print(f"send.py: world engine turn {closed['turn_id']} stays open — {closed.get('note', '')}")

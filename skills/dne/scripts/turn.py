@@ -354,6 +354,13 @@ def _run(campaign: str, turn_id: str) -> dict:
                     wdb.set_meta(db, "revision", wdb.revision(db) + 1)
             results.append({"action_id": act["action_id"], **out})
         wdb.apply_staged(campaign)
+        if out.get("refresh") == "clocks" and paths.session_flag(campaign, "display", "none") != "none":
+            try:                                  # like the map: the clocks on the display are state, pushed whole
+                import story
+                subprocess.run([sys.executable, str(HERE.parent / "display" / "push_stats.py"), "--clocks-json",
+                                json.dumps(story.clocks(campaign), ensure_ascii=False)], capture_output=True, timeout=15)
+            except Exception:
+                pass
         if out.get("refresh") == "battlemap" and paths.session_flag(campaign, "display", "none") != "none":
             try:                                  # the map on the display is state, not a message: pushing it twice is harmless
                 import battlemap
@@ -520,6 +527,30 @@ def replay(campaign: str, log: list) -> dict:
     return {"turns": len(log), "state_hash": wdb.state_hash(campaign)}
 
 
+def metrics(campaign: str) -> dict:
+    """Numbers for a playtest: how long the table waited, how often the runner was skipped, how much of the world's
+    own movement there was to narrate."""
+    with wdb.reader(campaign) as db:
+        if db is None:
+            return {"turns": 0}
+        turns = db.execute("SELECT * FROM turns ORDER BY seq").fetchall()
+        waits = []
+        for t in turns:
+            sent = db.execute("SELECT COUNT(*) AS n FROM outbox WHERE turn_id=? AND kind='narration'", (t["turn_id"],)).fetchone()["n"]
+            acts = db.execute("SELECT COUNT(*) AS n FROM actions WHERE turn_id=?", (t["turn_id"],)).fetchone()["n"]
+            waits.append({"turn_id": t["turn_id"], "actions": acts, "closed_by_the_runner": bool(t["narration"]) or sent > 0})
+        applied = db.execute("SELECT COUNT(*) AS n FROM events WHERE status='applied'").fetchone()["n"]
+        cancelled = db.execute("SELECT COUNT(*) AS n FROM events WHERE status='cancelled'").fetchone()["n"]
+        asked = db.execute("SELECT COUNT(*) AS n FROM requests").fetchone()["n"]
+        stale = db.execute("SELECT COUNT(*) AS n FROM requests WHERE status='stale'").fetchone()["n"]
+    finished = [w for w in waits if w["closed_by_the_runner"]]
+    return {"turns": len(turns), "turns_closed_through_the_runner": len(finished),
+            "turns_the_gm_narrated_around_the_runner": len(turns) - len(finished),
+            "turns_with_no_engine_action": sum(1 for w in waits if not w["actions"]),
+            "background_events_applied": applied, "events_cancelled_with_a_reason": cancelled,
+            "questions_put_to_players": asked, "questions_left_stale": stale}
+
+
 def stall_reason(campaign: str) -> "str | None":
     """For the Stop hook: a turn is open and nothing waits on a player, so the GM owes its narration."""
     if not wdb.enabled(campaign):
@@ -549,6 +580,7 @@ def main() -> int:
     f = sub.add_parser("finish")
     f.add_argument("--narration", default=None)
     sub.add_parser("log")
+    sub.add_parser("metrics")
     rp = sub.add_parser("replay")
     rp.add_argument("--log", required=True, help="a file written by `log`")
     h = sub.add_parser("help")
@@ -579,6 +611,8 @@ def main() -> int:
             out = resume(args.campaign)
         elif args.cmd == "log":
             out = export_log(args.campaign)
+        elif args.cmd == "metrics":
+            out = metrics(args.campaign)
         elif args.cmd == "replay":
             out = replay(args.campaign, json.loads(Path(args.log).read_text(encoding="utf-8")))
         else:

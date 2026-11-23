@@ -1382,6 +1382,7 @@ def health():
     }, 200
 
 
+HANDOUT_TYPES = ("letter", "news", "poster", "terminal", "intercept", "artifact")
 _last_chunk_ts: float = 0.0   # when the GM last sent narration (Status panel)
 _seen_message_ids: deque = deque(maxlen=500)   # world engine message ids already on the feed
 
@@ -1486,18 +1487,28 @@ def chunk():
 
     # Player/npc/dice/tutor/action text comes from send.py (no ANSI/chrome) — light clean only.
     # DM narration may come from wrapper.py — full clean.
-    cleaned = raw.strip() if (is_action or is_player or is_npc or is_dice or is_tutor) else _clean(raw)
+    handout = data.get("handout") if isinstance(data.get("handout"), dict) else None
+    if handout and str(handout.get("type", "")) not in HANDOUT_TYPES:
+        handout = None
+    cleaned = raw.strip() if (is_action or is_player or is_npc or is_dice or is_tutor or handout) else _clean(raw)
     if not cleaned.strip():
         return "", 204
 
     payload: dict = {"text": cleaned}
+    if handout:                                   # an object from the world, shown as a card: no scene or sound scan
+        payload["handout"] = {"type": handout["type"], "title": str(handout.get("title", "")).strip()[:120]}
 
-    if is_action:
+    if handout:
+        pass
+    elif is_action:
         payload["action"] = data["action"]
     elif is_player:
         payload["player"] = data["player"]
     elif is_npc:
         payload["npc"] = data["npc"]
+        voice = str(data.get("voice") or "").strip()
+        if voice and _tts is not None and voice in _tts.VALID_VOICES:
+            payload["voice"] = voice              # this NPC's own voice for the listen button
         if data.get("speaker_id"):
             payload["speaker_id"] = str(data["speaker_id"]).strip()[:64]
         if data.get("concealed"):
@@ -1527,12 +1538,16 @@ def chunk():
 
     # Store full typed payload so replay preserves action/player/npc/dice/tutor/whisper context
     log_entry: dict = {"text": cleaned}
-    if is_action:
+    if payload.get("handout"):
+        log_entry["handout"] = payload["handout"]
+    elif is_action:
         log_entry["action"] = data["action"]
     elif is_player:
         log_entry["player"] = data["player"]
     elif is_npc:
         log_entry["npc"] = data["npc"]
+        if payload.get("voice"):
+            log_entry["voice"] = payload["voice"]
         if payload.get("speaker_id"):
             log_entry["speaker_id"] = payload["speaker_id"]
         if payload.get("concealed"):
@@ -3107,6 +3122,55 @@ def rollback():
     return jsonify({"ok": True}), 200
 
 
+# ─── Progress clocks: segmented counters the whole table can see ──────────────
+
+CLOCKS_FILE = rt("clocks.json")
+_clocks_lock = threading.Lock()
+
+
+def _load_clocks() -> list:
+    try:
+        with open(CLOCKS_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except (OSError, ValueError):
+        return []
+
+
+@app.route("/clocks", methods=["GET", "POST"])
+def clocks_endpoint():
+    """GET the clocks; POST {"clocks": [{name, filled, size}]} replaces them, {"set": {...}} / {"remove": name} edits one."""
+    if request.method == "GET":
+        return jsonify(_load_clocks()), 200
+    if not _token_ok():
+        return "Forbidden", 403
+    data = request.get_json(silent=True) or {}
+    with _clocks_lock:
+        clocks = _load_clocks()
+        if isinstance(data.get("clocks"), list):
+            clocks = data["clocks"]
+        one = data.get("set")
+        if isinstance(one, dict) and str(one.get("name", "")).strip():
+            clocks = [c for c in clocks if c.get("name") != one["name"]] + [one]
+        if data.get("remove"):
+            clocks = [c for c in clocks if c.get("name") != data["remove"]]
+        clean = []
+        for c in clocks[:12]:
+            try:
+                size = max(2, min(12, int(c.get("size", 6))))
+                clean.append({"name": str(c.get("name", "")).strip()[:60], "size": size,
+                              "filled": max(0, min(size, int(c.get("filled", 0))))})
+            except (TypeError, ValueError, AttributeError):
+                continue
+        try:
+            with open(CLOCKS_FILE, "w", encoding="utf-8") as f:
+                json.dump(clean, f, ensure_ascii=False)
+        except OSError:
+            pass
+    _broadcast({"clocks": clean})
+    return jsonify(clean), 200
+
+
 # ─── Live Entropy (Tension Meter) & On-Demand 2D Tactical Battlemap ──
 
 _entropy_lock = threading.Lock()
@@ -3165,7 +3229,7 @@ def stream():
     # Send the current scene immediately on connect so the browser
     # starts with the right background even mid-session.
     initial_scene = SCENES[_current_scene_name] | {"name": _current_scene_name}
-    q.put_nowait({"scene": initial_scene, "timeline": _timeline_epoch()})
+    q.put_nowait({"scene": initial_scene, "timeline": _timeline_epoch(), "clocks": _load_clocks()})
 
     # Replay recent entries so late-connecting / reconnecting browsers catch up.
     # _text_log is the durable session record (maxlen=2000); replay only the

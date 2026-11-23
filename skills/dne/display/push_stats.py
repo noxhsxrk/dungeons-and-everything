@@ -190,6 +190,10 @@ def main() -> None:
                         help="Start autorun countdown: broadcast interval + current timestamp to display")
     parser.add_argument("--autorun-threshold", metavar="N", type=int,
                         help="Set min players needed to auto-fire (0 or omit to reset to player count)")
+    parser.add_argument("--clock", nargs=3, action="append", metavar=("NAME", "FILLED", "SIZE"),
+                        help="Show or update a progress clock on the display, e.g. --clock \"The alarm\" 3 6 (repeatable)")
+    parser.add_argument("--clock-remove", action="append", metavar="NAME", help="Take a progress clock off the display")
+    parser.add_argument("--clocks-json", metavar="JSON", help="Replace every clock: '[{\"name\": …, \"filled\": 3, \"size\": 6}]'")
     parser.add_argument("--set-campaign", metavar="NAME",
                         help="Set the active campaign name (written to .campaign for dm_help.py). "
                              "Server auto-resolves ruleset from the campaign's state.md.")
@@ -370,6 +374,29 @@ def main() -> None:
             print(f"--ruleset must be 2014 or 2024 (got {rs!r})", file=sys.stderr)
             sys.exit(2)
         payload["ruleset"] = rs
+
+    # ── Progress clocks (their own endpoint: they are not part of a character's stats) ──
+    clocks_url, clock_sent = FLASK_URL.replace("/stats", "/clocks"), False
+    if args.clocks_json:
+        try:
+            _send(clocks_url, json.dumps({"clocks": json.loads(args.clocks_json)}).encode("utf-8"), _read_token())
+        except json.JSONDecodeError as e:
+            print(f"Invalid --clocks-json: {e}", file=sys.stderr)
+            sys.exit(1)
+        clock_sent = True
+    for name, filled, size in args.clock or []:
+        try:
+            one = {"name": name, "filled": int(filled), "size": int(size)}
+        except ValueError:
+            print(f'--clock needs a name and two numbers, e.g. --clock "The alarm" 3 6 (got {filled!r} {size!r})', file=sys.stderr)
+            sys.exit(2)
+        _send(clocks_url, json.dumps({"set": one}).encode("utf-8"), _read_token())
+        clock_sent = True
+    for name in args.clock_remove or []:
+        _send(clocks_url, json.dumps({"remove": name}).encode("utf-8"), _read_token())
+        clock_sent = True
+    if clock_sent and not payload and not args.clear:
+        return
 
     # ── Clear display ─────────────────────────────────────────────────────────
     if args.clear:

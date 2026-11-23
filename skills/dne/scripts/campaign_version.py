@@ -121,6 +121,7 @@ def check(campaign: str) -> tuple[str, str]:
 FLAGS = {"success_at_cost": "on", "degrees": "on", "hero_points": "off", "content": "standard", "romance": "fade", "pacing": "mixed",
          "companions": "normal", "rolls": "normal", "show_dc": "on", "turn_end": "open",
          "engine": "full", "npc_growth": "normal", "world_engine": "off",
+         "sparks": "on", "style_guard": "on", "storyteller": "none",
          "lines": "(none)", "veils": "(none)"}
 #: Character-sheet sections a non-caster may leave out.
 OPTIONAL_SHEET = {"Spell Slots", "Known Spells / Cantrips"}
