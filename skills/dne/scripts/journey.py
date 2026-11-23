@@ -27,6 +27,7 @@ import scheduler  # noqa: E402
 import turn  # noqa: E402
 
 REST_MINUTES = {"short": 60, "long": 480}
+TIME_FACTORS: list = []   # fn(world) -> (factor, why): season, weather, an overloaded pack … slow a journey down
 
 
 def _decide(st: dict, question: str, options: list, expected: str = "party", **extra) -> dict:
@@ -168,11 +169,19 @@ def plan_route(world, to_name: str, mode: str = "foot", from_key: "str | None" =
     if not src or not dst:
         raise ValueError(f"no route: unknown place ({from_key or data.get('party_location') or 'party location not set'} → {to_name})")
     route = _shortest(data, src, dst, mode, world)
-    legs = []
+    legs, slow, why = [], 1.0, []
+    for factor in TIME_FACTORS:
+        f, reason = factor(world)
+        if f != 1.0:
+            slow *= f
+            why.append(reason)
     for a, b, miles, mult in route:
         speed = world_map.TRAVEL_SPEED_MPD.get(mode, 24.0)
-        legs.append({"a": a, "b": b, "a_name": data["places"][a]["name"], "b_name": data["places"][b]["name"],
-                     "miles": miles, "minutes": max(1, round(miles * mult / speed * 1440))})
+        leg = {"a": a, "b": b, "a_name": data["places"][a]["name"], "b_name": data["places"][b]["name"],
+               "miles": miles, "minutes": max(1, round(miles * mult * slow / speed * 1440))}
+        if why:
+            leg["slowed_by"] = why
+        legs.append(leg)
     return legs
 
 

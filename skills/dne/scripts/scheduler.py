@@ -44,6 +44,7 @@ sys.modules.setdefault("scheduler", sys.modules[__name__])   # run as a script, 
 WEEK = 7 * 1440
 EFFECTS: dict = {}       # effect type -> fn(world, event_row, effect) -> list of visible events (or None)
 AFTER_CHANGE: list = []  # fn(world) -> list of visible events; run whenever world state may have changed
+CLOCK_HOOKS: list = []   # fn(world, minutes): something that is used up or grows as in-world time passes
 
 
 def effect(name: str):
@@ -86,9 +87,18 @@ class World:
         return _minutes_of(cal) if cal else None
 
     def move_clock(self, minutes: int) -> None:
+        """Move the clock, one in-world day at a time at most, so anything with a daily rate or a daily state
+        (season, weather, supplies) sees every day whatever size of step was asked for."""
         if minutes <= 0 or not self.json("calendar.json"):
             return
-        _calendar_module()._advance_minutes(self.json("calendar.json"), minutes)
+        cal_mod = _calendar_module()
+        left = int(minutes)
+        while left > 0:
+            step = min(left, 1440 - self.minute % 1440)       # up to the next midnight
+            for hook in CLOCK_HOOKS:                           # at the start of the stretch: the day it belongs to
+                hook(self, step)
+            cal_mod._advance_minutes(self.json("calendar.json"), step)
+            left -= step
         self.touch("calendar.json")
         tracker = self.json("tracker.json")
         if tracker:

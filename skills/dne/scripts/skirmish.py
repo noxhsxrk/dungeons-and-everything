@@ -41,6 +41,7 @@ import scheduler  # noqa: E402
 import turn  # noqa: E402
 
 MAP = "battlemap.json"
+SIGHT_LIMITS: list = []   # fn(world) -> feet or None: fog, darkness … how far anyone can see at all
 
 
 def _world(ctx):
@@ -108,6 +109,9 @@ def distance(world, a: dict, b: dict) -> int:
 def sees(world, a: dict, b: dict) -> bool:
     """Whether `a` has line of sight to `b`: no wall on the line (grid), or the zone can see the other (zones)."""
     if b.get("hidden"):
+        return False
+    limits = [f for f in (limit(world) for limit in SIGHT_LIMITS) if f]
+    if limits and "name" in a and "name" in b and distance(world, a, b) > min(limits):
         return False
     if _zone_of(a) or _zone_of(b):
         za, zb = _zone_of(a), _zone_of(b)

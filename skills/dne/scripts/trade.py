@@ -56,7 +56,9 @@ def price(market: dict, item: str) -> tuple:
     stock = int((market.get("stock") or {}).get(item, 0))
     target = int((market.get("target") or {}).get(item, max(stock, 1)))
     scarcity = 3.0 if stock <= 0 else min(3.0, max(0.5, target / stock))
-    return max(1, round(base * scarcity)), f"{base} cp base × {scarcity:.1f} ({stock} in stock, {target} wanted)"
+    carried = int((market.get("surcharge") or {}).get(item, 0))
+    why = f"{base} cp base × {scarcity:.1f} ({stock} in stock, {target} wanted)"
+    return max(1, round(base * scarcity) + carried), why + (f" + {carried} cp transport" if carried else "")
 
 
 def _sees(world, place_key: str) -> str:
@@ -78,6 +80,13 @@ def _market_day(world, row, eff):
     if not market:
         return None
     out, stock = [], market.setdefault("stock", {})
+    for item, n in (market.get("makes") or {}).items():        # what the town produces itself comes in first
+        stock[item] = int(stock.get(item, 0)) + int(n)
+        market.get("surcharge", {}).pop(item, None)             # local goods carry no transport cost
+    day_no = int(eff.get("day", 0))
+    for item, plan in (market.get("restock") or {}).items():    # a regular delivery from outside the map
+        if int(plan.get("every_days", 0)) and day_no % int(plan["every_days"]) == 0:
+            stock[item] = int(stock.get(item, 0)) + int(plan.get("amount", 0))
     for item, n in (market.get("eats") or {}).items():
         had = int(stock.get(item, 0))
         stock[item] = max(0, had - int(n))
@@ -158,9 +167,17 @@ def _arrive(world, cid: str, caravan: dict) -> list:
         each, why = price(market, item)
         if each is None:
             continue
+        carry = int(caravan.get("transport", 0))             # what it cost to bring each one here
+        each += carry
         can = min(int(qty), int(market.get("cash", 0)) // each) if each else int(qty)
+        if can < int(qty) and market.get("when_broke") == "credit":
+            market["owes"] = int(market.get("owes", 0)) + (int(qty) - can) * each     # the rest on account
+            market["cash"] = int(market.get("cash", 0)) + (int(qty) - can) * each
+            can = int(qty)
         if can <= 0:
             continue
+        if carry:
+            market.setdefault("surcharge", {})[item] = carry
         market["stock"][item] = int(market["stock"].get(item, 0)) + can
         market["cash"] = int(market.get("cash", 0)) - can * each
         caravan["goods"][item] = int(qty) - can
@@ -284,12 +301,15 @@ def _market(ctx, intent: dict) -> dict:
     except (ValueError, KeyError) as exc:
         return {"status": "done", "elapsed_minutes": 0, "data": {"error": str(exc)}}
     market = world.get("market", key) or {"stock": {}, "base": {}, "target": {}, "cash": 0, "eats": {}}
-    for field in ("stock", "base", "target", "eats"):
+    for field in ("stock", "base", "target", "eats", "makes", "restock"):
         market.setdefault(field, {}).update(intent.get(field) or {})
+    for field in ("when_out", "when_broke"):
+        if field in intent:
+            market[field] = str(intent[field])
     if "cash" in intent:
         market["cash"] = int(intent["cash"])
     world.put("market", key, market)
-    if market.get("eats") and not ctx.db.execute(
+    if (market.get("eats") or market.get("makes") or market.get("restock")) and not ctx.db.execute(
             "SELECT 1 FROM events WHERE status='pending' AND event_id LIKE ?", (f"market-day-{key}-%",)).fetchone():
         scheduler.schedule(ctx.db, f"market-day-{key}-1", (world.minute or 0) + 1440,
                            {"type": "market_day", "place": key, "day": 1}, priority=-5)
@@ -317,6 +337,7 @@ def _caravan(ctx, intent: dict) -> dict:
     caravan = {"goods": dict(intent.get("goods") or {}), "budget": int(intent.get("budget", 0)),
                "wants": dict(intent.get("wants") or {}), "from": src, "to": dst, "at": src,
                "owner": intent.get("owner", ""), "mode": intent.get("mode", "wagon"), "status": "waiting",
+               "transport": int(intent.get("transport", 0)),
                "departs": departs, "knows_closed": [list(sorted(_keys(world, pair))) for pair in intent.get("knows_closed", [])],
                "log": []}
     world.put("caravan", cid, caravan)
@@ -344,6 +365,10 @@ def _deal(ctx, intent: dict, buying: bool) -> dict:
     coin, _m = economy._read_currency_cp(text)
     stock = int(market["stock"].get(item, 0))
     if buying:
+        target = int((market.get("target") or {}).get(item, 0))
+        if market.get("when_out") == "ration" and target and stock * 5 <= target and qty > 1:
+            return {"status": "done", "elapsed_minutes": 0,
+                    "data": {"bought": 0, "error": f"{item} is rationed here: one to a customer while stocks are this low"}}
         if stock < qty:
             return {"status": "done", "elapsed_minutes": 0,
                     "data": {"bought": 0, "error": f"sold out: {stock} {item} left" if stock else f"sold out: no {item} left"},
