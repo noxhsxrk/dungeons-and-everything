@@ -144,7 +144,7 @@ def _item_lines(text: str, item: str):
     span = _inventory_span(text)
     if not span:
         return []
-    pattern = r"^[ \t]*[-*][ \t]+" + re.escape(item.strip()) + r"(?:[ \t]*[×x][ \t]*(\d+))?[ \t]*(?:\n|$)"
+    pattern = r"^[ \t]*[-*][ \t]+" + re.escape(item.strip()) + r"(?:[ \t]*\(?[×x][ \t]*(\d+)\)?)?[ \t]*(?:\n|$)"
     return list(re.finditer(pattern, text[span.start():span.end()], re.M | re.I))
 
 

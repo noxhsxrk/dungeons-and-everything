@@ -187,3 +187,12 @@ class RedoSafetyTests(_Camp):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertEqual(st.read_text(encoding="utf-8"), "turn 2\n")
         self.assertIn("Redid", r.stdout)
+
+
+class SellQuantityFormatTests(_Camp):
+    def test_sell_from_parenthesised_quantity(self):
+        p = self.camp / "characters" / "dech.md"
+        p.write_text("# Dech\n## Equipment & Inventory\n**Weapons:**\n- หอก (×2)\n\n**Currency:** 5\n", encoding="utf-8")
+        r = self.run_py("economy.py", "-c", "eden", "sell", "--char", "dech", "--item", "หอก", "--value", "1")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("- หอก ×1", p.read_text(encoding="utf-8"))
