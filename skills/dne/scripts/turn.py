@@ -41,6 +41,7 @@ sys.modules.setdefault("turn", sys.modules[__name__])   # run as a script, `impo
 
 SCHEMA_VERSION = 1
 HANDLERS: dict = {}
+AFTER_ACTION: list = []      # fn(ctx, intent, result): called in the same transaction once an action is done
 
 
 def handler(name: str):
@@ -336,6 +337,12 @@ def _run(campaign: str, turn_id: str) -> dict:
                 db.execute("UPDATE actions SET status='waiting', result=? WHERE action_id=?",
                            (json.dumps(out, ensure_ascii=False), act["action_id"]))
             else:
+                for hook in AFTER_ACTION:
+                    hook(ctx, intent, out)
+                # A handler may address someone alone: {"to": "<PC>", "text": "…"} goes out as a private message.
+                for n, msg in enumerate(out.get("messages") or [], 1):
+                    _queue(db, turn_id, f"{act['action_id']}-m{n}", str(msg.get("text", "")), str(msg.get("to", "party")),
+                           str(msg.get("kind", "whisper")))
                 staged_as = f"{act['action_id']}@{wdb.revision(db)}"
                 wdb.stage_writes(db, staged_as, out.get("writes"))
                 out.pop("writes", None)

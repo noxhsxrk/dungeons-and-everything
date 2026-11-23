@@ -26,6 +26,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import paths  # noqa: E402
 
+sys.modules.setdefault("gm_guide", sys.modules[__name__])   # run as a script, `import gm_guide` is still this module
+
 SKILL = HERE.parent
 TURNS = ".autorun-turns.json"   # player turns handed out since state.md was last written
 
@@ -313,6 +315,11 @@ def turn_parts(campaign: str, count: bool = True, text: str = "", turn: "dict | 
             f"Before you narrate, write to {camp}: state.md (Current Situation: place, time, HP and resources; Recent "
             "Events; Live State Flags) and characters/<pc>.md (HP, slots, inventory, allies and gear gained). "
             "Quietly, no word to the players; this is not a full /dne save."))
+    if paths.session_flag(campaign, "world_engine", "off") == "on":
+        try:
+            import turn as _turn  # noqa: F401  (loads the engine modules, which register their providers)
+        except Exception:
+            pass
     for provider in PROVIDERS:                    # story.py and the engine modules add their own lines
         try:
             parts += provider(campaign, text, turn) or []
