@@ -41,3 +41,8 @@ venv/
 
 # macOS
 .DS_Store
+
+# display runtime files written next to the code
+skills/dne/display/ngrok.log
+skills/dne/display/ngrok.pid
+skills/dne/display/.ngrok_url

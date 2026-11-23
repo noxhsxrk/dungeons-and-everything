@@ -4091,6 +4091,16 @@ body.dialogue-bubbles .npc-block {
 }
 #battlemap-svg-wrap { margin-top: 10px; }
 
+  /* "Show all" while text is still typing; sits just above the input panel */
+  #skip-typing{
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--input-reserve, 24px) + 4px);
+    z-index: 31; padding: 8px 16px; border-radius: 999px; cursor: pointer;
+    font: 600 13px/1 system-ui, 'Noto Sans Thai', sans-serif;
+    background: var(--e-accent, #b48c3c); color: var(--e-dice-text, #111); border: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+  #skip-typing[hidden]{ display: none; }
+  body.input-only #skip-typing{ display: none; }
+
   /* ════════════════════════════════════════════════════════════════════
      PLAIN  ·  data-skin="editorial" data-variant="plain"  (the default)
      The editorial layout with quiet colours and ordinary type: one sans
@@ -4127,10 +4137,13 @@ body.dialogue-bubbles .npc-block {
   :root[data-variant="plain"] .dm-block p{ line-height: 1.75; }
   :root[data-variant="plain"] #codex-btn,
   :root[data-variant="plain"] #bubble-mode-btn{
-    background: var(--e-block); color: var(--e-ink); border: 1px solid var(--e-hair); backdrop-filter: none;
+    background: transparent; color: var(--e-mut); border: 1px solid transparent; backdrop-filter: none;
+    border-radius: 8px; padding: 6px 10px; font-size: 13px; transition: background .15s, color .15s;
   }
+  :root[data-variant="plain"] #codex-btn:focus-visible,
+  :root[data-variant="plain"] #bubble-mode-btn:focus-visible{ outline: 2px solid var(--e-accent); outline-offset: 1px; }
   :root[data-variant="plain"] #codex-btn:hover,
-  :root[data-variant="plain"] #bubble-mode-btn:hover{ background: var(--e-hair); }
+  :root[data-variant="plain"] #bubble-mode-btn:hover{ background: var(--e-hair); color: var(--e-ink); }
   :root[data-variant="plain"], :root[data-variant="plain"] body{ background: var(--e-canvas) !important; }
   :root[data-variant="plain"] #bottom-fade{ display: none; }
 
@@ -4172,9 +4185,11 @@ body.dialogue-bubbles .npc-block {
   :root[data-variant="plain"] body:not(.input-only)::before{
     content: ""; position: fixed; top: 0; left: 0; right: 0; height: 70px; z-index: 5; pointer-events: none;
     background: var(--e-canvas); }
-  /* Codex / Bubbles sit right of the corner logo instead of on top of it */
-  :root[data-variant="plain"] body:not(.input-only) #codex-btn{ left: 104px; top: 30px; }
-  :root[data-variant="plain"] body:not(.input-only) #bubble-mode-btn{ left: 188px; top: 30px; }
+  /* Codex / Bubbles: a quiet toolbar at the top of the reading column, never across the sidebar edge */
+  :root[data-variant="plain"] body:not(.input-only) #codex-btn{ left: 246px; top: 22px; }
+  :root[data-variant="plain"] body:not(.input-only) #bubble-mode-btn{ left: 330px; top: 22px; }
+  :root[data-variant="plain"] body:not(.input-only):has(#text-scroll.sidebar-hidden) #codex-btn{ left: 74px; }
+  :root[data-variant="plain"] body:not(.input-only):has(#text-scroll.sidebar-hidden) #bubble-mode-btn{ left: 158px; }
   :root[data-variant="plain"] #corner-logo{ filter: none; }
   /* header only carries the live badge + autorun countdown; no title, no toggle */
   :root[data-variant="plain"] #input-panel #input-panel-header{
@@ -4625,6 +4640,7 @@ body.dialogue-bubbles .npc-block {
 </div>
 
 <!-- Text -->
+<button id="skip-typing" type="button" hidden title="Show the rest of the text now">Show all</button>
 <div id="text-scroll">
   <div id="text-content"></div>
 </div>
@@ -5375,7 +5391,7 @@ if (_newPill) {
   });
 }
 
-let charDelay = 36;      // ms per character while typing (mutable — see speed toggle)
+let charDelay = 14;      // ms per character while typing (mutable — see speed toggle)
 const IDLE_GAP   = 1800; // ms silence before starting a new block
 
 function getOrCreateBlock() {
@@ -5390,9 +5406,14 @@ function getOrCreateBlock() {
   return currentEl.querySelector('p:last-child');
 }
 
+const _skipTypingBtn = document.getElementById('skip-typing');
+function _showSkip(on) { if (_skipTypingBtn) _skipTypingBtn.hidden = !on; }
+if (_skipTypingBtn) _skipTypingBtn.addEventListener('click', () => instantFlush());
+
 function typeNextChar() {
   if (charQueue.length === 0) {
     isTyping = false;
+    _showSkip(false);
     return;
   }
 
@@ -5434,6 +5455,7 @@ function startTyping() {
   if (isTyping) return;
   if (charDelay === 0) { instantFlush(); return; }
   isTyping = true;
+  if (charQueue.length > 40) _showSkip(true);   // only for text long enough to wait for
   typeNextChar();
 }
 
@@ -5620,6 +5642,7 @@ function instantFlush() {
     }
   }
   isTyping = false;
+  _showSkip(false);
   _currentInlineEl = null;
   if (currentCursor) currentCursor.classList.remove('typing-cursor');
   currentCursor = currentEl ? currentEl.querySelector('p:last-child') : null;
@@ -7291,17 +7314,25 @@ document.getElementById('sfx-row').addEventListener('click', () => {
 
 // ── Typing speed toggle ──────────────────────────────────────────────
 const _speedSteps = [
-  { label: 'Normal',  ms: 36 },
-  { label: 'Fast',    ms: 18 },
+  { label: 'Normal',  ms: 14 },
+  { label: 'Fast',    ms: 5  },
   { label: 'Instant', ms: 0  },
+  { label: 'Slow',    ms: 32 },
 ];
 let _speedIdx = 0;
+try { _speedIdx = Math.max(0, _speedSteps.findIndex(s => s.label === localStorage.getItem('dnd-text-speed'))); } catch (_) {}
 const _speedLabel = document.getElementById('speed-label');
-document.getElementById('speed-row').addEventListener('click', () => {
-  _speedIdx = (_speedIdx + 1) % _speedSteps.length;
+function _applySpeed() {
   const step = _speedSteps[_speedIdx];
   charDelay = step.ms;
   _speedLabel.textContent = step.label;
+}
+_applySpeed();
+document.getElementById('speed-row').addEventListener('click', () => {
+  _speedIdx = (_speedIdx + 1) % _speedSteps.length;
+  _applySpeed();
+  try { localStorage.setItem('dnd-text-speed', _speedSteps[_speedIdx].label); } catch (_) {}
+  if (charDelay === 0) instantFlush();
 });
 
 // ═══════════════════════════════════════════════════════════════════
@@ -8189,7 +8220,9 @@ async function _stageAction() {
     // Honest failure: the text + the dnd_staged_input cache are preserved, so a
     // tap re-sends without retyping. Never silently reset to 'Stage' on failure —
     // that's what read as "submitted but not acknowledged, gone forever".
-    _setSendNote(_lastStatus
+    _setSendNote(_lastStatus === 403
+      ? `Not sent: "${_selectedChar}" isn't in the current party (or this device was blocked). Pick your character again; your text is kept.`
+      : _lastStatus
       ? `Not sent (error ${_lastStatus}). Your text is kept; press send to retry.`
       : 'Not sent: no connection. Your text is kept; press send to retry.');
   }
@@ -8261,6 +8294,7 @@ function _reserveInputSpace() {
   const reserve = Math.round(window.innerHeight - rect.top) + 16;
   // 'important': the phone layout pins #text-scroll padding with !important.
   scroll.style.setProperty('padding-bottom', Math.max(40, reserve) + 'px', 'important');
+  document.documentElement.style.setProperty('--input-reserve', Math.max(24, reserve - 8) + 'px');
 }
 
 (function _initReserveInputSpace() {

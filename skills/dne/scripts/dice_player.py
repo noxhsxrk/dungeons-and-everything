@@ -34,6 +34,7 @@ import urllib.error
 import urllib.request
 
 from paths import display_dir as _display_dir, runtime_dir as _runtime_dir
+_DISPLAY_HOST = os.environ.get("DNE_DISPLAY_HOST", "localhost:5001")  # tests point this away from a live display
 DISPLAY_DIR = str(_display_dir())
 TOKEN_FILE  = os.path.join(str(_runtime_dir()), ".token")   # runtime state → update-safe dir
 SCHEME_FILE = os.path.join(DISPLAY_DIR, ".scheme")          # launch marker → code dir
@@ -45,7 +46,7 @@ try:
         _SCHEME = f.read().strip() or "http"
 except FileNotFoundError:
     _SCHEME = "http"
-_BASE       = f"{_SCHEME}://localhost:5001"
+_BASE       = f"{_SCHEME}://{_DISPLAY_HOST}"
 _DICE_REQ   = f"{_BASE}/dice-request"
 _TEXT_LOG   = os.path.join(str(_runtime_dir()), "text_log.json")
 

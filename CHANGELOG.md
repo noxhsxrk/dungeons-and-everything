@@ -8,6 +8,21 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Changed
+- **Display text is faster, with a "Show all" button.** Typing runs at 14 ms a character by default
+  (was 36); Settings → Type Speed cycles Normal / Fast / Instant / Slow and is remembered per browser.
+  While a long passage is still typing, a **Show all** button above the input shows the rest at once.
+- **Display, Plain look:** Codex and Bubbles are a quiet toolbar at the top of the reading column
+  instead of boxed buttons floating across the sidebar's edge.
+
+### Fixed
+- **Running the tests no longer touches a live game.** Tests posted to the display at
+  `localhost:5001` and wrote the runtime `stats.json`, so a test run during play put test characters
+  (Aldric, Bob, Reaper…) into the real party, and a phone that picked one got "error 403". Scripts
+  now take the display address from `DNE_DISPLAY_HOST`, and `tests/conftest.py` points it, the runtime
+  dir and the data dir at a throwaway sandbox.
+- A phone whose character isn't in the current party now says so instead of "error 403".
+
 ## [1.4.0] — 2026-11-23 — Living worlds, table limits, world versions
 
 ### Added

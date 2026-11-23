@@ -37,6 +37,7 @@ if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
 from paths import find_campaign, display_dir, runtime_dir
+_DISPLAY_HOST = os.environ.get("DNE_DISPLAY_HOST", "localhost:5001")  # tests point this away from a live display
 
 TERRAIN_KINDS = ("normal", "difficult", "wall", "cover", "water", "hazard")
 IMPASSABLE = {"wall"}
@@ -62,7 +63,7 @@ def _save(campaign: str, data: dict) -> None:
 def _push_display(data: "dict | None") -> bool:
     scheme_file = display_dir() / ".scheme"
     scheme = scheme_file.read_text(encoding="utf-8").strip() if scheme_file.exists() else "http"
-    url = f"{scheme}://localhost:5001/battlemap"
+    url = f"{scheme}://{_DISPLAY_HOST}/battlemap"
     token_file = runtime_dir() / ".token"
     token = token_file.read_text(encoding="utf-8").strip() if token_file.exists() else ""
     headers = {"Content-Type": "application/json"}

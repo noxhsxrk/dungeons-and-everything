@@ -16,6 +16,7 @@ import json
 import secrets
 import subprocess
 import urllib.request
+_DISPLAY_HOST = os.environ.get("DNE_DISPLAY_HOST", "localhost:5001")  # tests point this away from a live display
 
 DISPLAY_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(DISPLAY_DIR, "..", "scripts"))
@@ -88,7 +89,7 @@ if content:
             ctx = ssl.create_default_context()
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
-        req = urllib.request.Request(f"{scheme}://localhost:5001/queue/consumed",
+        req = urllib.request.Request(f"{scheme}://{_DISPLAY_HOST}/queue/consumed",
                                      data=b"", method="POST",
                                      headers={"X-DND-Token": token})
         urllib.request.urlopen(req, timeout=1, context=ctx)

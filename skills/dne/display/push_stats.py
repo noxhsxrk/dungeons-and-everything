@@ -88,9 +88,10 @@ _DISPLAY_DIR = os.path.dirname(os.path.abspath(__file__))
 if _DISPLAY_DIR not in sys.path:
     sys.path.insert(0, _DISPLAY_DIR)
 from runtime_paths import rt          # writable runtime dir (update-safe)
+_DISPLAY_HOST = os.environ.get("DNE_DISPLAY_HOST", "localhost:5001")  # tests point this away from a live display
 _SCHEME_FILE = os.path.join(_DISPLAY_DIR, ".scheme")   # launch marker → code dir
 _SCHEME = open(_SCHEME_FILE, encoding="utf-8").read().strip() if os.path.exists(_SCHEME_FILE) else "http"
-FLASK_URL  = f"{_SCHEME}://localhost:5001/stats"
+FLASK_URL  = f"{_SCHEME}://{_DISPLAY_HOST}/stats"
 TOKEN_FILE = rt(".token")
 TIMEOUT    = 2.0
 
