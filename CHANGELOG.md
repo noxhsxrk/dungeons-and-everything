@@ -8,6 +8,29 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Added — Table rules (ideas from PbtA, GURPS and Pathfinder 2e, rebuilt for 5e)
+- **One roll, five outcomes.** `dice.py --dc` on a check or save now prints critical success · success ·
+  **success at a cost** (1–4 short) · failure · critical failure; a natural 20/1 shifts it a step.
+  Attacks and death saves keep their 5e rules. New DM Standard 15, *Every Roll Moves the Story*:
+  soft and hard GM moves, prices for a close miss. Flags `success_at_cost` and `degrees` (on).
+- **World Kit gets richer** (all optional, all validated): `_meta.tech_level` (0–12) and
+  `status_levels`; `rarity`, `traits` and `tl` on gear (buying rare/unique needs `--force`);
+  playbook **`moves`** per class (listed at creation and level-up, `lookup.py move`); a **`template`**
+  quick build per class; **`disadvantages`** and quirks (`lookup.py disadvantage`); world
+  **conditions** with values; **`focus`** powers. The example kit shows every field.
+- **Monster stats by CR**, measured from the 334 SRD monsters (`data/monster_stats_by_cr.json`,
+  `build_monster_table.py`): `worldkit.py monster-stats --cr 3` prints typical AC/HP/attack/DC/damage,
+  and `validate` warns when a kit monster is far outside them.
+- **Character creation:** Flaws & Quirks, a Quick build from the class template, and party **Bonds**
+  (one question per other PC). New sheet sections: Moves, Bonds, Flaws & Quirks.
+- **Hero Points** (`hero_points: on`, replaces Inspiration): `character.py hero reset|award|use|recover`.
+  **Focus Points**: `character.py focus reset|use|refocus`; short rests restore 1, long rests all.
+- **GM tools:** `reaction.py` (2d6 NPC reaction, writes the attitude to `npcs.md` with `--apply`),
+  `subsystem.py` (Victory Points for chases, heists, influence; undo-safe), `economy.py treat`
+  (Treat Wounds, once per patient per in-world hour), `economy.py treasure` (house treasure curve),
+  valued conditions in `tracker.py` (`condition add X static 2 --decay --penalty check,save`).
+- Rules reference: `skills/dne/SKILL-table-rules.md`. No rules text from those games is copied.
+
 ### Changed
 - **The display is plain by default.** A new **Plain** skin (Settings → Skin) is the default for new
   devices: quiet grey colours with a muted slate accent, one sans face (Noto Sans / Noto Sans Thai), no

@@ -189,6 +189,40 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/character.py xp --level 1 --gained 150
 
 ---
 
+## Table Rules Scripts — optional layers (`SKILL-table-rules.md`)
+
+```bash
+S=${CLAUDE_SKILL_DIR}/scripts
+# Degree of success: --dc on a check or save prints PASS/FAIL plus
+#   critical success · success · success at a cost (1–4 short) · failure · critical failure
+python3 $S/dice.py d20+5 --vs check --dc 15
+
+# Monster numbers by CR (from the SRD), before writing a World Kit monster
+python3 $S/worldkit.py monster-stats --cr 3
+
+# Reaction roll for an NPC met for the first time (2d6 + CHA mod + status difference)
+python3 $S/reaction.py -c $CAMP --cha-mod 2 --status-diff -1 --npc "Vell" --apply
+
+# Victory Points: chases, heists, persuading a council
+python3 $S/subsystem.py -c $CAMP start "Rooftop chase" --goal 6 --limit 5
+python3 $S/subsystem.py -c $CAMP check "Rooftop chase" --total 17 --dc 15
+python3 $S/subsystem.py -c $CAMP status
+python3 $S/subsystem.py -c $CAMP end "Rooftop chase"
+
+# Treat Wounds (Medicine DC 15, once per patient per in-world hour) and the treasure budget
+python3 $S/economy.py -c $CAMP treat --char "Mira" --total 18
+python3 $S/economy.py -c $CAMP treasure --level 4 --party 4
+
+# Hero Points (hero_points: on) and Focus Points
+python3 $S/character.py hero reset|award|use|recover --char "Mira" -c $CAMP
+python3 $S/character.py focus reset --max 2 --char "Mira" -c $CAMP    # then: use | refocus
+
+# Valued conditions: a number that comes off d20 rolls and fades each turn
+python3 $S/tracker.py -c $CAMP condition add "Mira" static 2 --decay --penalty check,save
+```
+
+Buying a World Kit item marked `rare` or `unique` needs `economy.py buy … --force` (the GM decided it's available). `economy.py rest` restores 1 Focus Point on a short rest and all on a long rest.
+
 ## Stats Display Script — `display/push_stats.py`
 Pushes character and combat stats to the sidebar. Players merged by name; partial updates work.
 

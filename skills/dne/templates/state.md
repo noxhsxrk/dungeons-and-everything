@@ -165,6 +165,7 @@ revision_log: []
 - autorun: false
 - autorun_interval: 60
 *(display: none|local|lan|ngrok — the mode chosen at /dne new or /dne load; autorun is only ever true with a display running. roll_mode: players|auto. tutor_mode, autorun, autorun_interval, tts_voice, sfx_languages, autosave — session-scoped flags set via /dne commands or by the display companion)*
+*(Table rules — success_at_cost: on|off (on), degrees: on|off (on), hero_points: on|off (off); see SKILL-table-rules.md.)*
 *(autosave: on|off — default on. Governs the behind-the-scenes continuity checkpoint (Live State Flags + graph + session tail). Toggle with /dne autosave on|off.)*
 
 ## DM Notes (hidden from players)

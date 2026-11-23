@@ -90,6 +90,15 @@
 ### <Background> Background
 -
 
+## Moves
+*(World Kit playbook moves, if the class has them)*
+
+## Bonds
+*(one line per other PC, asked at party creation)*
+
+## Flaws & Quirks
+*(up to two disadvantages and one quirk; optional)*
+
 ## Equipment & Inventory
 **Weapons:**
 -
