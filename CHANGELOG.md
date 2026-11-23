@@ -8,6 +8,13 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Changed
+- **The display is plain by default.** A new **Plain** skin (Settings → Skin) is the default for new
+  devices: quiet grey colours with a muted slate accent, one sans face (Noto Sans / Noto Sans Thai), no
+  capitals, letter-spacing, shadows, background art or particles, in light and dark. Vellum and
+  Editorial are still in the skin menu, and a device that already chose a skin keeps it. On phones the
+  input stays a compact bottom bar; the controller textarea no longer runs past the panel edge.
+
 ### Fixed
 - **Thai on the display:** vowels and tone marks no longer float or sink. The fantasy faces (Cinzel,
   IM Fell, Syne, Newsreader) have no Thai, so every font stack now carries Noto Serif Thai / Noto Sans Thai

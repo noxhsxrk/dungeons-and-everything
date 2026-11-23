@@ -40,6 +40,7 @@
   //   { id:'editorial', label:'Editorial' }                                                   // flat
   //   { id:'gaslamp',   label:'Gaslamp',  base:'editorial', variant:'gaslamp' }   // overlay (future)
   window._SKINS = [
+    { id: 'plain',     label: 'Plain',    base: 'editorial', variant: 'plain' },  // default
     { id: 'vellum',    label: 'Vellum'    },
     { id: 'editorial', label: 'Editorial' },
   ];
@@ -58,7 +59,7 @@
       // data-variant to variant — mirrored in _apply() so the anti-FOUC and
       // the picker stay in lockstep.
       var skId = window.localStorage.getItem('dnd-skin');
-      var sk = null;
+      var sk = window._SKINS[0];   // nothing stored yet -> the first (default) skin
       for (var i = 0; i < window._SKINS.length; i++) {
         if (window._SKINS[i].id === skId) { sk = window._SKINS[i]; break; }
       }
@@ -83,6 +84,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <!-- Thai: the fantasy faces have no Thai glyphs; these sit after them in every stack, so only Thai text uses them. -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;600;700&family=Noto+Sans+Thai:wght@400;600;700;800&display=swap" rel="stylesheet">
 <!-- Editorial skin fonts (Colossal redesign) — loaded always, used only under data-skin="editorial" -->
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
@@ -2104,7 +2106,7 @@
     min-height: 160px;
     font-size: 16px !important;
     padding: 14px;
-    margin: 10px 12px;
+    margin: 10px 0;  /* width is 100%, so side margins pushed it off the panel */
     border-radius: 10px;
   }
   body.input-only #input-body[data-active-tab="move"] #input-footer {
@@ -4078,6 +4080,66 @@ body.dialogue-bubbles .npc-block {
   color: #f1e6d2;
 }
 #battlemap-svg-wrap { margin-top: 10px; }
+
+  /* ════════════════════════════════════════════════════════════════════
+     PLAIN  ·  data-skin="editorial" data-variant="plain"  (the default)
+     The editorial layout with quiet colours and ordinary type: one sans
+     face, no capitals, no tracking, no shadows, weights capped at 600.
+     ════════════════════════════════════════════════════════════════════ */
+  :root[data-variant="plain"]{
+    --e-canvas:#17181A; --e-ink:#DADBDD; --e-mut:rgba(218,219,221,.55);
+    --e-accent:#8FA3B8; --e-accent-ink:#A9BACB; --e-dice-text:#17181A;
+    --e-block:#1F2124; --e-on-block:#E4E5E7; --e-hair:rgba(218,219,221,.12); --e-track:rgba(218,219,221,.12);
+    --e-strong:#1F2124; --e-on-strong:#E4E5E7; --e-hair-strong:rgba(218,219,221,.12); --e-track-strong:rgba(218,219,221,.12);
+  }
+  :root[data-variant="plain"][data-theme="light"]{
+    --e-canvas:#F7F7F5; --e-ink:#232427; --e-mut:rgba(35,36,39,.58);
+    --e-accent:#4F6378; --e-accent-ink:#3E5064; --e-dice-text:#F7F7F5;
+    --e-block:#FFFFFF; --e-on-block:#232427; --e-hair:rgba(35,36,39,.12); --e-track:rgba(35,36,39,.10);
+    --e-strong:#FFFFFF; --e-on-strong:#232427; --e-hair-strong:rgba(35,36,39,.12); --e-track-strong:rgba(35,36,39,.10);
+  }
+  @media (prefers-color-scheme: light){
+    :root[data-variant="plain"]:not([data-theme]){
+      --e-canvas:#F7F7F5; --e-ink:#232427; --e-mut:rgba(35,36,39,.58);
+      --e-accent:#4F6378; --e-accent-ink:#3E5064; --e-dice-text:#F7F7F5;
+      --e-block:#FFFFFF; --e-on-block:#232427; --e-hair:rgba(35,36,39,.12); --e-track:rgba(35,36,39,.10);
+      --e-strong:#FFFFFF; --e-on-strong:#232427; --e-hair-strong:rgba(35,36,39,.12); --e-track-strong:rgba(35,36,39,.10);
+    }
+  }
+  :root[data-variant="plain"] body,
+  :root[data-variant="plain"] body *:not(code):not(pre):not(kbd){
+    font-family: 'Noto Sans', 'Noto Sans Thai', system-ui, sans-serif !important;
+    font-synthesis: none;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+    text-shadow: none !important;
+  }
+  :root[data-variant="plain"] .dm-block p{ line-height: 1.75; }
+  :root[data-variant="plain"] #codex-btn,
+  :root[data-variant="plain"] #bubble-mode-btn{
+    background: var(--e-block); color: var(--e-ink); border: 1px solid var(--e-hair); backdrop-filter: none;
+  }
+  :root[data-variant="plain"] #codex-btn:hover,
+  :root[data-variant="plain"] #bubble-mode-btn:hover{ background: var(--e-hair); }
+  :root[data-variant="plain"], :root[data-variant="plain"] body{ background: var(--e-canvas) !important; }
+  :root[data-variant="plain"] #input-panel textarea{ box-sizing: border-box; max-width: 100%; }
+  :root[data-variant="plain"] #bottom-fade{ display: none; }
+  :root[data-variant="plain"] #input-panel{ box-shadow: none; }
+  :root[data-variant="plain"] body.ed-drawer-open:not(.input-only) #input-panel{ box-shadow: -1px 0 0 var(--e-hair); }
+  @media (max-width: 768px){
+    /* Phones keep the compact bottom bar, not the desktop drawer. */
+    :root[data-variant="plain"] body:not(.input-only) #input-panel{
+      left: 10px !important; right: 104px !important; width: auto !important; transform: none !important;
+    }
+    :root[data-variant="plain"] body:not(.input-only) #text-scroll{ padding-right: 104px !important; }
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail #phone-mode-btn{
+      background: var(--e-accent) !important; color: var(--e-dice-text) !important; }
+    :root[data-variant="plain"] #input-panel{
+      top: auto !important; height: auto !important; max-height: 55vh !important;
+      background: var(--e-block) !important; color: var(--e-on-block) !important;
+      border: 1px solid var(--e-hair) !important;
+    }
+  }
 
   /* Thai: letter-spacing stops WebKit/Blink shaping a Thai cluster, so upper and
      lower vowels and tone marks lose their places (สระลอย/สระจม). Thai is never
@@ -7535,7 +7597,7 @@ function _effectiveTheme(theme) {
 
     function _read() {
       let v = null; try { v = localStorage.getItem('dnd-skin'); } catch (_) {}
-      return _SKINS.some(s => s.id === v) ? v : 'vellum';
+      return _SKINS.some(s => s.id === v) ? v : _SKINS[0].id;
     }
 
     function _apply(skin) {
