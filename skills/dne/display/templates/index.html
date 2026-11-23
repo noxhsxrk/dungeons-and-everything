@@ -89,6 +89,7 @@
 <!-- Editorial skin fonts (Colossal redesign) — loaded always, used only under data-skin="editorial" -->
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <link rel="icon" type="image/x-icon"  href="/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="/icons/app_icon.svg">
 <link rel="icon" type="image/png" sizes="32x32"  href="/icons/app_icon_32.png">
 <link rel="apple-touch-icon" sizes="180x180"      href="/icons/app_icon_180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/icons/app_icon_192.png">
@@ -3811,7 +3812,9 @@
     }
   }
 /* ─── Quick-Action Chips, Whispers, Codex, Bubbles & Visual Juice ─── */
-#quick-chips {
+/* Suggested-action chips are off: they took the room the story needs. */
+#quick-chips, #quick-chips:not(:empty) { display: none !important; }
+#quick-chips-unused {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -4279,7 +4282,6 @@ body.dialogue-bubbles .npc-block {
     font-size: 13px; color: var(--p-hint); text-align: left; padding: 0 4px;
     flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
   :root[data-variant="plain"] #waiting-indicator .queue-label{ font-size: 13px; color: var(--p-hint); }
-  :root[data-variant="plain"] #waiting-indicator .queue-label::after{ content: " · waiting on"; }
   :root[data-variant="plain"] #waiting-indicator .queue-check{ font-size: 13px; font-weight: 600; color: var(--e-ink); opacity: 1 !important; }
 
   /* shared screen on a phone: full-width bar; rail turns into a row of icons at the top right */
@@ -4304,6 +4306,134 @@ body.dialogue-bubbles .npc-block {
     :root[data-variant="plain"] body:not(.input-only) #ed-rail #phone-mode-btn .ed-ic svg{ width: 20px !important; height: 20px !important; }
     :root[data-variant="plain"] body:not(.input-only) #ed-rail #dm-help-btn::before{ content: "◈"; font-size: 18px; }
   }
+
+
+  /* ── Plain on a phone (shared screen): an icon toolbar, the scene on a second line,
+     drawers as solid bottom sheets. Icons are stroke outlines (Lucide-style) via CSS masks. ── */
+  :root[data-variant="plain"]{
+    --ic-party:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9' cy='7' r='4'/%3E%3Cpath d='M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'/%3E%3C/svg%3E"); --ic-close:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E"); --ic-codex:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z'/%3E%3Cpath d='M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z'/%3E%3C/svg%3E"); --ic-bubbles:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3C/svg%3E");
+    --ic-dice:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='3'/%3E%3Ccircle cx='8.5' cy='8.5' r='1'/%3E%3Ccircle cx='15.5' cy='15.5' r='1'/%3E%3Ccircle cx='12' cy='12' r='1'/%3E%3C/svg%3E"); --ic-settings:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4'/%3E%3C/svg%3E"); --ic-help:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z'/%3E%3C/svg%3E"); --ic-phone:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z'/%3E%3C/svg%3E");
+  }
+  /* Plain type everywhere, including labels set by id rules and drawer titles */
+  :root[data-variant="plain"] #scene-indicator{
+    font-family:'Noto Sans','Noto Sans Thai',system-ui,sans-serif !important; letter-spacing:normal !important;
+    text-transform:none !important; font-weight:500 !important; font-size:13px !important; color:var(--e-mut) !important; }
+  :root[data-variant="plain"] #audio-controls::before,
+  :root[data-variant="plain"] #dice-drawer::before{
+    font-family:'Noto Sans','Noto Sans Thai',system-ui,sans-serif !important; letter-spacing:normal !important;
+    text-transform:none !important; font-size:15px !important; font-weight:600 !important; color:var(--e-ink) !important; }
+  :root[data-variant="plain"] #dp-reel-wrap{ background:var(--e-block) !important; border:1px solid var(--e-hair) !important; }
+  :root[data-variant="plain"] #dp-reel{ color:var(--e-ink) !important; }
+  :root[data-variant="plain"] img[src^="/icons/"]{ filter:none !important; }
+  :root[data-variant="plain"] #dp-reel-wrap::before,
+  :root[data-variant="plain"] #dp-reel-wrap::after{ display:none !important; }
+  /* Settings: one row style, plain labels, values as small outlined buttons */
+  :root[data-variant="plain"] #audio-controls #controls-toggle-row{ display:none !important; }
+  :root[data-variant="plain"] body:not(.input-only) #audio-controls .audio-row{
+    display:flex !important; align-items:center !important; justify-content:space-between !important; gap:16px !important;
+    min-height:52px; padding:10px 16px !important; margin:0 !important; box-sizing:border-box;
+    border-bottom:1px solid var(--e-hair) !important; }
+  :root[data-variant="plain"] body:not(.input-only) #audio-controls .audio-row[hidden]{ display:none !important; }
+  :root[data-variant="plain"] body:not(.input-only) #audio-controls .audio-label{
+    font-size:15px !important; font-weight:500 !important; color:var(--e-ink) !important; opacity:1 !important; }
+  :root[data-variant="plain"] body:not(.input-only) #audio-controls .theme-label,
+  :root[data-variant="plain"] body:not(.input-only) #audio-controls .speed-label,
+  :root[data-variant="plain"] body:not(.input-only) #audio-controls .narrate-label,
+  :root[data-variant="plain"] body:not(.input-only) #audio-controls .ts-btn{
+    min-height:34px; min-width:44px; padding:0 12px !important; display:inline-grid; place-items:center;
+    border:1px solid var(--p-field-line) !important; border-radius:8px !important; background:transparent !important;
+    color:var(--e-ink) !important; font-size:14px !important; font-weight:500 !important; box-sizing:border-box; }
+  :root[data-variant="plain"] body:not(.input-only) #audio-controls .theme-label.on{
+    background:var(--e-accent) !important; color:var(--e-dice-text) !important; border-color:var(--e-accent) !important; }
+
+  @media (max-width: 768px){
+    /* row 1: icon toolbar; row 2: the scene name */
+    :root[data-variant="plain"] body:not(.input-only)::before{ height: calc(max(8px, env(safe-area-inset-top)) + 84px) !important; }
+    :root[data-variant="plain"] body:not(.input-only) #text-scroll{ padding-top: calc(max(8px, env(safe-area-inset-top)) + 96px) !important; }
+    :root[data-variant="plain"] body:not(.input-only) #scene-indicator{ top: calc(max(8px, env(safe-area-inset-top)) + 54px) !important; max-width: calc(100vw - 32px) !important; }
+    :root[data-variant="plain"] body:not(.input-only) #world-clock{ display:none !important; }
+    :root[data-variant="plain"] body:not(.input-only) #sidebar-toggle,
+    :root[data-variant="plain"] body:not(.input-only) #codex-btn,
+    :root[data-variant="plain"] body:not(.input-only) #bubble-mode-btn{
+      position:fixed !important; top:max(8px, env(safe-area-inset-top)) !important; z-index:420 !important;
+      width:40px !important; height:40px !important; min-height:40px !important; padding:0 !important; margin:0 !important;
+      font-size:0 !important; line-height:0 !important; color:var(--e-ink) !important;
+      background:transparent !important; border:1px solid transparent !important; border-radius:10px !important;
+      box-shadow:none !important; display:grid !important; place-items:center; }
+    :root[data-variant="plain"] body:not(.input-only) #sidebar-toggle{ left:8px !important; }
+    :root[data-variant="plain"] body:not(.input-only) #sidebar-toggle:not(.visible){ display:none !important; }
+    :root[data-variant="plain"] body:not(.input-only) #codex-btn{ left:52px !important; }
+    :root[data-variant="plain"] body:not(.input-only) #bubble-mode-btn{ left:96px !important; }
+    :root[data-variant="plain"] body:not(.input-only):not(:has(#sidebar-toggle.visible)) #codex-btn{ left:8px !important; }
+    :root[data-variant="plain"] body:not(.input-only):not(:has(#sidebar-toggle.visible)) #bubble-mode-btn{ left:52px !important; }
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail > *{ background:transparent !important; color:var(--e-ink) !important; border:1px solid transparent !important; }
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail .ed-launch.active,
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail #phone-mode-btn{ background:var(--p-chip) !important; }
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail .ed-ic,
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail #phone-mode-btn .ed-ic,
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail #dm-help-btn::before{ display:none !important; }
+    :root[data-variant="plain"] body:not(.input-only) #sidebar-toggle::before, :root[data-variant="plain"] body:not(.input-only) #codex-btn::before, :root[data-variant="plain"] body:not(.input-only) #bubble-mode-btn::before,
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail > *::after{
+      content:""; display:block; width:20px; height:20px; background:currentColor;
+      -webkit-mask: var(--ic) center / contain no-repeat; mask: var(--ic) center / contain no-repeat; }
+    :root[data-variant="plain"] body:not(.input-only) #sidebar-toggle{ --ic: var(--ic-party); }
+    :root[data-variant="plain"] body:not(.input-only):has(#sidebar.mobile-open) #sidebar-toggle{ --ic: var(--ic-close); }
+    :root[data-variant="plain"] body:not(.input-only) #codex-btn{ --ic: var(--ic-codex); }
+    :root[data-variant="plain"] body:not(.input-only) #bubble-mode-btn{ --ic: var(--ic-bubbles); }
+    :root[data-variant="plain"] body:not(.input-only) #ed-launch-dice{ --ic: var(--ic-dice); }
+    :root[data-variant="plain"] body:not(.input-only) #ed-launch-settings{ --ic: var(--ic-settings); }
+    :root[data-variant="plain"] body:not(.input-only) #dm-help-btn{ --ic: var(--ic-help); }
+    :root[data-variant="plain"] body:not(.input-only) #phone-mode-btn{ --ic: var(--ic-phone); }
+    :root[data-variant="plain"] body:not(.input-only) #sidebar-toggle:active, :root[data-variant="plain"] body:not(.input-only) #codex-btn:active, :root[data-variant="plain"] body:not(.input-only) #bubble-mode-btn:active, :root[data-variant="plain"] body:not(.input-only) #ed-rail > *:active{ background:var(--p-chip) !important; }
+    :root[data-variant="plain"] body:not(.input-only) #sidebar-toggle:focus-visible, :root[data-variant="plain"] body:not(.input-only) #codex-btn:focus-visible, :root[data-variant="plain"] body:not(.input-only) #bubble-mode-btn:focus-visible,
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail > *:focus-visible{ outline:2px solid var(--e-accent) !important; outline-offset:1px; }
+
+    /* Settings and Dice: solid bottom sheets above everything, with a dimmed backdrop */
+    :root[data-variant="plain"] body:not(.input-only) #audio-controls,
+    :root[data-variant="plain"] body:not(.input-only) #dice-drawer{
+      top:auto !important; bottom:0 !important; left:0 !important; right:0 !important;
+      width:100% !important; height:auto !important; max-height:82dvh !important; overflow-y:auto !important;
+      /* closed = clipped away in place, never parked off-screen: iOS widens or lengthens the
+         page for boxes left outside the viewport, which pushed text and icons past the edge */
+      transform:none !important; opacity:1 !important; z-index:60 !important;
+      -webkit-clip-path:inset(100% 0 0 0); clip-path:inset(100% 0 0 0); visibility:hidden;
+      background:var(--e-canvas) !important; color:var(--e-ink) !important; backdrop-filter:none !important;
+      border:0 !important; border-top:1px solid var(--e-hair) !important; border-radius:16px 16px 0 0 !important;
+      box-shadow:0 -8px 24px rgba(0,0,0,.25) !important; padding-bottom:max(16px, env(safe-area-inset-bottom)) !important;
+      transition:clip-path .26s cubic-bezier(.22,1,.36,1), -webkit-clip-path .26s cubic-bezier(.22,1,.36,1),
+                 visibility 0s linear .26s !important; }
+    :root[data-variant="plain"] body:not(.input-only) #audio-controls.ed-open,
+    :root[data-variant="plain"] body:not(.input-only) #dice-drawer.ed-open{ -webkit-clip-path:inset(0 0 0 0); clip-path:inset(0 0 0 0); visibility:visible;
+      transition:clip-path .26s cubic-bezier(.22,1,.36,1), -webkit-clip-path .26s cubic-bezier(.22,1,.36,1),
+                 visibility 0s !important; }
+    :root[data-variant="plain"] body:not(.input-only) #ed-scrim.on{ z-index:55 !important; background:rgba(0,0,0,.45) !important; }
+    :root[data-variant="plain"] body:not(.input-only).ed-drawer-open #ed-rail{ right:8px !important; }
+  }
+  /* desktop rail: the same line icons above a short label */
+  :root[data-variant="plain"] body:not(.input-only) #ed-launch-dice{ --ic: var(--ic-dice); }
+  :root[data-variant="plain"] body:not(.input-only) #ed-launch-settings{ --ic: var(--ic-settings); }
+  :root[data-variant="plain"] body:not(.input-only) #dm-help-btn{ --ic: var(--ic-help); }
+  :root[data-variant="plain"] body:not(.input-only) #phone-mode-btn{ --ic: var(--ic-phone); }
+  @media (min-width: 769px){
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail .ed-ic{ display:none !important; }
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail > *::before{
+      content:""; display:block; width:22px; height:22px; background:currentColor; flex:0 0 auto;
+      -webkit-mask: var(--ic) center / contain no-repeat; mask: var(--ic) center / contain no-repeat; }
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail > *{ font-size:11px !important; font-weight:500 !important; gap:6px !important; }
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail #dm-help-btn{ font-size:0 !important; }
+    :root[data-variant="plain"] body:not(.input-only) #ed-rail #dm-help-btn::after{ content:"DM Help"; font-size:11px; font-weight:500; }
+  }
+  @media (max-width: 768px) and (prefers-reduced-motion: reduce){
+    :root[data-variant="plain"] body:not(.input-only) #audio-controls, :root[data-variant="plain"] body:not(.input-only) #dice-drawer{ transition:none !important; }
+  }
+
+  /* Any look, on a phone: a closed right-hand drawer is removed rather than parked past the right
+     edge (iOS lets the page pan sideways to it, cutting text off at the screen edge). */
+  @media (max-width: 768px){
+    :root[data-skin="editorial"]:not([data-variant="plain"]) body:not(.input-only) #audio-controls:not(.ed-open),
+    :root[data-skin="editorial"]:not([data-variant="plain"]) body:not(.input-only) #dice-drawer:not(.ed-open){ display:none !important; }
+  }
+  #text-content{ overflow-wrap: break-word; }
 
   /* phone controller: whole screen, header row, tabs, then the conversation */
   :root[data-variant="plain"] body.input-only #input-panel{ background: var(--e-canvas) !important; color: var(--e-ink) !important; }
@@ -4359,7 +4489,7 @@ body.dialogue-bubbles .npc-block {
 <div id="bottom-fade"></div>
 
 <!-- Corner logo -->
-<img id="corner-logo" src="/icons/logo_primary_fullcolor.png" alt="Dungeons &amp; Everything">
+<img id="corner-logo" src="/icons/logo.svg" alt="Dungeons &amp; Everything">
 
 <!-- Sidebar toggle button -->
 <button id="sidebar-toggle" title="Toggle character sidebar">◀ Hide</button>
@@ -5474,7 +5604,7 @@ function _classIconSrc(classStr) {
   if (!classStr) return null;
   const lower = classStr.toLowerCase();
   for (const [key, file] of Object.entries(_CLASS_ICONS)) {
-    if (lower.includes(key)) return '/icons/' + file + '.png';
+    if (lower.includes(key)) return '/icons/' + file + '.svg';
   }
   return null;
 }
@@ -5547,7 +5677,7 @@ function _addBlockBadge(el) {
   if (!icon) return;                                 // no guess beats a wrong one
 
   const img = document.createElement('img');
-  img.src = '/icons/' + icon + '.png';
+  img.src = '/icons/' + icon + '.svg';
   img.className = 'block-badge';
   img.alt = '';                                      // decorative; the prose says it
   el.appendChild(img);
@@ -5928,7 +6058,7 @@ function _renderDiceBlockNow(text, isReplay) {
   const iconName = _diceRollIcon(cleaned);
   if (iconName) {
     const ico = document.createElement('img');
-    ico.src = '/icons/' + iconName + '.png';
+    ico.src = '/icons/' + iconName + '.svg';
     ico.className = 'dice-block-icon';
     ico.alt = '';
     block.appendChild(ico);
@@ -6020,9 +6150,9 @@ function _renderInspirationBlockNow(name, reason) {
   block.className = 'inspiration-block';
   const title = document.createElement('div');
   title.className = 'inspiration-title';
-  title.innerHTML = `<img src="/icons/focus.png" style="width:22px;height:22px;vertical-align:middle;opacity:0.85;margin-right:10px;filter:drop-shadow(0 0 6px rgba(220,190,60,0.6))">` +
+  title.innerHTML = `<img src="/icons/focus.svg" style="width:22px;height:22px;vertical-align:middle;opacity:0.85;margin-right:10px;filter:drop-shadow(0 0 6px rgba(220,190,60,0.6))">` +
     `${name}` +
-    `<img src="/icons/focus.png" style="width:22px;height:22px;vertical-align:middle;opacity:0.85;margin-left:10px;filter:drop-shadow(0 0 6px rgba(220,190,60,0.6))">`;
+    `<img src="/icons/focus.svg" style="width:22px;height:22px;vertical-align:middle;opacity:0.85;margin-left:10px;filter:drop-shadow(0 0 6px rgba(220,190,60,0.6))">`;
   const sub = document.createElement('div');
   sub.className = 'inspiration-sub';
   sub.textContent = 'Inspiration';
@@ -6331,7 +6461,7 @@ function _buildPlayerCard(p, solo) {
   const hp = p.hp || {};
   const hpRow = document.createElement('div');
   hpRow.className = 'sb-hp-row';
-  hpRow.innerHTML = `<img src="/icons/enemy.png" class="sb-row-icon" alt=""><span class="sb-label">HP</span>
+  hpRow.innerHTML = `<img src="/icons/enemy.svg" class="sb-row-icon" alt=""><span class="sb-label">HP</span>
     <span class="sb-hp-nums">${hp.current ?? '—'} / ${hp.max ?? '—'}</span>`;
   card.appendChild(hpRow);
 
@@ -6359,7 +6489,7 @@ function _buildPlayerCard(p, solo) {
   if (xp.current != null) {
     const xpRow = document.createElement('div');
     xpRow.className = 'sb-xp-row';
-    xpRow.innerHTML = `<img src="/icons/ability.png" class="sb-row-icon" alt=""><span class="sb-label">XP</span>
+    xpRow.innerHTML = `<img src="/icons/ability.svg" class="sb-row-icon" alt=""><span class="sb-label">XP</span>
       <span class="sb-xp-nums">${xp.current} / ${xp.next ?? '?'}</span>`;
     card.appendChild(xpRow);
     const xpTrack = document.createElement('div');
@@ -6646,7 +6776,7 @@ function openSheet(name) {
     content.appendChild(_smDivider());
     const title = document.createElement('div');
     title.className = 'sm-section-title';
-    title.innerHTML = '<img src="/icons/dagger.png" class="sheet-section-icon" alt="">Attacks';
+    title.innerHTML = '<img src="/icons/dagger.svg" class="sheet-section-icon" alt="">Attacks';
     content.appendChild(title);
     const table = document.createElement('table');
     table.className = 'sm-attacks-table';
@@ -6676,7 +6806,7 @@ function openSheet(name) {
     content.appendChild(_smDivider());
     const title = document.createElement('div');
     title.className = 'sm-section-title';
-    title.innerHTML = '<img src="/icons/crystal_ball.png" class="sheet-section-icon" alt="">Spellcasting';
+    title.innerHTML = '<img src="/icons/crystal_ball.svg" class="sheet-section-icon" alt="">Spellcasting';
     content.appendChild(title);
     // Derive live slot string from spell_slots object if available; fall back to static string
     let _slotsStr = sp.slots || '';
@@ -6737,7 +6867,7 @@ function openSheet(name) {
     content.appendChild(_smDivider());
     const title = document.createElement('div');
     title.className = 'sm-section-title';
-    title.innerHTML = '<img src="/icons/scroll.png" class="sheet-section-icon" alt="">Features & Passives';
+    title.innerHTML = '<img src="/icons/scroll.svg" class="sheet-section-icon" alt="">Features & Passives';
     content.appendChild(title);
     sheet.features.forEach(f => {
       const el = document.createElement('div');
@@ -6760,7 +6890,7 @@ function openSheet(name) {
     content.appendChild(_smDivider());
     const title = document.createElement('div');
     title.className = 'sm-section-title';
-    title.innerHTML = '<img src="/icons/pack.png" class="sheet-section-icon" alt="">Inventory';
+    title.innerHTML = '<img src="/icons/pack.svg" class="sheet-section-icon" alt="">Inventory';
     content.appendChild(title);
     const list = document.createElement('ul');
     list.className = 'sm-inventory-list';
@@ -7145,7 +7275,7 @@ function updateStats(stats) {
         const el = document.createElement('div');
         el.className = 'sb-turn-item sb-turn-has-icon' + (name === merged.current ? ' sb-turn-current' : '');
         const isPC = name in _playerData;
-        const iconSrc = isPC ? '/icons/helmet.png' : '/icons/enemy.png';
+        const iconSrc = isPC ? '/icons/helmet.svg' : '/icons/enemy.svg';
         el.innerHTML = `<img src="${iconSrc}" class="sb-turn-icon" alt="">${name}`;
         list.appendChild(el);
       });
@@ -7942,7 +8072,16 @@ function _autoGrowInput() {
 }
 _inputText.addEventListener('input', _autoGrowInput);
 window.addEventListener('resize', _autoGrowInput);
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(_autoGrowInput);   // Thai webfont changes line metrics
+if (document.fonts) {   // the Thai webfont arriving changes line breaks and heights
+  if (document.fonts.ready) document.fonts.ready.then(_autoGrowInput);
+  if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', _autoGrowInput);
+}
+// Re-fit when the field's width changes (Skip turn shown, rotation, a sidebar opening).
+if (window.ResizeObserver) {
+  let _lastW = 0;
+  new ResizeObserver(() => { const w = _inputText.clientWidth; if (w !== _lastW) { _lastW = w; _autoGrowInput(); } })
+    .observe(_inputText);
+}
 
 let _selectedChar     = 'Everybody';
 let _stagedData       = {};   // {char: {text, ready, timestamp}} — mirror of server state

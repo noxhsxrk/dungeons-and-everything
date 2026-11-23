@@ -38,12 +38,12 @@ except ImportError:
 #: prose -> the badge it must produce. Two are KIND-driven (npc, dice, tutor),
 #: which is the path that must work in any language; the rest are semantic.
 CASES = [
-    (["The road bends east toward the village, and a gate stands open."], "location.png"),
-    (["Well met, traveller.", "--npc", "Vesna"], "chat.png"),
-    (["d20+4 = 18 vs DC 15 — success", "--dice"], "attack.png"),
-    (["A chest sits in the corner, and inside is a pouch of gold coin."], "treasure.png"),
-    (["Remember: a saving throw uses your own modifier.", "--tutor"], "scroll.png"),
-    (["A rune flares and the air crackles with arcane light."], "crystal_ball.png"),
+    (["The road bends east toward the village, and a gate stands open."], "location.svg"),
+    (["Well met, traveller.", "--npc", "Vesna"], "chat.svg"),
+    (["d20+4 = 18 vs DC 15 — success", "--dice"], "attack.svg"),
+    (["A chest sits in the corner, and inside is a pouch of gold coin."], "treasure.svg"),
+    (["Remember: a saving throw uses your own modifier.", "--tutor"], "scroll.svg"),
+    (["A rune flares and the air crackles with arcane light."], "crystal_ball.svg"),
 ]
 
 

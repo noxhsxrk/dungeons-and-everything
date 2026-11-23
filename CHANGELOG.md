@@ -14,6 +14,13 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
   While a long passage is still typing, a **Show all** button above the input shows the rest at once.
 - **Display, Plain look:** Codex and Bubbles are a quiet toolbar at the top of the reading column
   instead of boxed buttons floating across the sidebar's edge.
+- **New icon set.** Every display icon (block badges, the 13 class icons, sheet sections, HP/XP, the
+  corner logo, favicons and app icons) is redrawn as one family of thin-line SVGs in a slate tone that
+  reads on light and dark; the old PNG artwork is gone (4 MB lighter).
+- **Display on a phone (Plain):** the top bar is one row of icon buttons (party, Codex, Bubbles | dice,
+  settings, DM help, phone) with the scene name below it; Settings and Dice open as solid bottom
+  sheets; settings rows share one style. The desktop rail uses the same icons.
+- **Suggested-action chips are gone**; they took room from the story and the input.
 
 ### Fixed
 - **Running the tests no longer touches a live game.** Tests posted to the display at
@@ -22,6 +29,9 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
   now take the display address from `DNE_DISPLAY_HOST`, and `tests/conftest.py` points it, the runtime
   dir and the data dir at a throwaway sandbox.
 - A phone whose character isn't in the current party now says so instead of "error 403".
+- **iPhone: text and buttons no longer run past the screen edge.** Closed drawers were parked just off
+  the right edge, and iOS widened the page to include them; on phones they are now clipped in place.
+- The input field re-measures once the Thai webfont loads, so it no longer keeps a blank extra line.
 
 ## [1.4.0] — 2026-11-23 — Living worlds, table limits, world versions
 

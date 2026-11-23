@@ -70,7 +70,7 @@ class BadgeLanguageTests(unittest.TestCase):
         icons |= set(re.findall(r"'(?:npc|dice|tutor)-block':\s*'([a-z_]+)'", self.src))
         self.assertTrue(icons, "no icons parsed — the scan is blind")
         for name in sorted(icons):
-            self.assertTrue((ICONS / f"{name}.png").exists(), f"icons/{name}.png missing")
+            self.assertTrue((ICONS / f"{name}.svg").exists(), f"icons/{name}.svg missing")
 
     def test_an_unmatched_block_gets_no_badge(self):
         fn = re.search(r"function _addBlockBadge\(el\) \{(.*?)\n\}", self.src, re.S)
