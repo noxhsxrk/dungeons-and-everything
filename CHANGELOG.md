@@ -8,6 +8,14 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Added
+- **Table Settings page.** `display/setup.html` (at `/setup` when the display runs, and under Settings → Table Settings): tick every dial, press copy and paste the text to the GM, who writes it to Session Flags. It works on phones and as a plain file, and takes current values as a query string.
+- **Four new dials:** `companions` (quiet/normal/chatty), `rolls` (few/normal/many), `show_dc` (on/off) and `turn_end` (open/options).
+
+### Changed
+- **Pacing you can feel.** The `pacing` dial is now `adventure` | `mixed` | `slow` (old `downtime` = `slow`), with a concrete limit on how often unasked trouble arrives: every scene, once per scene, or at most once per in-world day. Standard 6 says outright that a turn which just answers the player is a complete turn. `/dne new` asks about pacing, players can say "slow down" mid-game, and the world update audit adds `pacing:` to old worlds.
+- **Romance is for adult characters.** Romance and intimacy at every `romance` setting need characters who are clearly adults and characters of unclear age count as under 18. No romance between family members. The GM cuts away and keeps playing.
+
 ## [1.5.0] — 2026-11-23 — A table that keeps playing
 
 ### Changed

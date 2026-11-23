@@ -1232,6 +1232,12 @@ def index():
     )
 
 
+@app.route("/setup")
+def setup_page():
+    """Table settings picker: tick the dials, copy the text, paste it to the GM."""
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "setup.html")
+
+
 @app.route("/icons/<path:filename>")
 def serve_icon(filename):
     """Serve icons, favicon, and brand assets from display/icons/."""

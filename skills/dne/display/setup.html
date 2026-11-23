@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Table Settings · DnE</title>
+<link rel="icon" href="icons/favicon.ico">
+<style>
+  :root {
+    --canvas:#F4F5F6; --ink:#1D1F22; --mut:#5A6069; --line:rgba(29,31,34,.14);
+    --field:#FFFFFF; --accent:#4F6B88; --accent-ink:#FFFFFF; --sel:rgba(79,107,136,.12); --warn:#8A5A1C;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --canvas:#17181A; --ink:#DADBDD; --mut:rgba(218,219,221,.66); --line:rgba(218,219,221,.16);
+      --field:#1F2124; --accent:#8FA3B8; --accent-ink:#17181A; --sel:rgba(143,163,184,.16); --warn:#D9A866; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--canvas); color:var(--ink);
+    font:16px/1.55 system-ui, -apple-system, "Segoe UI", "Noto Sans Thai", "Sukhumvit Set", sans-serif; }
+  main { max-width:720px; margin:0 auto; padding:24px 16px 140px; }
+  h1 { font-size:1.6rem; margin:0 0 4px; text-wrap:balance; }
+  .lede { color:var(--mut); margin:0 0 24px; }
+  section { border-top:1px solid var(--line); padding:18px 0; }
+  h2 { font-size:1.05rem; margin:0 0 2px; }
+  h2 code { font-size:.8em; color:var(--mut); font-weight:400; margin-left:6px; }
+  .hint { color:var(--mut); font-size:.9rem; margin:0 0 10px; }
+  .opts { display:grid; gap:8px; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); }
+  label.opt { display:block; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+    background:var(--field); cursor:pointer; min-height:44px; }
+  label.opt input { position:absolute; opacity:0; pointer-events:none; }
+  label.opt b { display:block; font-weight:600; }
+  label.opt span { display:block; color:var(--mut); font-size:.85rem; line-height:1.4; }
+  label.opt:has(input:checked) { border-color:var(--accent); background:var(--sel); box-shadow:inset 0 0 0 1px var(--accent); }
+  label.opt:has(input:focus-visible) { outline:2px solid var(--accent); outline-offset:2px; }
+  label.opt:has(input:disabled) { opacity:.45; cursor:not-allowed; }
+  .warn { color:var(--warn); font-size:.88rem; margin:10px 0 0; }
+  textarea { width:100%; min-height:64px; border:1px solid var(--line); border-radius:10px; background:var(--field);
+    color:var(--ink); font:inherit; padding:10px 12px; resize:vertical; }
+  .two { display:grid; gap:12px; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); }
+  .two label { font-weight:600; display:block; margin-bottom:4px; }
+  .bar { position:fixed; left:0; right:0; bottom:0; background:var(--canvas); border-top:1px solid var(--line);
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom)); }
+  .bar-in { max-width:720px; margin:0 auto; display:flex; gap:12px; align-items:center; }
+  button { font:inherit; font-weight:600; border:0; border-radius:999px; padding:12px 22px; min-height:44px;
+    background:var(--accent); color:var(--accent-ink); cursor:pointer; }
+  #status { color:var(--mut); font-size:.9rem; flex:1; }
+  pre { white-space:pre-wrap; background:var(--field); border:1px solid var(--line); border-radius:10px;
+    padding:12px; font-size:.85rem; margin:8px 0 0; }
+  details summary { cursor:pointer; color:var(--mut); }
+</style>
+</head>
+<body>
+<main>
+  <h1>ตั้งค่าโต๊ะ</h1>
+  <p class="lede">เลือกแล้วกด “คัดลอก” จากนั้นวางข้อความลงในแชทกับ GM (หรือช่องพิมพ์ใน display) GM จะบันทึกลง Session Flags ให้เอง</p>
+  <form id="f"></form>
+  <details><summary>ดูข้อความที่จะคัดลอก</summary><pre id="out"></pre></details>
+</main>
+<div class="bar"><div class="bar-in">
+  <span id="status" aria-live="polite"></span>
+  <button type="button" id="copy">คัดลอกข้อความ</button>
+</div></div>
+
+<script>
+// key, title, hint, default, [value, label, description]
+const DIALS = [
+  ["pacing", "ความเร็วของเรื่อง", "ปัญหาที่ไม่ได้ไปหาเองโผล่มาบ่อยแค่ไหน", "mixed", [
+    ["adventure", "เร้าใจ", "มีเรื่องได้ทุกฉาก ตัดฉากไว"],
+    ["mixed", "ผสม", "ไม่เกินฉากละครั้ง มีช่วงเงียบ"],
+    ["slow", "ค่อยเป็นค่อยไป", "แทบไม่มีเรื่องแทรก ผู้เล่นพาเรื่องเอง"]]],
+  ["difficulty", "ความยาก", "ความโหดของผลลัพธ์เวลาพลาด", "standard", [
+    ["easy", "ง่าย", "เตือนอันตรายล่วงหน้า"], ["standard", "ปกติ", ""],
+    ["hard", "ยาก", "พลาดแล้วเจ็บ"], ["deadly", "โหด", "ตัวละครตายได้จริง"]]],
+  ["spotlight", "ใครคุมทิศทาง", "GM ป้อนเบาะแสแค่ไหน", "balanced", [
+    ["dm_led", "GM นำ", "ป้อน hook ชัดและบ่อย"], ["balanced", "สมดุล", ""],
+    ["player_led", "ผู้เล่นนำ", "GM รอให้ผู้เล่นเลือกทาง"]]],
+  ["companions", "NPC ร่วมทาง", "เพื่อนร่วมทางพูดแทรกบ่อยแค่ไหน", "normal", [
+    ["quiet", "เงียบ", "พูดเมื่อถูกถามหรือเรื่องสำคัญ"], ["normal", "ปกติ", ""],
+    ["chatty", "ช่างพูด", "แซว คอมเมนต์ มีชีวิตชีวา"]]],
+  ["rolls", "ความถี่การทอย", "ขอให้ทอยเต๋าบ่อยแค่ไหน", "normal", [
+    ["few", "น้อย", "ทอยเฉพาะตอนพลาดแล้วมีผลจริง"], ["normal", "ปกติ", ""],
+    ["many", "บ่อย", "แทบทุกการกระทำที่เสี่ยง"]]],
+  ["show_dc", "บอกค่า DC", "บอกความยากก่อนทอยไหม", "on", [
+    ["on", "บอก", "เช่น DC 13"], ["off", "ไม่บอก", "ลุ้นแบบไม่รู้ตัวเลข"]]],
+  ["turn_end", "จบเทิร์นแบบไหน", "", "open", [
+    ["open", "ปลายเปิด", "คิดเองว่าจะทำอะไร"], ["options", "มีตัวเลือก", "2–3 ทางให้เลือก หรือทำอย่างอื่นก็ได้"]]],
+  ["roll_mode", "ใครทอยเต๋า", "", "players", [
+    ["players", "ผู้เล่นทอยเอง", ""], ["auto", "GM ทอยให้", ""]]],
+  ["content", "ความแรงของเนื้อหา", "เลือก 18/20 = ยืนยันว่าทุกคนที่โต๊ะอายุถึง", "standard", [
+    ["standard", "ปกติ", "อันตรายจริง แต่เล่าสั้นแล้วตัดไป"],
+    ["18", "18+", "เลือด บาดแผล สยองขวัญ เต็มฉาก"],
+    ["20", "20+", "หนักที่สุดที่โต๊ะเลือก"]]],
+  ["romance", "โรแมนซ์", "เฉพาะตัวละครที่เป็นผู้ใหญ่ชัดเจนเท่านั้น", "fade", [
+    ["off", "ปิด", "ไม่มีพล็อตรัก"], ["fade", "ตัดฉาก", "มีความรักได้ ฉากใกล้ชิดตัดข้าม"],
+    ["open", "เปิด", "ฉากใกล้ชิดแบบไม่โจ่งแจ้ง (ต้อง 18/20)"]]],
+  ["success_at_cost", "สำเร็จแบบมีราคา", "พลาดฉิวเฉียดได้ผลแต่ต้องจ่าย", "on", [["on", "เปิด", ""], ["off", "ปิด", ""]]],
+  ["degrees", "ระดับความสำเร็จ", "สำเร็จ/ล้มเหลวแบบวิกฤตในการเช็ค", "on", [["on", "เปิด", ""], ["off", "ปิด", ""]]],
+  ["hero_points", "Hero Points", "แต้มพลิกสถานการณ์", "off", [["on", "เปิด", ""], ["off", "ปิด", ""]]],
+];
+const LISTS = [["lines", "Lines: ห้ามมีในเรื่องเด็ดขาด"], ["veils", "Veils: เกิดได้แต่นอกฉาก"]];
+
+const q = new URLSearchParams(location.search);   // prefill: setup.html?pacing=slow&content=18
+const f = document.getElementById("f");
+const esc = s => s.replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+for (const [key, title, hint, def, opts] of DIALS) {
+  const cur = opts.some(o => o[0] === q.get(key)) ? q.get(key) : def;
+  f.insertAdjacentHTML("beforeend", `<section><h2>${title}<code>${key}</code></h2>` +
+    (hint ? `<p class="hint">${hint}</p>` : "") + `<div class="opts" role="radiogroup" aria-label="${title}">` +
+    opts.map(([v, l, d]) => `<label class="opt"><input type="radio" name="${key}" value="${v}"${v === cur ? " checked" : ""}>` +
+      `<b>${l}</b>${d ? `<span>${d}</span>` : ""}</label>`).join("") + `</div>` +
+    (key === "romance" ? `<p class="warn" id="romance-note" hidden>“เปิด” ใช้ได้เมื่อความแรงเป็น 18 หรือ 20</p>` : "") + `</section>`);
+}
+f.insertAdjacentHTML("beforeend", `<section><h2>Lines &amp; Veils</h2><p class="hint">คั่นด้วย , เช่น แมงมุม, ทรมานสัตว์</p><div class="two">` +
+  LISTS.map(([k, l]) => `<div><label for="${k}">${l}</label><textarea id="${k}" name="${k}">${esc(q.get(k) || "")}</textarea></div>`).join("") +
+  `</div></section>`);
+
+function text() {
+  const d = new FormData(f), lines = ["[DnE table settings]",
+    "Write each line to state.md → ## Session Flags (replace the old value), confirm in one line, then keep playing:"];
+  for (const [key] of DIALS) lines.push(`- ${key}: ${d.get(key)}`);
+  for (const [k] of LISTS) {
+    const v = String(d.get(k) || "").split(/[,\n]/).map(s => s.trim()).filter(Boolean).join("; ");
+    lines.push(`- ${k}: ${v || "(none)"}`);
+  }
+  return lines.join("\n");
+}
+function sync() {
+  const adult = ["18", "20"].includes(new FormData(f).get("content"));
+  const open = f.querySelector('input[name=romance][value=open]');
+  open.disabled = !adult;
+  if (!adult && open.checked) f.querySelector('input[name=romance][value=fade]').checked = true;
+  document.getElementById("romance-note").hidden = adult;
+  document.getElementById("out").textContent = text();
+}
+f.addEventListener("change", sync); f.addEventListener("input", sync); sync();
+
+const status = document.getElementById("status");
+document.getElementById("copy").addEventListener("click", async () => {
+  const t = text();
+  try { await navigator.clipboard.writeText(t); }
+  catch {   // http over LAN or file:// without clipboard permission
+    const ta = Object.assign(document.createElement("textarea"), {value: t});
+    document.body.append(ta); ta.select(); document.execCommand("copy"); ta.remove();
+  }
+  status.textContent = "คัดลอกแล้ว วางในแชทกับ GM ได้เลย";
+});
+</script>
+</body>
+</html>

@@ -65,6 +65,15 @@ class DisplayWorldTests(unittest.TestCase):
         self.assertIn("ทองดี", r.get_data(as_text=True))
         self.assertNotEqual(self.client.get("/character/" + urllib.parse.quote("../state")).status_code, 200)
 
+    def test_table_settings_page_covers_every_flag(self):
+        r = self.client.get("/setup")
+        self.assertEqual(r.status_code, 200)
+        page = r.get_data(as_text=True)
+        self.assertIn("[DnE table settings]", page)
+        import campaign_version
+        for flag in campaign_version.FLAGS:
+            self.assertIn(f'"{flag}"', page, flag)
+
     def test_codex_has_no_dm_prep(self):
         body = json.dumps(self.client.get("/codex").get_json(), ensure_ascii=False)
         self.assertNotIn("the Chief did it", body)       # world.md mystery answer
