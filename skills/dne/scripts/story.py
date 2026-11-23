@@ -106,9 +106,14 @@ def _sentences(text: str) -> list:
     return [s.strip() for s in re.split(r"(?<=[.!?。！？])\s+|\n+", text) if s.strip()]
 
 
-def _repeats(texts: list, names: set) -> list:
-    """Phrases that turn up in three or more of the narrations: word trigrams, and for scripts written without
-    spaces the longest run of characters (nine or more) that the narrations share."""
+REPEATED_IN = 4      # of the last eight narrations: fewer is how any scene talks about its own subject
+THAI_MIN = 12        # characters: shorter runs are mostly nouns (a vehicle, a rank and a name), not turns of phrase
+
+
+def _repeats(texts: list, names: set, said_by_players: str = "") -> list:
+    """Wordings that turn up in REPEATED_IN or more of the narrations: word trigrams, and for scripts written
+    without spaces the longest run of characters (twelve or more) that the narrations share. Names, and anything the
+    players themselves have been saying (the scene's own subject), are left out."""
     lows = [t.casefold() for t in texts]
     inside = lambda phrase: sum(1 for t in lows if phrase in t)  # noqa: E731
     found = []
@@ -117,23 +122,26 @@ def _repeats(texts: list, names: set) -> list:
         words = re.findall(r"[a-z']{3,}", low)
         for j in range(len(words) - 2):
             seen.setdefault(" ".join(words[j:j + 3]), set()).add(i)
-    found += [g for g, where in seen.items() if len(where) >= 3]
+    found += [g for g, where in seen.items() if len(where) >= REPEATED_IN]
     for low in lows:
-        for run in re.findall(r"[\u0e00-\u0e7f]{9,}", low):
+        for run in re.findall(r"[\u0e00-\u0e7f]{%d,}" % THAI_MIN, low):
             j = 0
-            while j <= len(run) - 9:
-                if inside(run[j:j + 9]) < 3:
+            while j <= len(run) - THAI_MIN:
+                if inside(run[j:j + THAI_MIN]) < REPEATED_IN:
                     j += 1
                     continue
-                k = j + 9
-                while k < len(run) and k - j < 40 and inside(run[j:k + 1]) >= 3:
+                k = j + THAI_MIN
+                while k < len(run) and k - j < 40 and inside(run[j:k + 1]) >= REPEATED_IN:
                     k += 1
                 found.append(run[j:k])
                 j = k
     out = []
     for g in sorted(set(found), key=lambda g: (-len(g), g)):      # the longest wording of each habit, once
-        if not any(n and n in g for n in names) and not any(g in kept or kept in g for kept in out):
-            out.append(g)
+        if any(n and n in g for n in names) or any(g in kept or kept in g for kept in out):
+            continue
+        if said_by_players and (g in said_by_players or g[:7] in said_by_players):
+            continue                              # the players brought it up: it is what the scene is about
+        out.append(g)
     return out[:2]
 
 
@@ -160,20 +168,44 @@ def guard(campaign: str) -> list:
                 break
         if turn_end != "options" and sum(1 for t in recent if t.rstrip().endswith(("?", "？"))) >= 3 and not any("asking what" in n for n in notes):
             notes.append("the last turns all ended on a question: let one end on a plain fact")
-    try:
-        import npc
-        camp = paths.find_campaign(campaign)
-        names = {a.casefold() for n, e in npc.entries(camp).items() for a in npc.aliases(n, e)}
-    except Exception:
-        names = set()
-    phrases = _repeats(texts, names)
+    names = _names(campaign)
+    phrases = _repeats(texts, names, _player_words(campaign))
     if phrases:
-        notes.append("phrases you keep reaching for: " + ", ".join(f"\"{p}\"" for p in phrases) + ": leave them out this turn")
+        notes.append(f"wording that came back in {REPEATED_IN} or more of your last {len(texts)} narrations: "
+                     + ", ".join(f"\"{p}\"" for p in phrases) + ". If that is habit and not the scene's own subject, vary it")
     dna = _dna(campaign)
     banned = [c for c in dna.get("taboo_cliches") or [] if any(str(c).casefold() in t.casefold() for t in texts[-3:])]
     if banned:
         notes.append("this world's own list of clichés to avoid turned up: " + ", ".join(f"\"{b}\"" for b in banned[:3]))
     return notes[:3]
+
+
+def _names(campaign: str) -> set:
+    """Every name the story uses, lower-cased: a name repeating is not a habit of style."""
+    names = set()
+    try:
+        import npc
+        camp = paths.find_campaign(campaign)
+        full = npc.entries(camp)
+        for n in dict.fromkeys(npc.index_names(camp) + list(full)):
+            names |= {a.casefold() for a in npc.aliases(n, full.get(n))}
+        for folder in ("characters", "companions"):
+            for sheet in (camp / folder).glob("*.md") if (camp / folder).is_dir() else []:
+                text = sheet.read_text(encoding="utf-8", errors="replace")
+                title = text.splitlines()[0].lstrip("# ").strip() if text.strip() else sheet.stem
+                names |= {title.casefold(), sheet.stem.casefold(), title.split()[0].casefold() if title else ""}
+    except Exception:
+        pass
+    return {n for n in names if len(n) >= 2}
+
+
+def _player_words(campaign: str) -> str:
+    """What the players have typed lately, lower-cased, to tell the scene's subject from the GM's habits."""
+    try:
+        log = json.loads((paths.runtime_dir() / "text_log.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    return " ".join(str(e.get("text", "")) for e in log[-40:] if isinstance(e, dict) and e.get("player")).casefold()
 
 
 def _dna(campaign: str) -> dict:
@@ -297,6 +329,28 @@ def campfire(campaign: str, rng: "random.Random | None" = None) -> "str | None":
     return frame.format(name=name, line=line)
 
 
+def tool_tip(campaign: str, n: int) -> "str | None":
+    """Every fourth turn, one of the table's storytelling tools with the exact command: a GM that reads little of
+    the docs meets them here."""
+    if n % 4:
+        return None
+    display, scripts = HERE.parent / "display", HERE
+    tips = (
+        f"Tag the tone of each scene you narrate, so the pacing can be varied: add `--tone tension|combat|relief|humor|"
+        f"wonder|moral|quiet|mystery` to your `python3 \"{display / 'send.py'}\"` call.",
+        f"A letter, a headline, a wanted notice or a terminal log is better shown than described: "
+        f"`python3 \"{display / 'send.py'}\" --handout letter|news|poster|terminal|intercept|artifact --title \"<heading>\"` "
+        "with its text on stdin.",
+        f"If the players are racing or building something, show it: `python3 \"{display / 'push_stats.py'}\" --clock "
+        f"\"<what it is>\" <filled> <size>` (and `--clock-remove \"<name>\"` when it is over).",
+        f"Something only one character would see or know goes to that player alone: `python3 \"{display / 'send.py'}\" "
+        "--to \"<PC>\"` with the detail on stdin. Do not tell the table what it means.",
+        f"At a rest, let the characters talk: `python3 \"{scripts / 'story.py'}\" -c {campaign} campfire` gives a question "
+        "from their own Bonds and Flaws.",
+    )
+    return "TABLE TOOL: " + tips[(n // 4) % len(tips)]
+
+
 def provider(campaign: str, text: str, turn_view) -> list:
     """(priority, line) pairs for the GM note."""
     parts = []
@@ -312,6 +366,9 @@ def provider(campaign: str, text: str, turn_view) -> list:
     teller = STORYTELLERS.get(paths.session_flag(campaign, "storyteller", "none"))
     if teller and n % 8 == 1:
         parts.append((gm_guide.RULE, "This table's storyteller: " + teller))
+    tip = tool_tip(campaign, n)
+    if tip and paths.session_flag(campaign, "display", "none") != "none":
+        parts.append((gm_guide.RULE, tip))
     pace = pacing(campaign)
     if pace:
         parts.append((gm_guide.NUDGE, pace))

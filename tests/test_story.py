@@ -52,14 +52,19 @@ class StoryTests(EngineCase):
         self.assertEqual(self.story.guard("oldworld"), [])
 
     def test_repeated_openings_and_phrases_in_thai_and_english(self):
-        self.feed("กลิ่นโอโซนลอยอบอวลไปทั่วห้อง ดวงตาของเธอหรี่ลงอย่างช้าๆ เมื่อมองมาที่คุณ",
-                  "กลิ่นเลือดเก่าโชยมาจากห้องใต้ดิน ดวงตาของเธอหรี่ลงอย่างช้าๆ ก่อนจะหันหนี",
-                  "กลิ่นฝนลอยเข้ามาทางหน้าต่าง ดวงตาของเธอหรี่ลงอย่างช้าๆ อีกครั้ง",
+        self.feed("กลิ่นโอโซนลอยอบอวลไปทั่วห้อง ดวงตาของเธอหรี่ลงอย่างช้าๆ เมื่อมองมาที่คุณ ยานลำเลียงหุ้มเกราะจอดอยู่ด้านนอก",
+                  "กลิ่นเลือดเก่าโชยมาจากห้องใต้ดิน ดวงตาของเธอหรี่ลงอย่างช้าๆ ก่อนจะหันหนี ยานลำเลียงหุ้มเกราะติดเครื่อง",
+                  "กลิ่นฝนลอยเข้ามาทางหน้าต่าง ดวงตาของเธอหรี่ลงอย่างช้าๆ อีกครั้ง ยานลำเลียงหุ้มเกราะเคลื่อนออกไป",
+                  "ดวงตาของเธอหรี่ลงอย่างช้าๆ ขณะที่ยานลำเลียงหุ้มเกราะหายไปในหมอก",
                   "The smell of old blood hangs here. Silence settles over the room like dust.")
+        (self.rt / "text_log.json").write_text(json.dumps(
+            json.loads((self.rt / "text_log.json").read_text(encoding="utf-8"))
+            + [{"player": "Mira", "text": "Mira: ผมวิ่งตามยานลำเลียงหุ้มเกราะไป"}], ensure_ascii=False), encoding="utf-8")
         notes = " | ".join(self.story.guard("oldworld"))
         self.assertIn("opened with a smell", notes)
-        self.assertIn("phrases you keep reaching for", notes)
-        self.assertIn("ดวงตาของเธอ", notes)
+        self.assertIn("wording that came back in 4 or more", notes)
+        self.assertIn("ดวงตาของเธอหรี่ลงอย่างช้าๆ", notes)                 # the whole habit, not a fragment of it
+        self.assertNotIn("ยานลำเลียง", notes)                            # what the players are chasing is the scene, not a tic
 
     def test_the_worlds_own_banned_phrases(self):
         (self.camp / "worldkit.json").write_text(json.dumps({"narrative_dna": {"taboo_cliches": ["smell of ozone"]}}), encoding="utf-8")
@@ -89,6 +94,18 @@ class StoryTests(EngineCase):
         self.assertEqual(self.story.spark("oldworld", 7), self.story.spark("oldworld", 7))   # reproducible
         self.flags(self.FLAGS + "- sparks: off\n")
         self.assertFalse(any("SPARK" in self.note() for _ in range(8)))
+
+    def test_the_display_tools_come_round_with_their_exact_commands(self):
+        self.flags(self.FLAGS.replace("display: none", "display: local") + "- sparks: off\n")
+        notes = [self.note() for _ in range(20)]
+        tips = [line for n in notes for line in n.splitlines() if line.startswith("TABLE TOOL: ")]
+        self.assertEqual(len(tips), 5)                                    # one in four turns
+        joined = " ".join(tips)
+        for needle in ("--tone tension|combat", "--handout letter|news", "--clock ", "--to \"<PC>\"", "campfire"):
+            self.assertIn(needle, joined)
+        self.assertIn(str(DISPLAY / "send.py"), joined)                   # a real path, not a placeholder
+        self.flags(self.FLAGS + "- sparks: off\n")                        # no display: nothing to show them on
+        self.assertFalse(any("TABLE TOOL" in self.note() for _ in range(8)))
 
     def test_previewing_the_note_does_not_use_up_a_spark(self):
         before = self.story.load("oldworld")
