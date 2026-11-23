@@ -352,6 +352,12 @@ def _run(campaign: str, turn_id: str) -> dict:
                     wdb.set_meta(db, "revision", wdb.revision(db) + 1)
             results.append({"action_id": act["action_id"], **out})
         wdb.apply_staged(campaign)
+        if out.get("refresh") == "battlemap" and paths.session_flag(campaign, "display", "none") != "none":
+            try:                                  # the map on the display is state, not a message: pushing it twice is harmless
+                import battlemap
+                battlemap._push_display(battlemap._load(campaign))
+            except Exception:
+                pass
         if status == "waiting_for_player":
             break
     questions = deliver(campaign)

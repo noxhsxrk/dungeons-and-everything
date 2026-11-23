@@ -269,6 +269,10 @@ def turn_parts(campaign: str, count: bool = True, text: str = "", turn: "dict | 
     full = paths.session_flag(campaign, "engine", "full") != "light"
     parts = _engine_parts(campaign, turn)
     if paths.session_flag(campaign, "world_engine", "off") == "on":
+        if full:
+            parts.append((RULE, "A fight on the world engine: `fight` (what it is for, what ends it), `combatant`, then `advise` "
+                                "before an enemy acts, `move`, `spend`, `damage`, `round` (`turn.py help fight`). It ends when "
+                                "its objective is settled, not when the last enemy drops."))
         parts.append((RULE, "Time passes only through the world engine: a rest is the action `rest`, a journey is "
                             "`travel`, waiting is `wait` (never calendar.py rest, economy.py rest or world_map.py travel: "
                             "they would move time or the party a second time). An interrupted rest or journey waits "
