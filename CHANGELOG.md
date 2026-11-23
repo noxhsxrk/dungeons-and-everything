@@ -8,6 +8,12 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Fixed
+- **Thai on the display:** vowels and tone marks no longer float or sink. The fantasy faces (Cinzel,
+  IM Fell, Syne, Newsreader) have no Thai, so every font stack now carries Noto Serif Thai / Noto Sans Thai
+  for Thai text only (English keeps its fantasy face), and once Thai text appears the page turns
+  `lang="th"` and drops letter-spacing, which broke Thai mark placement.
+
 ## [1.2.0] — 2026-11-23 — Any agent, Thai tables, polish
 
 ### Added
