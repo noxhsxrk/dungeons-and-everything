@@ -10,7 +10,14 @@
     "premise": "AD 2289, 87 years after EDEN, humanity's central AI, took over. Survivors hide underground from its machines.",
     "base_ruleset": "2014",
     "srd_fallback": false,
-    "power": "medium"
+    "power": "medium",
+    "tech_level": 10,
+    "status_levels": [
+      "Surface stray",
+      "Tunnel hand",
+      "Colonist",
+      "Council"
+    ]
   },
   "lexicon": {
     "spell": "protocol",
@@ -112,7 +119,40 @@
           "name": "Breach Lead",
           "description": "Re-skins Battle Master: superiority dice d8, 4 dice, maneuvers Trip Attack, Pushing Attack, Rally."
         }
-      ]
+      ],
+      "moves": [
+        {
+          "name": "Hold the Hatch",
+          "level": 1,
+          "trigger": "When you plant yourself in a doorway or tunnel mouth",
+          "description": "Nothing gets past you without going through you: enemies that try to pass provoke an opportunity attack even if they disengage."
+        },
+        {
+          "name": "Covering Fire",
+          "level": 3,
+          "trigger": "When an ally breaks cover on your call",
+          "description": "Spend your reaction; until your next turn that ally can't be the target of opportunity attacks."
+        }
+      ],
+      "template": {
+        "abilities": {
+          "STR": 15,
+          "DEX": 13,
+          "CON": 14,
+          "INT": 8,
+          "WIS": 12,
+          "CHA": 10
+        },
+        "skills": [
+          "Athletics",
+          "Perception"
+        ],
+        "equipment": [
+          "Scrap Rifle",
+          "Scrap Plate",
+          "Ration Brick"
+        ]
+      }
     },
     {
       "name": "Infiltrator",
@@ -129,6 +169,20 @@
         {
           "name": "Cutter",
           "description": "Chassis: Assassin."
+        }
+      ],
+      "moves": [
+        {
+          "name": "Ghost in the Grid",
+          "level": 1,
+          "trigger": "When you move through ground a Watcher is sweeping",
+          "description": "Roll Stealth on the ladder; on a success at a cost you get through but leave a trace EDEN will find within the hour."
+        },
+        {
+          "name": "Read the Machine",
+          "level": 2,
+          "trigger": "When you watch an EDEN unit for a full minute unseen",
+          "description": "Ask the GM two of: where is it going, what is it guarding, what will make it leave, what is it about to do."
         }
       ]
     },
@@ -166,7 +220,25 @@
           "name": "Nanite Warden",
           "description": "Chassis: Light Domain."
         }
-      ]
+      ],
+      "template": {
+        "abilities": {
+          "STR": 10,
+          "DEX": 12,
+          "CON": 14,
+          "INT": 13,
+          "WIS": 15,
+          "CHA": 8
+        },
+        "skills": [
+          "Medicine",
+          "Insight"
+        ],
+        "equipment": [
+          "Nanite Vial",
+          "Salvage Vest"
+        ]
+      }
     },
     {
       "name": "Brawler",
@@ -736,7 +808,10 @@
         "Loud"
       ],
       "range": "60/180 ft",
-      "description": "Magnetic sidearm; Watchers hear it."
+      "description": "Magnetic sidearm; Watchers hear it.",
+      "traits": [
+        "loud"
+      ]
     },
     {
       "name": "Scrap Plate",
@@ -775,7 +850,11 @@
         "Two-Handed"
       ],
       "range": "100/400 ft",
-      "description": "Bolt-action; reliable."
+      "description": "Bolt-action; reliable.",
+      "traits": [
+        "loud",
+        "two-handed"
+      ]
     },
     {
       "name": "Salvage Vest",
@@ -802,7 +881,11 @@
       "category": "Gear",
       "cost": "300 sc",
       "weight": 0,
-      "description": "Consumed by the Restart protocol."
+      "description": "Consumed by the Restart protocol.",
+      "rarity": "uncommon",
+      "traits": [
+        "medical"
+      ]
     },
     {
       "name": "Ration Brick",
@@ -819,6 +902,20 @@
       "cost": "5 sc",
       "weight": 1,
       "description": "Powers a stun baton charge or a lamp for 8 hours."
+    },
+    {
+      "name": "Seraph Shard",
+      "index": "seraph-shard",
+      "category": "Gear",
+      "cost": "2000 sc",
+      "weight": 1,
+      "rarity": "unique",
+      "tl": 12,
+      "traits": [
+        "eden-tech",
+        "illegal"
+      ],
+      "description": "A sliver of a Seraph's processor. Held to a wound, it closes it; EDEN always knows where it is."
     }
   ],
   "monsters": [
@@ -908,8 +1005,8 @@
       "xp": 13000,
       "size": "Gargantuan",
       "type": "construct",
-      "hp": 300,
-      "hp_dice": "16d20+128",
+      "hp": 259,
+      "hp_dice": "14d20+112",
       "ac": 20,
       "speed": "walk 50 ft.",
       "str": 28,
@@ -1028,6 +1125,28 @@
       ],
       "role": "support",
       "description": "Repair Pulse (Recharge 5–6): one construct within 30 ft regains 2d8+2 HP. Action — Bone Saw. +3 to hit, 2d6+1 slashing."
+    }
+  ],
+  "disadvantages": [
+    {
+      "name": "Oxygen Debt",
+      "kind": "disadvantage",
+      "description": "You owe the colony air-ration credit; the Council can call it in at the worst time."
+    },
+    {
+      "name": "Flagged by EDEN",
+      "kind": "disadvantage",
+      "description": "Your face is in EDEN's archive. Watchers that see you clearly call for a Reaper."
+    },
+    {
+      "name": "Sworn to the Dead",
+      "kind": "disadvantage",
+      "description": "You promised a dying squadmate to bring their tags home, and the tags are on the surface."
+    },
+    {
+      "name": "Counts the Seconds",
+      "kind": "quirk",
+      "description": "You count under your breath when you're scared, and you're always scared."
     }
   ]
 }

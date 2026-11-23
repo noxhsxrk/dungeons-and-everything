@@ -17,6 +17,27 @@ CR_XP = dict(enumerate((10, 200, 450, 700, 1100, 1800, 2300, 2900, 3900,
                        18000, 20000, 22000, 25000, 33000, 41000, 50000,
                        62000, 75000, 90000, 105000, 120000, 135000, 155000)))
 CR_XP.update({0.125: 25, 0.25: 50, 0.5: 100})
+RARITIES = ('common', 'uncommon', 'rare', 'unique')
+ROLL_KINDS = ('attack', 'save', 'check')
+ABILITIES = ('STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA')
+MONSTER_TABLE = Path(__file__).resolve().parent.parent / 'data' / 'monster_stats_by_cr.json'
+
+
+def _int_in(value, low, high):
+    return type(value) is int and low <= value <= high
+
+
+def monster_table():
+    """Typical AC/HP/attack/DC/damage per CR, measured from the SRD (build_monster_table.py)."""
+    try:
+        return json.loads(MONSTER_TABLE.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return {}
+
+
+def _cr_key(cr):
+    f = float(Fraction(str(cr)))
+    return str(int(f)) if f == int(f) else str(f)
 
 
 def path(campaign):
@@ -71,6 +92,12 @@ def validate(kit, campaign=None):
     meta = kit.get('_meta', {})
     if isinstance(meta, dict) and 'power' in meta and meta['power'] not in ('none', 'low', 'medium', 'high'):
         errors.append('_meta.power must be none, low, medium or high')
+    if isinstance(meta, dict) and 'tech_level' in meta and not _int_in(meta['tech_level'], 0, 12):
+        errors.append('_meta.tech_level must be an integer 0–12')
+    if isinstance(meta, dict) and 'status_levels' in meta and (
+            not isinstance(meta['status_levels'], list)
+            or not all(isinstance(s, str) and s.strip() for s in meta['status_levels'])):
+        errors.append('_meta.status_levels must be a list of rank names, lowest first')
     rules_2024 = (isinstance(meta, dict) and meta.get('base_ruleset') == '2024'
                   or campaign is not None and campaign_ruleset(campaign) == '2024')
     srd_2024 = {}
@@ -119,6 +146,46 @@ def validate(kit, campaign=None):
                     errors.append(f'{label}: duplicate index {index}')
                 if isinstance(index, str):
                     indices.add(index)
+            if category in ('races', 'classes', 'backgrounds', 'spells', 'equipment', 'monsters'):
+                if 'rarity' in record and record['rarity'] not in RARITIES:
+                    errors.append(f'{label}: rarity must be one of {", ".join(RARITIES)}')
+                if 'traits' in record and (not isinstance(record['traits'], list)
+                                           or not all(isinstance(x, str) and x for x in record['traits'])):
+                    errors.append(f'{label}: traits must be a list of strings')
+            if category == 'equipment' and 'tl' in record and not _int_in(record['tl'], 0, 12):
+                errors.append(f'{label}: tl must be an integer 0–12')
+            if category == 'spells' and 'focus' in record and type(record['focus']) is not bool:
+                errors.append(f'{label}: focus must be true or false')
+            if category == 'classes':
+                moves = record.get('moves', [])
+                if not isinstance(moves, list) or not all(
+                        isinstance(m, dict) and all(isinstance(m.get(k), str) and m[k].strip()
+                                                    for k in ('name', 'trigger', 'description'))
+                        and _int_in(m.get('level'), 1, 20) for m in moves):
+                    errors.append(f'{label}: moves must be a list of {{name, level 1–20, trigger, description}}')
+                if 'template' in record:
+                    tpl = record['template']
+                    abil = tpl.get('abilities') if isinstance(tpl, dict) else None
+                    if (not isinstance(abil, dict) or set(abil) != set(ABILITIES)
+                            or not all(_int_in(v, 3, 18) for v in abil.values())):
+                        errors.append(f'{label}: template.abilities needs STR DEX CON INT WIS CHA, each 3–18')
+                    for skill in (tpl.get('skills', []) if isinstance(tpl, dict) else []):
+                        if skill not in skills:
+                            errors.append(f'{label}: template skill {skill!r} is not a skill of this world')
+                    if isinstance(tpl, dict) and not isinstance(tpl.get('equipment', []), list):
+                        errors.append(f'{label}: template.equipment must be a list')
+            if category == 'disadvantages':
+                if record.get('kind') not in ('disadvantage', 'quirk'):
+                    errors.append(f'{label}: kind must be disadvantage or quirk')
+                if not isinstance(record.get('description'), str) or not record['description'].strip():
+                    errors.append(f'{label}: description is required')
+            if category == 'conditions':
+                for flag in ('valued', 'decay'):
+                    if flag in record and type(record[flag]) is not bool:
+                        errors.append(f'{label}: {flag} must be true or false')
+                pen = record.get('penalty_on', [])
+                if not isinstance(pen, list) or any(k not in ROLL_KINDS for k in pen):
+                    errors.append(f'{label}: penalty_on must list attack, save and/or check')
             if category == 'classes':
                 chassis = record.get('chassis')
                 if not isinstance(chassis, str) or chassis.lower() not in HIT_DICE:
@@ -282,6 +349,28 @@ def warnings(kit):
         out.append(f"_meta.power is low (at most 2 casting classes) but {len(casters)} cast: {', '.join(casters)}")
     if not kit.get('currency'):
         out.append('missing currency')
+    tech = kit.get('_meta', {}).get('tech_level')
+    if isinstance(tech, int):
+        for r in kit.get('equipment', []):
+            if isinstance(r.get('tl'), int) and r['tl'] > tech and r.get('rarity') not in ('rare', 'unique'):
+                out.append(f"{r['name']}: tech level {r['tl']} is above the world's {tech}; "
+                           "mark it rare or unique (a relic) or lower its tl")
+    table = monster_table()
+    for r in kit.get('monsters', []):
+        row = table.get(_cr_key(r.get('cr', 0))) if r.get('cr') is not None else None
+        if not row:
+            continue
+        hits = [int(x) for x in re.findall(r'\+(\d+) to hit', r.get('description', ''))]
+        # Tolerance: hand-made monsters may sit a little past the SRD's 10th–90th percentile.
+        for stat, value, slack in (('AC', r.get('ac'), 1), ('HP', r.get('hp'), None),
+                                   ('attack', max(hits) if hits else None, 1)):
+            band = row.get(stat.lower())
+            if not band or not isinstance(value, (int, float)):
+                continue
+            lo, hi = (band[0] * 0.85, band[2] * 1.15) if slack is None else (band[0] - slack, band[2] + slack)
+            if not lo <= value <= hi:
+                out.append(f"Monster {r['name']} (CR {format_cr(r['cr'])}): {stat} {value} outside typical "
+                           f"{band[0]}–{band[2]} (worldkit.py monster-stats --cr {format_cr(r['cr'])})")
     for field in ('name', 'genre', 'premise'):
         if not kit.get('_meta', {}).get(field):
             out.append(f'missing _meta.{field}')
@@ -335,11 +424,44 @@ def show(kit):
         print(f'  {key} → {value}')
 
 
+def monster_stats(cr, role=None):
+    """Print the SRD's typical numbers at one CR (low – typical – high)."""
+    if cr is None:
+        print('monster-stats needs --cr')
+        return 2
+    try:
+        key = _cr_key(cr)
+    except (ValueError, ZeroDivisionError):
+        print(f'bad CR {cr!r}')
+        return 2
+    row = monster_table().get(key)
+    if not row:
+        print(f'No SRD monsters near CR {cr}')
+        return 1
+    print(f"CR {format_cr(key)}" + (f" ({role})" if role else "")
+          + f" — {row['n']} SRD monsters (bands from {row['sample']}): low – typical – high")
+    for stat, label in (('ac', 'AC'), ('hp', 'HP'), ('attack', 'Attack bonus'),
+                        ('dc', 'Save DC'), ('damage', 'Damage per hit')):
+        if row.get(stat):
+            lo, mid, hi = row[stat]
+            print(f'  {label:<15} {lo} – {mid} – {hi}')
+    if role:
+        print('  (brutes lean to high HP and damage, skirmishers to AC, casters to save DCs)')
+    print(f"  XP {CR_XP.get(float(key) if '.' in key else int(key), '?')}")
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('validate', 'show'))
-    parser.add_argument('source')
+    parser.add_argument('command', choices=('validate', 'show', 'monster-stats'))
+    parser.add_argument('source', nargs='?')
+    parser.add_argument('--cr', help='monster-stats: challenge rating, e.g. 3 or 1/4')
+    parser.add_argument('--role', help='monster-stats: brute, skirmisher, ranged, caster or support (shown only)')
     args = parser.parse_args()
+    if args.command == 'monster-stats':
+        return monster_stats(args.cr, args.role)
+    if not args.source:
+        parser.error('validate/show need a campaign name or a worldkit.json path')
     source = Path(args.source)
     campaign = None
     if args.command == 'show' or not source.is_file():

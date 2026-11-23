@@ -247,7 +247,22 @@ def adjust_gold(campaign: str, char_name: str, delta_spec: str, reason: str = ""
     return rec
 
 
-def buy_item(campaign: str, char_name: str, item: str, cost_spec: str) -> dict:
+def _kit_rarity(campaign: str, item: str):
+    """The World Kit rarity of a bought item, if the kit gives one."""
+    try:
+        import worldkit
+        kit = worldkit.load(campaign)
+    except (ValueError, OSError):
+        return None
+    record = worldkit.find(kit, "equipment", item) if kit else None
+    return record.get("rarity") if record else None
+
+
+def buy_item(campaign: str, char_name: str, item: str, cost_spec: str, force: bool = False) -> dict:
+    rarity = _kit_rarity(campaign, item)
+    if rarity in ("rare", "unique") and not force:
+        raise ValueError(f"'{item}' is {rarity} in this world: it isn't on sale. If the GM decides "
+                         "a seller has one, buy it with --force")
     cf = _find_char_file(campaign, char_name)
     text = cf.read_text(encoding="utf-8")
     cur_cp, _ = _read_currency_cp(text)
@@ -509,6 +524,7 @@ def main() -> None:
     p_buy.add_argument("--char", required=True)
     p_buy.add_argument("--item", required=True)
     p_buy.add_argument("--cost", required=True, help="e.g. 50gp")
+    p_buy.add_argument("--force", action="store_true", help="Buy a rare/unique World Kit item anyway")
 
     p_sell = sub.add_parser("sell", help="Sell an item (atomic inventory + gold)")
     p_sell.add_argument("--char", required=True)
@@ -548,7 +564,7 @@ def main() -> None:
             print(f"{rec['character']}: {rec['before']} → {rec['after']} ({rec['delta']})"
                   + (f" — {rec['reason']}" if rec["reason"] else ""))
         elif args.cmd == "buy":
-            rec = buy_item(args.campaign, args.char, args.item, args.cost)
+            rec = buy_item(args.campaign, args.char, args.item, args.cost, args.force)
             print(f"{rec['character']} bought '{rec['item']}' for {rec['cost']} (balance: {rec['after']})")
         elif args.cmd == "sell":
             rec = sell_item(args.campaign, args.char, args.item, args.value)

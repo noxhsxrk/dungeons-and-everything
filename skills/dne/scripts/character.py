@@ -552,6 +552,9 @@ def do_calc(args: list[str]):
     print(f"\n{'='*50}")
     print(f"  {class_label} Level {lvl}  |  Proficiency Bonus: +{prof}")
     print(f"{'='*50}")
+    moves = [m["name"] for m in (world or {}).get("moves", []) if m.get("level", 1) <= lvl]
+    if moves:
+        print(f"  Playbook moves: {', '.join(moves)}")
     if origin_feat:
         print(f"  Origin feat: {origin_feat}")
 
@@ -899,6 +902,9 @@ def do_levelup(args: list[str]):
         features = [shown if name == SUBCLASS_NAME.get(cls) else name for name in features]
     if features:
         print(f"  New features: {', '.join(dict.fromkeys(features))}")
+    moves = [m["name"] for m in (world or {}).get("moves", []) if m.get("level") == to_lvl]
+    if moves:
+        print(f"  Playbook moves: {', '.join(moves)}")
 
     # Powers already on the character's sheet are not offered again.
     known_text = ""

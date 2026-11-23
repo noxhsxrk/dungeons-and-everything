@@ -88,6 +88,12 @@ CATEGORY_MAP = {
     "species":     "species",
     "subclass":    "subclasses_world",
     "subclasses":  "subclasses_world",
+    "move":        "moves_world",
+    "moves":       "moves_world",
+    "disadvantage":  "disadvantages",
+    "disadvantages": "disadvantages",
+    "flaw":          "disadvantages",
+    "quirk":         "disadvantages",
     "subspecies":  "subspecies",
     "invocation":     "class_options",
     "invocations":    "class_options",
@@ -250,6 +256,10 @@ def _dataset_key(ruleset=None, campaign=None, category=None):
             {"name": s["name"], "index": _norm(s["name"]), "class": c.get("name", ""),
              "label": c.get("subclass_label", "Subclass"), "description": s.get("description", "")}
             for c in kit.get("classes", []) for s in c.get("subclasses", []) if s.get("name")]
+        # Playbook moves live inside their class records too.
+        data["moves_world"] = [
+            {**m, "index": _norm(m["name"]), "class": c.get("name", "")}
+            for c in kit.get("classes", []) for m in c.get("moves", []) if m.get("name")]
         _data_by_rs[key] = data
         _index_by_rs[key] = {
             cat: {alias: r for r in records
@@ -457,6 +467,16 @@ def _fmt_class_option(r: dict) -> str:
     return "\n".join(lines)
 
 
+def _fmt_tags(r: dict) -> list:
+    """One short line for the optional rarity / traits / tech level fields."""
+    bits = [r["rarity"]] if r.get("rarity") else []
+    if isinstance(r.get("traits"), list) and r["traits"] and "ability_bonuses" not in r:
+        bits.append("traits: " + ", ".join(map(str, r["traits"])))
+    if r.get("tl") is not None:
+        bits.append(f"TL {r['tl']}")
+    return [" · ".join(bits)] if bits else []
+
+
 def _fmt_class(r: dict) -> str:
     lines = [f"## {r.get('name', '?')}"]
     for key, label in (("chassis", "Chassis"), ("power_source", "Power source")):
@@ -464,7 +484,15 @@ def _fmt_class(r: dict) -> str:
             lines.append(f"{label}: {r[key]}")
     if r.get("subclasses"):
         lines.append(f"{r.get('subclass_label', 'Subclasses')}: " + ", ".join(x["name"] for x in r["subclasses"]))
-    return "\n".join(lines + ["", r.get("description", "")])
+    tpl = r.get("template")
+    if isinstance(tpl, dict):
+        abil = ", ".join(f"{k} {v}" for k, v in (tpl.get("abilities") or {}).items())
+        extra = [f"skills {', '.join(tpl['skills'])}"] if tpl.get("skills") else []
+        extra += [f"gear {', '.join(tpl['equipment'])}"] if tpl.get("equipment") else []
+        lines.append("Quick build: " + "; ".join([abil, *extra]))
+    if r.get("moves"):
+        lines.append("Moves: " + ", ".join(f"{m['name']} (L{m['level']})" for m in r["moves"]))
+    return "\n".join(lines + _fmt_tags(r) + ["", r.get("description", "")])
 
 
 def _fmt_origin(r: dict) -> str:
@@ -485,6 +513,9 @@ def _fmt_origin(r: dict) -> str:
 FORMATTERS = {
     "classes": _fmt_class,
     "subclasses_world": lambda r: f"## {r['name']}  [{r['class']} — {r['label']}]\n\n{r.get('description', '')}",
+    "moves_world": lambda r: (f"## {r['name']}  [{r['class']} move, level {r['level']}]\n"
+                              f"Trigger: {r['trigger']}\n\n{r['description']}"),
+    "disadvantages": lambda r: f"## {r['name']}  [{r.get('kind', 'disadvantage')}]\n\n{r.get('description', '')}",
     "backgrounds": _fmt_origin,
     "races": _fmt_origin,
     "subraces": _fmt_origin,
@@ -499,6 +530,9 @@ FORMATTERS = {
     "weapon_mastery_properties": _fmt_feature,
     "class_options": _fmt_class_option,
 }
+# World Kit tags (rarity / traits / tech level) on gear, powers and monsters.
+for _cat in ("equipment", "spells", "monsters"):
+    FORMATTERS[_cat] = (lambda f: lambda r: "\n".join([f(r), *_fmt_tags(r)]))(FORMATTERS[_cat])
 
 
 # ─── Reference link for a name we do not hold ────────────────────────────────
