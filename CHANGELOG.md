@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.6.2] — 2026-11-23 — Examples in Table Settings
+
 ### Changed
 - **Table Settings shows an example for each choice:** one scene per setting, and what the GM does with it at the option you picked.
 
