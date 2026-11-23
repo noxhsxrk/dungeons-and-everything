@@ -63,12 +63,13 @@ CAMPAIGN_FILES = [
     "session-tail.md",
     "session-log-archive.md",
     "npc-timeline.json",
+    "world.db",
 ]
 
 #: What snapshots tracked before "tracked" was recorded in meta.json.
 _LEGACY_TRACKED = [f for f in CAMPAIGN_FILES if f not in (
     "calendar.json", "subsystems.json", "factions.json", "dne-version.json", "xp-ledger.jsonl", "worldkit.json",
-    "session_tail.json", "session-tail.md", "session-log-archive.md", "npc-timeline.json",
+    "session_tail.json", "session-tail.md", "session-log-archive.md", "npc-timeline.json", "world.db",
 )]
 
 # The display's stats and feed, as dne-display-app.py names them. (They were listed as ".stats.json" and
@@ -84,6 +85,17 @@ CAMPAIGN_DIRS = ["companions"]
 
 #: Outside every snapshot on purpose: an undo must not rewind the counter that marks it.
 TIMELINE_FILE = "timeline.json"
+
+
+def _copy_db(src: pathlib.Path, dst: pathlib.Path) -> None:
+    """Copy an SQLite store through its backup API: a consistent copy even if a writer is mid-transaction."""
+    import sqlite3
+    a, b = sqlite3.connect(str(src)), sqlite3.connect(str(dst))
+    try:
+        a.backup(b)
+    finally:
+        a.close()
+        b.close()
 
 
 def _dir_files(root: pathlib.Path) -> list:
@@ -171,7 +183,10 @@ def _write_snapshot(campaign: str, cdir: pathlib.Path, snap_dir: pathlib.Path, t
         if src.exists() and src.is_file():
             dst = snap_dir / "campaign" / rel
             dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src, dst)
+            if rel.endswith(".db"):
+                _copy_db(src, dst)
+            else:
+                shutil.copy2(src, dst)
             files_saved.append(rel)
 
     # Characters directory
@@ -375,7 +390,11 @@ def _fingerprint(cdir: pathlib.Path, scope: int = FINGERPRINT_SCOPE) -> str:
         paths += [cdir / name / rel for name in CAMPAIGN_DIRS for rel in _dir_files(cdir / name)]
     for path in paths:
         h.update(str(path.relative_to(cdir)).encode())
-        h.update(path.read_bytes() if path.is_file() else b"<absent>")
+        if path.suffix == ".db" and path.is_file():   # logical content: the same rows hash the same in any file layout
+            import world_db
+            h.update(world_db.db_digest(path).encode())
+        else:
+            h.update(path.read_bytes() if path.is_file() else b"<absent>")
     return h.hexdigest()
 
 

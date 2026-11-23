@@ -85,11 +85,17 @@ subprocess.run([sys.executable, PUSH, "--autorun-waiting", "true", "--autorun-cy
 
 # Poll loop — exit when queue appears, session changes, or timeout passes (4 hours)
 content = ""
+turn_view = None
 try:
     for _ in range(48000):  # 0.3s * 48000 = 4 hours
         if os.path.exists(QFILE):
             try:
                 content = open(QFILE, encoding="utf-8").read()
+                try:                      # world engine: the input is stored before the queue file goes
+                    import turn
+                    turn_view = turn.receive(camp, content, QFILE)
+                except Exception:
+                    turn_view = None
                 os.unlink(QFILE)
             except Exception:
                 content = ""
@@ -145,7 +151,7 @@ if content:
         pass
     try:   # what else this turn needs: engine for fights, XP that isn't on the sheet, a save that is due
         import gm_guide
-        note += "".join("\n- " + line for line in gm_guide.turn_notes(camp, text=content))
+        note += "".join("\n- " + line for line in gm_guide.turn_notes(camp, text=content, turn=turn_view))
     except Exception:
         pass
     content = content.rstrip("\n") + "\n" + note + "]]\n"

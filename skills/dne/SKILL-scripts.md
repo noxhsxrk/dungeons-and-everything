@@ -714,6 +714,18 @@ python3 ${CLAUDE_SKILL_DIR}/display/autorun_wait.py
 When player input arrives in `.input_queue`, prints the sanitized action and exits, which wakes the host session (Antigravity system message / Claude Code task notification).
 The output ends with a `[[GM note …]]` line (not a player action): how to end the turn, and whether the watchdog needs starting.
 
+### World Engine — `scripts/turn.py`, `scripts/world_db.py`
+Only for campaigns with `world_engine: on`. `world_db.py` holds the store (`<campaign>/world.db`) and, in its docstring, the contract every engine module keeps.
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/turn.py -c <campaign> begin --text "<input>" [--input-id ID]
+python3 ${CLAUDE_SKILL_DIR}/scripts/turn.py -c <campaign> resolve --intents '<JSON list>'
+python3 ${CLAUDE_SKILL_DIR}/scripts/turn.py -c <campaign> answer --request <id> --value <n>
+python3 ${CLAUDE_SKILL_DIR}/scripts/turn.py -c <campaign> status | resume
+python3 ${CLAUDE_SKILL_DIR}/scripts/turn.py -c <campaign> finish < narration.txt
+python3 ${CLAUDE_SKILL_DIR}/scripts/turn.py -c <campaign> help [action]
+```
+Every command prints one JSON object: `turn_id`, `status` (`open`, `waiting_for_player`, `finished`, `idle`), `completed`, `pending`, `next_input`, `waiting`, `revision`. `send.py --message-id <id>` gives a message a stable id: the display shows a repeated id once.
+
 ### NPC Records — `scripts/npc.py`
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/npc.py -c <campaign> add --name "<Name>" --role "<role>" --cr <CR> --aliases "<names used in play>"

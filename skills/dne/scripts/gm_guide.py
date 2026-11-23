@@ -188,7 +188,30 @@ def _turns_unsaved(campaign: str, count: bool) -> int:
     return turns
 
 
-def turn_notes(campaign: str, count: bool = True, text: str = "") -> list[str]:
+def engine_lines(campaign: str, view: "dict | None") -> list[str]:
+    """What the world engine needs the GM to know about the turn that just opened (world_engine: on)."""
+    if not view or not view.get("turn_id"):
+        return []
+    lines = []
+    for done in view.get("answered") or []:
+        for res in done.get("results") or []:
+            d = res.get("data") or {}
+            if "total" in d:
+                verdict = f", {d['degree'] or ('pass' if d.get('passed') else 'fail')} against DC {d['dc']}" if "dc" in d else ""
+                lines.append(f"ROLL IN: {d.get('actor')} rolled {d.get('dice')} for {d.get('label') or 'the roll'}: "
+                             f"total {d['total']}{verdict}. Narrate from this result; do not ask again.")
+    for w in view.get("waiting") or []:
+        lines.append(f"WAITING ON A PLAYER: {w['question']} ({w['request_id']}). Do not decide it for them; "
+                     "their answer comes as their next message.")
+    if view.get("duplicate"):
+        lines.append(f"This input was already received as {view['turn_id']}: do not resolve it a second time.")
+    lines.append(f"World engine: {view['turn_id']} is open. Rolls, rests, travel and trade go through "
+                 f"`{_py('turn.py')} -c {campaign} resolve --intents '[...]'` (`{_py('turn.py')} -c {campaign} help` "
+                 "lists the actions); your plain send.py narration closes the turn.")
+    return lines
+
+
+def turn_notes(campaign: str, count: bool = True, text: str = "", turn: "dict | None" = None) -> list[str]:
     """Lines for the GM, sent with every player action (`text`). Standing rules first, then what is due.
 
     `engine: light` in Session Flags drops the fight and XP rules: that table lets the GM judge them.
@@ -197,7 +220,7 @@ def turn_notes(campaign: str, count: bool = True, text: str = "") -> list[str]:
         return []
     cmds = SKILL / "SKILL-commands.md"
     full = paths.session_flag(campaign, "engine", "full") != "light"
-    notes = [] if not full else [
+    notes = engine_lines(campaign, turn) + ([] if not full else [
         "Fights and rests run on the engine, never on narration alone. Before the first blow run "
         f"`{_py('combat.py')} init '<JSON>'` so every enemy has HP and AC (`{_py('worldkit.py')} monster-stats "
         "--cr <CR>` prints fair numbers for its rank; a d20 the player typed goes in as \"roll\": N). Each attack is "
@@ -205,7 +228,7 @@ def turn_notes(campaign: str, count: bool = True, text: str = "") -> list[str]:
         "the damage off the target's HP. An enemy is beaten only at 0 HP or when its morale breaks. Full steps: "
         f"{section_lines('SKILL-commands.md', '/dne combat start')}; a rest: "
         f"{section_lines('SKILL-commands.md', '/dne rest').replace(str(cmds) + ' ', '')} of that file."
-    ]
+    ])
     notes += _npc_notes(campaign, text)
     clock = _clock_gap(campaign)
     if clock:

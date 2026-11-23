@@ -1383,6 +1383,7 @@ def health():
 
 
 _last_chunk_ts: float = 0.0   # when the GM last sent narration (Status panel)
+_seen_message_ids: deque = deque(maxlen=500)   # world engine message ids already on the feed
 
 
 @app.route("/chunk", methods=["POST"])
@@ -1392,6 +1393,11 @@ def chunk():
         return "Forbidden", 403
     _last_chunk_ts = _time.time()
     data = request.get_json(silent=True) or {}
+    mid = str(data.get("message_id") or "")
+    if mid:                                       # the engine's outbox resends after a crash: show it once
+        if mid in _seen_message_ids:
+            return "", 204
+        _seen_message_ids.append(mid)
     raw = data.get("text", "")
     if not raw:
         return "", 204

@@ -198,6 +198,7 @@ Optional settings in `state.md → ## Session Flags` let a table tune the DM's d
 - **`rolls`** — `few` | `normal` (default) | `many`. How often to call for a roll. `few`: if the character could plausibly do it and failing wouldn't change much, it just works; roll only when failure has a real consequence. `many`: roll for most risky or uncertain actions.
 - **`show_dc`** — `on` (default) | `off`. `off`: call for the roll by skill only ("roll Stealth"), keep the DC to yourself and narrate the result.
 - **`engine`** — `full` (default) | `light`. How much of play runs on the rules scripts. `full`: every fight is tracked (`combat.py init`, HP and AC for each enemy, `combat.py attack` per blow) and XP comes only from `xp.py award`; the scripts flag XP they did not award. `light`: you judge fights and XP yourself, calling for the rolls that matter; saves, NPC records and the in-world clock are kept at both levels.
+- **`world_engine`** — `off` (default) | `on`. **Experimental, opt-in per campaign.** `on`: turns run through the world engine (`scripts/turn.py`), see **World engine** below. `off`: nothing of it runs and no file is created.
 - **`npc_growth`** — `off` | `slow` | `normal` (default) | `fast`. NPCs grow while the party is away: one CR/level step for every 120 / 60 / 30 in-world days since they last grew (`npc.py advance`), with a line in their History about what they did. `off`: they stay as written.
 - **`turn_end`** — `open` (default) | `options`. `options`: end each turn that waits on the players with 2–3 short numbered choices that fit the scene, plus "or something else"; never choose for them. `open`: end on the situation and let them decide.
 - **`pacing`** — `adventure` | `mixed` (default) | `slow`. How often the world brings trouble the players didn't go looking for. A *complication* is a new threat, interruption, countdown, ambush or bad news that arrives unasked.
@@ -359,6 +360,17 @@ Read `## Campaign Arc` at every session load alongside `## DM Style Notes`. The 
 At the start of each turn, run `check_input.py` before processing the player's message. If it prints output, use those queued actions as part of (or all of) the player's action this turn. Empty output means no queued input — proceed normally. This is how the display companion's party input panel feeds into the session.
 
 A line wrapped in double brackets — e.g. `[[Narration length for this turn: aim for ~250 words…]]` — is **not** a player action; it is a directive from the display's Narration slider, or a `[[GM note …]]` from `autorun_wait.py` itself (follow it; never narrate it). Treat a narration-length directive as a hard length budget for **this turn's** narration: write to roughly that word count, trimming description and pacing to fit, and never pad to reach it. The remaining `[Char]: …` lines are the actual player actions. (If the only thing returned is the `[[…]]` directive with no action lines, treat it as no player input.)
+
+**World engine** (`world_engine: on` in `state.md → ## Session Flags`; experimental):
+
+The engine keeps each turn whole: the table's input is stored once, a roll happens once, a message reaches the display once, and a turn interrupted by a crash, a new session or a context compaction is picked up where it stopped. The protocol is four verbs:
+
+1. **begin** — done for you when input arrives through the display (`autorun_wait.py`, `check_input.py`); their output names the open turn. In chat: `python3 ${CLAUDE_SKILL_DIR}/scripts/turn.py -c <campaign> begin --text "<what the table said>"`. It also takes the undo point for the turn.
+2. **resolve** — for anything mechanical, hand the engine the intents instead of running the separate scripts: `turn.py -c <campaign> resolve --intents '[{"actor": "Mira", "action": "roll", "spec": "1d20+5", "dc": 13, "label": "Stealth"}]'`. Several intents run in order; the first that needs a player stops the rest. `turn.py -c <campaign> help` lists the actions, `help <action>` is that action's manual. An out-of-game question (`{"action": "ask"}`) takes no in-world time.
+3. **wait** — when the result says `waiting_for_player`, the question is already on the display. Do not decide it for them. Their answer arrives as their next message (a bare number answers a roll) or with `turn.py -c <campaign> answer --request <id> --value <n>`; a repeated or late answer changes nothing.
+4. **finish** — your plain `send.py` narration closes the turn; in chat use `turn.py -c <campaign> finish` with the narration on stdin. A turn that still waits on a player stays open.
+
+After a restart or a compaction run `turn.py -c <campaign> status` before anything else, and `resume` if a turn is open. **Limits:** on a host with no hooks, a GM that answers without running these scripts skips the engine for that turn; Claude Code's Stop hook catches an open turn, other hosts rely on the `[[GM note]]`.
 
 **Autorun / taxi mode** (`autorun: true` in `state.md → ## Session Flags`):
 

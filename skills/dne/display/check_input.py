@@ -31,7 +31,7 @@ from runtime_paths import rt          # writable runtime dir (update-safe)
 QUEUE_FILE = rt(".input_queue")
 NARRATION_TARGET = rt("narration_target")  # set by the display's Narration slider
 ROLL_PREFS = rt("roll_prefs.json")         # per-character roll overrides (Settings → Rolls)
-STATS_FILE = rt(".stats.json")             # active campaign metadata
+STATS_FILE = rt("stats.json")              # active campaign metadata
 CAMP_FILE  = rt(".campaign")               # canonical active campaign marker
 
 
@@ -102,9 +102,21 @@ try:
     if os.path.exists(QUEUE_FILE):
         with open(QUEUE_FILE, encoding="utf-8") as f:
             content = f.read().strip()
+        engine = ""
+        try:                                  # world engine: store the input before the queue file goes
+            scripts_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts"))
+            if scripts_dir not in sys.path:
+                sys.path.insert(0, scripts_dir)
+            import turn, gm_guide
+            camp = _active_campaign_name()
+            view = turn.receive(camp, content, QUEUE_FILE) if camp else None
+            if view:
+                engine = "\n".join(f"[[{line}]]" for line in gm_guide.engine_lines(camp, view))
+        except Exception:
+            pass
         os.remove(QUEUE_FILE)
         if content:
-            for d in (_roll_directives(), _narration_directive(), _lorebook_directive(content)):
+            for d in (_roll_directives(), _narration_directive(), _lorebook_directive(content), engine):
                 if d:
                     print(d)
             print(content)

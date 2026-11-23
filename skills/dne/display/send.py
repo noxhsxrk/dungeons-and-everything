@@ -408,6 +408,9 @@ def main() -> None:
         help="Send as a dice result (inline gold styling)",
     )
     parser.add_argument(
+        "--message-id", default="",
+        help="Stable id for this message (world engine outbox): the display shows a repeated id once")
+    parser.add_argument(
         "--tutor", action="store_true",
         help="Send as a tutor/learning hint (collapsible parchment block)",
     )
@@ -696,6 +699,8 @@ def main() -> None:
                 print(f"send.py: chunk payload validation failed: {'; '.join(issues)}",
                       file=sys.stderr)
                 sys.exit(2)
+            if args.message_id:
+                payload["message_id"] = f"{args.message_id}#{chunks_sent}"
             ok = _post(FLASK_URL, json.dumps(payload).encode("utf-8"), token)
             if ok:
                 chunks_sent += 1
@@ -725,6 +730,21 @@ def main() -> None:
             summary = ", ".join(f"{e['endpoint']}={e.get('reason','?')}" for e in failed)
             print(f"send.py: PARTIAL FAILURE — {summary}", file=sys.stderr)
             sys.exit(3)
+
+    # ── World engine: a plain narration is the end of the open turn ───────────
+    if text.strip() and not _has_content_flag and not args.message_id:
+        try:
+            _scripts = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts"))
+            if _scripts not in sys.path:
+                sys.path.insert(0, _scripts)
+            import turn
+            from runtime_paths import rt as _rt
+            _camp = open(_rt(".campaign"), encoding="utf-8").read().strip()
+            closed = turn.narration_sent(_camp, text) if _camp else None
+            if closed and closed.get("finished") is False:
+                print(f"send.py: world engine turn {closed['turn_id']} stays open — {closed.get('note', '')}")
+        except Exception:
+            pass
 
     # ── Optional verify round-trip ────────────────────────────────────────────
     # When --verify is on, hit /health to confirm the chunks/stats counts

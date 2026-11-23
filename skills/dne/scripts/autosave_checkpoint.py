@@ -322,6 +322,12 @@ def main() -> int:
     # The game must not stop: with autorun on, a turn may not end without the wait loop.
     if not args.campaign and not args.snapshot_only:
         stall = autorun_stall_reason(stdin_obj, campaign)
+        if not stall and not stdin_obj.get("stop_hook_active"):
+            try:                              # world engine: a turn is open and owes its narration
+                import turn
+                stall = turn.stall_reason(campaign)
+            except Exception:
+                stall = None
         if stall:
             _emit_block(stall)
             return 0
