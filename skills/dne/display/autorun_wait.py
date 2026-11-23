@@ -17,6 +17,8 @@ import secrets
 import subprocess
 import urllib.request
 _DISPLAY_HOST = os.environ.get("DNE_DISPLAY_HOST", "localhost:5001")  # tests point this away from a live display
+if hasattr(sys.stdout, "reconfigure"):   # player actions come in any script; a cp1252 console would refuse them
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 DISPLAY_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(DISPLAY_DIR, "..", "scripts"))

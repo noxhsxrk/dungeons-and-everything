@@ -154,6 +154,19 @@ class SchedulerTests(unittest.TestCase):
         event = [v for v in out["visible_events"] if v.get("event_id") == "cousin-talks"][0]
         self.assertEqual((event["text"], event["cause_id"]), ("The clerk's cousin talks.", "bribed the clerk"))
 
+    def test_thinking_out_of_game_costs_time_only_if_the_table_said_so(self):
+        self.turn.begin("oldworld", "what time is it?")
+        self.assertEqual(self.turn.resolve("oldworld", [{"action": "ask"}])["elapsed_minutes"], 0)
+        self.turn.finish("oldworld", "Morning.")
+        state = self.camp / "state.md"
+        state.write_text(state.read_text(encoding="utf-8") + "- ooc_minutes: 10\n", encoding="utf-8")
+        before = json.loads((self.camp / "calendar.json").read_text(encoding="utf-8"))
+        self.turn.begin("oldworld", "what was that noise?")
+        out = self.turn.resolve("oldworld", [{"action": "ask", "action_id": "second-ask"}])
+        after = json.loads((self.camp / "calendar.json").read_text(encoding="utf-8"))
+        self.assertEqual(out["elapsed_minutes"], 10)
+        self.assertEqual(after["hour"] * 60 + after.get("minute", 0), before["hour"] * 60 + before.get("minute", 0) + 10)
+
     def test_an_event_waiting_on_a_place_fires_when_the_party_enters(self):
         with self.wdb.writer("oldworld") as db:
             self.s.schedule(db, "old-friend", None, {"type": "note", "text": "an old friend waves"}, trigger={"enter": "Millbridge"})

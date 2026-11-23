@@ -204,6 +204,23 @@ More detail: [`skills/dne/display/README.md`](skills/dne/display/README.md).
 - **Fights that make sense.** Encounters are balanced from the world's own bestiary. Enemies fight to their role, retreat when broken, and never conjure resources they don't have. A tactical grid appears only when a fight needs one.
 - **SRD 5.1 or 5.2 core.** Choose the 2014 or 2024 rules per campaign; the table rules sit on top of either.
 
+## Telling it well
+
+The Game Master is watched by its own tools. A **style guard** reads its last narrations and tells it when it keeps opening on a smell, repeats a phrase, narrates a player's feelings for them, or talks past the moment to stop. Every few turns it is handed a **spark** (two oracle words, a camera move, a question to pass to a player, a devil's bargain) that it is free to drop. A named NPC arrives with what they want from the person in front of them. Letters, headlines and terminal logs appear on the display as the objects themselves (`send.py --handout`), each NPC speaks in their own voice, and **progress clocks** show what the table is racing. Pick a director in Table Settings: pulp action, noir mystery, ensemble banter or creeping dread.
+
+## The world engine (experimental, opt-in)
+
+Turn it on per campaign (`world_migrate.py -c <campaign> inspect`, then `enable`; it backs the campaign up first and rewrites nothing). With it on:
+
+- **Turns that survive.** Input is stored once, a roll is made once, a message is shown once; a crash or a compacted chat resumes where it stopped.
+- **A world that moves on its own clock.** Consequences are queued and arrive when due. A rest or a journey can be interrupted, and the players decide what to do before more time or supplies are spent.
+- **Roads, caravans and markets.** Open the bridge in time and the flour reaches the market; leave it shut and the market runs out. The last sack goes to one buyer.
+- **Nobody knows what they were not told.** News travels by rider, rumour or radio and can be intercepted; a faction acts on what it has actually heard.
+- **NPCs with somewhere to be**, factions that negotiate or dig in, story beats the players can prevent, plans judged against the facts of the scene, fights that end when the point of the scene is settled.
+- **The table itself:** a spotlight nudge for the quiet player, clues sent to one phone only, and the small things players invented coming back when they belong.
+
+Off by default: nothing of it runs and no file is created. It is experimental: on a host with no hooks, a GM that answers without running the scripts skips the engine for that turn. A playtest script is in [docs/world-engine-playtest.md](docs/world-engine-playtest.md).
+
 ## For developers
 
 ```bash
@@ -213,6 +230,7 @@ python3 -m venv .venv && .venv/bin/pip install pytest flask flask-cors pyyaml
 
 - `skills/dne/SKILL.md` — the Game Master's core rules; `SKILL-commands.md` — every `/dne` procedure; `SKILL-scripts.md` — script reference; `SKILL-table-rules.md` — the optional table rules; `SKILL-content.md` — running an `18` / `20` table
 - `skills/dne/scripts/` — the rules engine (`worldkit.py`, `character.py`, `lookup.py`, `encounter_gen.py`, `combat.py`, `dice.py`, …)
+- `skills/dne/scripts/world_db.py` — the world engine's store and, in its docstring, the contract engine modules keep; `turn.py` runs a turn; `scheduler.py`, `journey.py`, `trade.py`, `knowledge.py`, `routine.py`, `stakes.py`, `table.py`, `skirmish.py`, `upkeep.py`, `story.py` add the actions
 - `skills/dne/display/` — the table display (Flask)
 - `skills/dne/data/` — bundled 5e SRD data
 - `dice-server/` — optional physical-dice server

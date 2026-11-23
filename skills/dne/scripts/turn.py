@@ -82,12 +82,21 @@ class Ctx:
 def _ask(ctx: Ctx, intent: dict) -> dict:
     """ask — an out-of-game question ("what time is it?", "where are we?"). No in-world time passes.
 
-    {"action": "ask"}  →  the in-world time, the open requests and the revision."""
-    minute = wdb.now_minute(ctx.campaign)
+    {"action": "ask"}  →  the in-world time, the open requests and the revision.
+    A table that agreed thinking takes time sets `ooc_minutes: N` in Session Flags: each `ask` then lets N in-world
+    minutes pass, and whatever comes due in them happens."""
+    spent, extra = int(ctx.flag("ooc_minutes", "0") or 0), {}
+    if spent > 0:
+        import scheduler
+        world = scheduler.World(ctx.campaign, ctx.db)
+        if world.minute is not None:
+            out = scheduler.advance(world, world.minute + spent)
+            extra = {"elapsed_minutes": out["elapsed_minutes"], "writes": world.writes(), "visible_events": out["visible_events"]}
+    minute = wdb.now_minute(ctx.campaign) if not extra else scheduler.World(ctx.campaign, ctx.db).minute + extra["elapsed_minutes"]
     when = None
     if minute is not None:
         when = f"day {minute // 1440}, {minute % 1440 // 60:02d}:{minute % 60:02d}"
-    return {"status": "done", "elapsed_minutes": 0, "data": {"in_world_time": when, "minute": minute}}
+    return {"status": "done", "elapsed_minutes": 0, "data": {"in_world_time": when, "minute": minute}, **extra}
 
 
 @handler("roll")

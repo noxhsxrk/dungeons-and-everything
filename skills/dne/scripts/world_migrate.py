@@ -132,7 +132,7 @@ def backup(campaign: str, why: str) -> dict:
         revision = wdb.revision(db) if db is not None else 0
     manifest = {"campaign": campaign, "taken": dest.name, "why": why, "revision": revision, "turns": turns,
                 "world_minute": wdb.now_minute(campaign), "state_hash": wdb.state_hash(campaign),
-                "files": sorted(str(p.relative_to(dest)) for p in dest.rglob("*") if p.is_file()),
+                "files": sorted(p.relative_to(dest).as_posix() for p in dest.rglob("*") if p.is_file()),
                 "covers": "every file of the campaign folder except .snapshots, .redo-snapshots and earlier backups",
                 "format": {"store": "sqlite (world.db), schema " + str(wdb.SCHEMA_VERSION), "files": "as written"}}
     (dest / "manifest.json").write_text(json.dumps(manifest, indent=1, ensure_ascii=False), encoding="utf-8")
@@ -171,7 +171,7 @@ def shadow_run(campaign: str, intents: list, text: str = "shadow run") -> dict:
             import turn
             turn.begin(campaign, text)
             out = turn.resolve(campaign, intents)
-            changed = sorted(str(p.relative_to(copy)) for p in copy.rglob("*")
+            changed = sorted(p.relative_to(copy).as_posix() for p in copy.rglob("*")
                              if p.is_file() and p.name not in (wdb.DB_NAME,) and ".snapshots" not in p.parts
                              and (not (camp / p.relative_to(copy)).exists()
                                   or (camp / p.relative_to(copy)).read_bytes() != p.read_bytes()))
