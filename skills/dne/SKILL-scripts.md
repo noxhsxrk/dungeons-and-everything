@@ -712,6 +712,13 @@ Blocks until player input is queued from the web/mobile companion, session inval
 python3 ${CLAUDE_SKILL_DIR}/display/autorun_wait.py
 ```
 When player input arrives in `.input_queue`, prints the sanitized action and exits, which wakes the host session (Antigravity system message / Claude Code task notification).
+The output ends with a `[[GM note …]]` line (not a player action): how to end the turn, and whether the watchdog needs starting.
+
+### Autorun Watchdog — `display/autorun_watchdog.py`
+Second background task, started once per session with the first wait loop. Silent while the game runs; exits with `AUTORUN STALLED: …` (waking the host session) when a player action has waited 90 seconds (`DNE_AUTORUN_STALL_S`) with no `autorun_wait.py` running, autorun on and the display up. A newer watchdog replaces an older one; it ends by itself after 4 hours.
+```bash
+python3 ${CLAUDE_SKILL_DIR}/display/autorun_watchdog.py
+```
 
 ### Check Input Queue — `display/check_input.py`
 Non-blocking check to inspect and drain any queued player inputs from `.input_queue`:

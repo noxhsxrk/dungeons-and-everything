@@ -99,7 +99,73 @@ class WaiterTests(_Env):
         run()
         state["last_narration_at"] = 9e12             # the GM narrated
         queue.write_text("[Mira]: steps in", encoding="utf-8")
-        self.assertEqual(run(), "[Mira]: steps in")
+        self.assertTrue(run().startswith("[Mira]: steps in\n[[GM note"))
+
+    def test_autorun_wait_tells_the_gm_to_come_back_and_to_start_the_watchdog(self):
+        env = {**os.environ, "DNE_DISPLAY_HOST": "127.0.0.1:9"}
+        run = lambda: subprocess.run([sys.executable, str(DISPLAY / "autorun_wait.py")], capture_output=True,
+                                     encoding="utf-8", env=env, timeout=60).stdout
+        (self.rt / ".input_queue").write_text("[Mira]: opens the door", encoding="utf-8")
+        out = run()
+        self.assertIn("autorun_wait.py running again", out)
+        self.assertIn("autorun_watchdog.py", out)
+        (self.rt / ".autorun-watchdog.json").write_text(json.dumps({"pid": os.getpid(), "since": 9e12}), encoding="utf-8")
+        (self.rt / ".input_queue").write_text("[Mira]: listens", encoding="utf-8")
+        out = run()
+        self.assertIn("autorun_wait.py running again", out)
+        self.assertNotIn("autorun_watchdog.py", out)
+
+
+class WatchdogTests(_Env):
+    """Hosts without a Stop hook: a background task that exits (waking the GM) when the game stalls."""
+
+    def setUp(self):
+        super().setUp()
+        (self.rt / "active-campaign.json").write_text(json.dumps({"name": "eden"}), encoding="utf-8")
+        import http.server
+        import threading
+
+        class Health(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"ok")
+
+            def log_message(self, *a):
+                pass
+
+        srv = http.server.HTTPServer(("127.0.0.1", 0), Health)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(srv.shutdown)
+        self.env = {**os.environ, "DNE_DISPLAY_HOST": f"127.0.0.1:{srv.server_port}", "DNE_AUTORUN_STALL_S": "1"}
+
+    def start(self):
+        p = subprocess.Popen([sys.executable, str(DISPLAY / "autorun_watchdog.py")], stdout=subprocess.PIPE,
+                             encoding="utf-8", env=self.env)
+        self.addCleanup(p.kill)
+        return p
+
+    def test_wakes_the_gm_when_an_action_got_no_wait_loop(self):
+        (self.rt / ".autorun-delivered").write_text("1", encoding="utf-8")   # handed out, GM never came back
+        out, _ = self.start().communicate(timeout=30)
+        self.assertIn("AUTORUN STALLED", out)
+        self.assertIn("autorun_wait.py", out)
+        self.assertIn("autorun_watchdog.py", out)
+        self.assertFalse((self.rt / ".autorun-watchdog.json").exists())
+
+    def test_silent_while_the_gm_listens_or_no_action_waits_and_yields_to_a_newer_one(self):
+        import time
+        p = self.start()                        # nothing queued, nothing delivered: the GM drives in chat
+        time.sleep(2.5)
+        self.assertIsNone(p.poll())
+        self.write_waiter(os.getpid())          # the wait loop is running
+        (self.rt / ".input_queue").write_text("[Mira]: waits", encoding="utf-8")
+        time.sleep(2.5)
+        self.assertIsNone(p.poll())
+        (self.rt / ".autorun-watchdog.json").write_text(json.dumps({"pid": 1, "since": 1}), encoding="utf-8")
+        out, _ = p.communicate(timeout=30)      # a newer watchdog registered: leave without waking anyone
+        self.assertEqual(out, "")
+        self.assertTrue((self.rt / ".autorun-watchdog.json").exists())
 
 
 class StopHookTests(_Env):

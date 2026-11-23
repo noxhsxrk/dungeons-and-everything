@@ -60,7 +60,8 @@ class SaveCheckTests(unittest.TestCase):
         (self.camp / "session-tail.md").write_text("tail\n", encoding="utf-8")
         out = self.run_check()
         self.assertIn("✓ session-log.md", out)
-        self.assertIn("✓ Relationships for NPCs", out)
+        self.assertIn("☐ Relationships for NPCs", out)   # a touched npcs.md proves nothing: never auto-ticked
+        self.assertIn("☐ Other NPCs", out)
         self.assertIn("✓ characters/nox.md", out)
 
     def test_bad_since_is_an_error(self):

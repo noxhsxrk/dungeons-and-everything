@@ -88,6 +88,7 @@ to the sidebar on load.
 |---|---|
 | `dne-display-app.py` | Flask server — receives `send.py` POSTs, strips ANSI/TUI chrome, detects scene from keywords, pushes via SSE |
 | `autorun_wait.py` | Blocking wait for autorun mode — pure-python (TCC-safe), drives the turn loop between responses |
+| `autorun_watchdog.py` | Second background task: wakes the GM (`AUTORUN STALLED`) when a player action waited 90 s with no wait loop |
 | `send.py` | Single pipeline for all display updates — narration, dice, NPC dialogue, stat changes, timed effects |
 | `push_stats.py` | Bulk stat pushes (party load, turn order, world time, factions) |
 | `check_input.py` | Drains the player input queue (autorun mode) — called at turn start |

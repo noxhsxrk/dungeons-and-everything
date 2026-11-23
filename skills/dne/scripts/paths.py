@@ -106,9 +106,10 @@ def runtime_dir() -> pathlib.Path:
 
 
 AUTORUN_WAITER = ".autorun-waiter.json"   # written by display/autorun_wait.py while it waits
+AUTORUN_WATCHDOG = ".autorun-watchdog.json"   # written by display/autorun_watchdog.py while it watches
 
 
-def autorun_waiter() -> "dict | None":
+def autorun_waiter(name: str = AUTORUN_WAITER) -> "dict | None":
     """The running autorun_wait.py ({pid, since, session}), or None when nothing is waiting.
 
     A record whose process is gone (killed, crashed) counts as nothing waiting. On Windows,
@@ -117,7 +118,7 @@ def autorun_waiter() -> "dict | None":
     import json
     import time
     try:
-        rec = json.loads((runtime_dir() / AUTORUN_WAITER).read_text(encoding="utf-8"))
+        rec = json.loads((runtime_dir() / name).read_text(encoding="utf-8"))
         pid, since = int(rec["pid"]), float(rec["since"])
     except (OSError, ValueError, KeyError, TypeError):
         return None

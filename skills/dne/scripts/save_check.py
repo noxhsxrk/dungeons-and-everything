@@ -6,7 +6,8 @@ A save touches many files (state.md, the session log, characters, NPCs, the
 graph, factions, calendar, world.md). Written as prose, steps get skipped:
 relationships especially, because they live in three places. This script
 lists every part of the save, marks what was already written this session
-(by file time) and names the NPCs who appeared in this session's narration,
+(by file time; relationships are never marked, the GM answers them by name) and
+names the NPCs who appeared in this session's narration,
 so nothing is skipped and "no change" is a decision, not an omission.
 
 Usage:
@@ -116,15 +117,18 @@ def checklist(campaign: str, since: float) -> list[tuple[bool, str]]:
     npcs = npc_index(camp)
     seen = [n for n in npcs if text and appeared(n, text)]
     others = [n for n in npcs if n not in seen]
-    rel_files_done = done("npcs.md") or done("graph.json")
+    # Never ticked by file time: a touched npcs.md says nothing about whether *these* relationships
+    # were written (one edited row used to tick the whole item, and the save skipped the rest).
+    now = lambda ns: "; ".join(f"{n['name']} (now: {n['attitude'] or '?'})" for n in ns)  # noqa: E731
+    how = (". This row never ticks itself. For each one that changed (toward the party or another NPC, romance "
+           "and grudges included): update the Attitude column in npcs.md, `NPC dispositions` in state.md → Live "
+           "State Flags, and a graph edge (`campaign_graph.py set-disposition` / add-edge). Then name every NPC "
+           "here in your save summary with its change, or 'no change'")
     if seen:
-        items.append((rel_files_done, "Relationships for NPCs in this session's narration: " + "; ".join(
-            f"{n['name']} (now: {n['attitude'] or '?'})" for n in seen)
-            + ". For each: update the Attitude column in npcs.md, `NPC dispositions` in state.md → Live State Flags, "
-              "and a graph edge (`campaign_graph.py set-disposition` / add-edge), or say why it didn't change"))
+        items.append((False, "Relationships for NPCs in this session's narration: " + now(seen) + how))
     if others:
-        items.append((rel_files_done, "Other NPCs (didn't match the narration by name; check if they took part): "
-                      + ", ".join(n["name"] for n in others)
+        items.append((False, "Other NPCs (didn't match the narration by name; check if they took part): "
+                      + now(others) + how
                       + ". Add `- **Aliases:** <names used in play>` to their npcs-full.md entry so this check finds them"))
     items.append(("Faction stances" in flags or "NPC dispositions" in flags,
                   "state.md → Live State Flags: Cover, Faction stances, NPC dispositions present and current"))

@@ -130,4 +130,18 @@ if content:
     except Exception:
         pass
 
+# The GM reads this output every turn, so the rule that keeps the game alive travels with it.
+if content:
+    note = ("[[GM note, not a player action: end this turn with your reply on the display (send.py; if you "
+            "decline the action or your reply was blocked, one short line with send.py --tutor and move the "
+            "scene on) and with autorun_wait.py running again in the background.")
+    try:
+        from paths import autorun_waiter, AUTORUN_WATCHDOG
+        if not autorun_waiter(AUTORUN_WATCHDOG):
+            note += (f' The autorun watchdog is not running: also start `python3 "{os.path.join(DISPLAY_DIR, "autorun_watchdog.py")}"`'
+                     " as a second background task now. It wakes you if the game stalls.")
+    except Exception:
+        pass
+    content = content.rstrip("\n") + "\n" + note + "]]\n"
+
 sys.stdout.write(content)

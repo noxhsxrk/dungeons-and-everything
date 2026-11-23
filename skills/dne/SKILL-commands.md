@@ -395,7 +395,7 @@ Campaign "<name>" created from <source title>.
 ---
 
 ## `/dne save`
-**Start and finish with the checklist.** Run `python3 ${CLAUDE_SKILL_DIR}/scripts/save_check.py -c <campaign>` first: it lists every part of the save, ticks what was already written this session, and names the NPCs who appeared in this session's narration (relationships live in three places: the Attitude column in npcs.md, `NPC dispositions` in state.md → Live State Flags, and the graph). Work through every ☐, run it again, and in your save summary to the players list each file you changed and, for every ☐ left, why nothing changed. Never report "saved everything" with a ☐ unexplained.
+**Start and finish with the checklist.** Run `python3 ${CLAUDE_SKILL_DIR}/scripts/save_check.py -c <campaign>` first: it lists every part of the save, ticks what was already written this session, and names the NPCs who appeared in this session's narration (relationships live in three places: the Attitude column in npcs.md, `NPC dispositions` in state.md → Live State Flags, and the graph). The relationship rows never tick themselves (file times can't show them): answer them NPC by NPC, including a romance or grudge that deepened. The players never have to say what to save. Work through every ☐, run it again, and in your save summary to the players list each file you changed and, for every ☐ left, why nothing changed. Never report "saved everything" with a ☐ unexplained.
 
 Write session events to session-log.md, update state.md (location, active quests, party HP/resources, recent events), update any characters/*.md that changed. Mirror each updated character to the global roster (`<DNE_CAMPAIGN_ROOT>/characters/<file>.md`, default `~/.dne/characters/`).
 
@@ -986,6 +986,7 @@ Toggle autorun (taxi) mode — Antigravity drives the turn loop automatically wh
    ```
    When the player submits on the web, the host wakes you with the background task's completion containing the player's action.
    Every turn after that ends by relaunching it, including turns where you decline a request (SKILL.md → Autorun, step 3).
+5. Launch the watchdog once, as a second background task the same way: `python3 ${CLAUDE_SKILL_DIR}/display/autorun_watchdog.py`. It stays silent while the game runs and wakes you with `AUTORUN STALLED` if a player action waits 90 seconds with no wait loop; follow its message, then start it again.
 
 The display shows a pie-clock countdown draining from full to empty over the interval. Green pulse = actively waiting. Configurable via `autorun_interval: N` in state.md (default 60 seconds).
 
@@ -994,7 +995,7 @@ The display shows a pie-clock countdown draining from full to empty over the int
 2. Confirm: *"Autorun disabled. Back to manual mode."*
 3. Do NOT start the autorun wait after this response.
 
-**Check on `/dne load`:** If `autorun: true` is present in state.md, tell the DM autorun is active and begin the background wait loop after the recap paragraph.
+**Check on `/dne load`:** If `autorun: true` is present in state.md, tell the DM autorun is active and begin the background wait loop (and the watchdog, `autorun_watchdog.py`) after the recap paragraph.
 
 **When NOT to run the autorun wait (even if flag is set):**
 - Mid-combat, resolving a specific combatant's turn
