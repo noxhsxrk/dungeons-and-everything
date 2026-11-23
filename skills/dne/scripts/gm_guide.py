@@ -75,7 +75,11 @@ def session_start(campaign: str) -> list[str]:
         f"{_py('migrate_ruleset.py')} {campaign} --check",
         f"{_py('campaign_version.py')} -c {campaign} check",
     ]
-    if (camp / "factions.json").exists():
+    engine = paths.session_flag(campaign, "world_engine", "off") == "on"
+    if engine:
+        steps.append(f"{_py('turn.py')} -c {campaign} status   (world engine: if a turn is open, run `resume` and finish it "
+                     "before anything new; faction weeks and queued events run by themselves as time passes)")
+    if (camp / "factions.json").exists() and not engine:
         steps.append(f"{_py('faction.py')} -c {campaign} turn   (write its lines to state.md, section ## Faction Moves)")
     if (camp / "calendar.json").exists():
         steps.append(f"{_py('calendar.py')} -c {campaign} now   (the in-world date and time: show this one on the display)")
@@ -278,7 +282,8 @@ def turn_parts(campaign: str, count: bool = True, text: str = "", turn: "dict | 
         parts.append((DUE,
             f"IN-WORLD CLOCK OUT OF STEP: {clock[0]}. calendar.json is the clock: NPC growth, faction turns and timed "
             f"effects count from it. If the story is later than the calendar, move it: `{_py('calendar.py')} -c {campaign} "
-            "advance <N> <hours|days>` (or `set \"<D Month YYYY>\"`), as after every rest, journey or time skip. If the "
+            "advance <N> <hours|days>` (time passes, and with the world engine on whatever is due happens), as after "
+            "every rest, journey or time skip; `set \"<D Month YYYY>\"` only corrects a wrong date. If the "
             f"calendar is right, show its date: `python3 \"{SKILL / 'display' / 'push_stats.py'}\" --world-time "
             f"'{{\"date\": \"{clock[1]}\", \"time\": \"<time of day>\"}}'`."))
     gaps = _xp_gaps(campaign) if full else []

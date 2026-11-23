@@ -726,6 +726,14 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/turn.py -c <campaign> help [action]
 ```
 Every command prints one JSON object: `turn_id`, `status` (`open`, `waiting_for_player`, `finished`, `idle`), `completed`, `pending`, `next_input`, `waiting`, `revision`. `send.py --message-id <id>` gives a message a stable id: the display shows a repeated id once.
 
+### World Clock & Consequences — `scripts/scheduler.py`
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/scheduler.py -c <campaign> list
+python3 ${CLAUDE_SKILL_DIR}/scripts/scheduler.py -c <campaign> advance --minutes N | --days N [--batch 200]
+python3 ${CLAUDE_SKILL_DIR}/scripts/scheduler.py -c <campaign> correct --minutes ±N
+```
+Engine campaigns only. In play use the actions `{"action": "wait", "hours": 6}` and `{"action": "schedule", "in_minutes": 240, "text": "…", "cause": "…", "event_id": "…"}` (`turn.py help schedule`). The module docstring states the ordering, batching and randomness rules.
+
 ### Scene Context — `scripts/scene_context.py`
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/scene_context.py -c <campaign> [--text "<input>"] [--for dm|player:<Name>|companion:<Name>] [--budget 1800] [--json]

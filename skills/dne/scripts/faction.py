@@ -205,6 +205,13 @@ def _now(campaign: str):
 
 def run_turns(campaign: str, data: dict, rng: random.Random, force: bool = False) -> list[str]:
     """Play the turns owed since the last one (one per in-world week, at most 4)."""
+    try:
+        import world_db
+        if world_db.enabled(campaign) and not force:
+            return ["World engine is on: faction weeks run by themselves as in-world time passes "
+                    "(scheduler.py -c <campaign> list shows the next one). Nothing to do at load."]
+    except ImportError:
+        pass
     if not data["factions"]:
         return ["No factions tracked (add them with faction.py add)."]
     now = _now(campaign)

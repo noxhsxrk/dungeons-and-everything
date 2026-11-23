@@ -253,6 +253,14 @@ def _tracker():
     return tracker
 
 
+def _engine_on(campaign: str) -> bool:
+    try:
+        import world_db
+        return world_db.enabled(campaign)
+    except ImportError:
+        return False
+
+
 def cmd_advance(campaign: str, amount: int, unit: str) -> None:
     cal = _load(campaign)
     if not cal:
@@ -260,6 +268,16 @@ def cmd_advance(campaign: str, amount: int, unit: str) -> None:
         sys.exit(1)
 
     minutes = amount * MINUTES_PER_UNIT[unit]
+    if _engine_on(campaign):                      # one way for time to pass: what is due on the way happens
+        import scheduler
+        out = scheduler.run(campaign, minutes=minutes)
+        print(f"  +{amount} {unit} → {_format_date(_load(campaign))}  (world engine: {len(out['applied'])} event(s) applied)")
+        for ev in out["visible_events"]:
+            print(f"    - {ev.get('text', ev.get('type'))}")
+        if out.get("remaining"):
+            print(f"    {out['remaining']} more event(s) are due: run it again")
+        _send_date(_load(campaign))
+        return
     _advance_minutes(cal, minutes)
     _save(campaign, cal)
 
@@ -307,6 +325,13 @@ def cmd_set(campaign: str, date_str: str, time_str: str, hour=None) -> None:
         if not 0 <= hour <= 23:
             raise ValueError("Hour must be between 0 and 23")
         cal.update(hour=hour, minute=0)
+    if _engine_on(campaign) and _load(campaign):  # a correction, not time passing: queued events keep their distance
+        import scheduler
+        delta = scheduler._minutes_of(cal) - scheduler._minutes_of(_load(campaign))
+        scheduler.run(campaign, fix=delta)
+        print(f"  Date corrected: {_format_date(_load(campaign))}  (world engine: nothing ran, queued events moved with it)")
+        _send_date(_load(campaign))
+        return
     _save(campaign, cal)
     print(f"  Date set: {_format_date(cal)}")
     _send_date(cal)

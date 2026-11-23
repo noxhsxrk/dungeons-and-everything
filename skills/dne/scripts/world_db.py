@@ -259,19 +259,20 @@ def now_minute(campaign: str) -> "int | None":
     return _calendar_minutes(campaign)
 
 
-def db_digest(path: Path) -> str:
-    """Hash of a store's logical content: every table's rows, minus wall-clock and delivery columns."""
+def db_digest(path: Path, tables: "tuple | None" = None) -> str:
+    """Hash of a store's logical content: rows, minus wall-clock, delivery and counter columns.
+
+    `tables` limits it (("events", "things") is the world itself, without the turns that got it there)."""
     h = hashlib.sha256()
     if not path.exists():
         return h.hexdigest()
     db = sqlite3.connect(str(path))
     try:
         for (table,) in db.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").fetchall():
+            if table == "meta" or (tables and table not in tables):
+                continue                          # meta holds the seed and counters: bookkeeping, not world state
             cols = [c[1] for c in db.execute(f"PRAGMA table_info({table})") if c[1] not in _NOT_STATE]
-            if table == "meta":
-                rows = db.execute("SELECT key, value FROM meta WHERE key != 'seed' ORDER BY key").fetchall()
-            else:
-                rows = db.execute(f"SELECT {', '.join(cols)} FROM {table} ORDER BY {', '.join(cols)}").fetchall()
+            rows = db.execute(f"SELECT {', '.join(cols)} FROM {table} ORDER BY {', '.join(cols)}").fetchall()
             h.update(table.encode())
             h.update(json.dumps(rows, ensure_ascii=False, default=str).encode("utf-8"))
     finally:
@@ -279,10 +280,10 @@ def db_digest(path: Path) -> str:
     return h.hexdigest()
 
 
-def state_hash(campaign: str) -> str:
+def state_hash(campaign: str, tables: "tuple | None" = None) -> str:
     """Hash of the game state a replay must reproduce: the store plus the campaign files rules read."""
     camp = paths.find_campaign(campaign)
-    h = hashlib.sha256(db_digest(db_path(campaign)).encode())
+    h = hashlib.sha256(db_digest(db_path(campaign), tables).encode())
     files = [camp / f for f in STATE_FILES] + sorted((camp / "characters").glob("*.md"))
     for f in files:
         h.update(f.name.encode())

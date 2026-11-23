@@ -34,7 +34,11 @@ def make(root: pathlib.Path, name: str = "oldworld") -> pathlib.Path:
         "npcs-full.md": "# NPCs (full entries)\n\n## Bren\n- **HP:** 9 | **AC:** 11\n",
         "session-log.md": "# Session log\n\n## Session 3\n- Reached Millbridge.\n",
         "graph.json": json.dumps({"nodes": {"npc_bren": {"type": "npc", "name": "Bren"}}, "edges": []}),
-        "factions.json": json.dumps({"factions": [{"name": "Tollmen", "force": 3, "cunning": 2, "wealth": 4}]}),
+        "factions.json": json.dumps({"factions": {
+            "Tollmen": {"force": 3, "wealth": 4, "influence": 2, "goal": "Tax the bridge", "clock": 6,
+                        "goal_stat": "wealth", "progress": 0, "rivals": ["Millers' Guild"], "stability": 9},
+            "Millers' Guild": {"force": 2, "wealth": 3, "influence": 3, "goal": "Keep the road open", "clock": 6,
+                               "goal_stat": "influence", "progress": 0, "rivals": ["Tollmen"], "stability": 8}}}),
         "calendar.json": json.dumps({"gregorian": True, "day": 15, "month": 5, "year": 2026, "hour": 9,
                                      "months": ["January", "February", "March", "April", "May", "June", "July",
                                                 "August", "September", "October", "November", "December"]}),
