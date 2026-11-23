@@ -370,6 +370,8 @@ The engine keeps each turn whole: the table's input is stored once, a roll happe
 3. **wait** — when the result says `waiting_for_player`, the question is already on the display. Do not decide it for them. Their answer arrives as their next message (a bare number answers a roll) or with `turn.py -c <campaign> answer --request <id> --value <n>`; a repeated or late answer changes nothing.
 4. **finish** — your plain `send.py` narration closes the turn; in chat use `turn.py -c <campaign> finish` with the narration on stdin. A turn that still waits on a player stays open.
 
+**Time, rest and travel.** In an engine campaign time passes only through the engine: `{"action": "wait", "hours": 2}`, `{"action": "rest", "type": "long", "resting": [...], "watch": [...]}`, `{"action": "travel", "to": "<place>"}`. Whatever is due on the way happens; if it needs the party to decide (an event queued with `"interrupt": true`, a closed road), the clock stops at that minute and the turn waits for their choice: never finish an interrupted rest or journey for them. Set consequences in motion with `{"action": "schedule", "in_minutes": N, "text": "…", "cause": "…"}`; `calendar.py set` only corrects a wrong date.
+
 After a restart or a compaction run `turn.py -c <campaign> status` before anything else, and `resume` if a turn is open. **Limits:** on a host with no hooks, a GM that answers without running these scripts skips the engine for that turn; Claude Code's Stop hook catches an open turn, other hosts rely on the `[[GM note]]`.
 
 **Autorun / taxi mode** (`autorun: true` in `state.md → ## Session Flags`):

@@ -325,6 +325,15 @@ def main() -> None:
             print(f"  Distance: {r['miles']} mi ({r['direction']}) · Mode: {r['mode']} · Time: {r['days']} day(s)")
             print(f"  Biomes: {', '.join(r['biomes'])} · Danger: {r['max_danger']}/5 · Encounter checks: {r['encounter_checks']}")
         elif args.cmd == "travel":
+            try:
+                import world_db
+                engine = world_db.enabled(args.campaign)
+            except ImportError:
+                engine = False
+            if engine:                            # the engine walks the road leg by leg; this would jump to the end
+                print('World engine is on: travel through the turn runner — turn.py -c <campaign> resolve --intents '
+                      '\'[{"action": "travel", "to": "' + args.to + '"}]\'')
+                sys.exit(1)
             r = compute_route(args.campaign, args.to, mode=args.mode)
             data = _load(args.campaign)
             dst = _find_place(data, args.to)

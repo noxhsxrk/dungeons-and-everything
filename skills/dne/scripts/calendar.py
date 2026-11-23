@@ -293,6 +293,10 @@ def cmd_rest(campaign: str, rest_type: str) -> None:
         print("Calendar not initialised. Run `calendar.py -c <campaign> init` first.")
         sys.exit(1)
 
+    if _engine_on(campaign):                      # the engine's rest takes the time, once, and can be interrupted
+        print('  World engine is on: rest through the turn runner so the time passes once — '
+              'turn.py -c <campaign> resolve --intents \'[{"action": "rest", "type": "' + rest_type + '"}]\'')
+        sys.exit(1)
     if rest_type == "short":
         _advance_minutes(cal, 60)
         label = "Short rest (+1 hour)"

@@ -329,14 +329,18 @@ def _run(campaign: str, turn_id: str) -> dict:
                                 json.dumps({"key": req.get("key", "choice"), "text": req.get("text", "")}, ensure_ascii=False),
                                 "open", "", _epoch()))
                     _queue(db, turn_id, request_id, req.get("text", ""), req.get("audience", "party"), "question")
+                # Time that passed before the question still passed: its file changes are applied now.
+                wdb.stage_writes(db, f"{act['action_id']}@{wdb.revision(db)}", out.get("writes"))
+                out.pop("writes", None)
                 db.execute("UPDATE actions SET status='waiting', result=? WHERE action_id=?",
                            (json.dumps(out, ensure_ascii=False), act["action_id"]))
             else:
-                wdb.stage_writes(db, act["action_id"], out.get("writes"))
+                staged_as = f"{act['action_id']}@{wdb.revision(db)}"
+                wdb.stage_writes(db, staged_as, out.get("writes"))
                 out.pop("writes", None)
                 db.execute("UPDATE actions SET status='done', result=? WHERE action_id=?",
                            (json.dumps(out, ensure_ascii=False), act["action_id"]))
-                if not db.execute("SELECT 1 FROM applies WHERE action_id=?", (act["action_id"],)).fetchone():
+                if not db.execute("SELECT 1 FROM applies WHERE action_id=?", (staged_as,)).fetchone():
                     wdb.set_meta(db, "revision", wdb.revision(db) + 1)
             results.append({"action_id": act["action_id"], **out})
         wdb.apply_staged(campaign)

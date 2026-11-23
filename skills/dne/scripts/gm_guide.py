@@ -266,6 +266,11 @@ def turn_parts(campaign: str, count: bool = True, text: str = "", turn: "dict | 
     cmds = SKILL / "SKILL-commands.md"
     full = paths.session_flag(campaign, "engine", "full") != "light"
     parts = _engine_parts(campaign, turn)
+    if paths.session_flag(campaign, "world_engine", "off") == "on":
+        parts.append((RULE, "Time passes only through the world engine: a rest is the action `rest`, a journey is "
+                            "`travel`, waiting is `wait` (never calendar.py rest, economy.py rest or world_map.py travel: "
+                            "they would move time or the party a second time). An interrupted rest or journey waits "
+                            "for the players' choice; do not finish it for them."))
     if full:
         parts.append((RULE,
         "Fights and rests run on the engine, never on narration alone. Before the first blow run "
