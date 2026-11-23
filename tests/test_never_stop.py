@@ -67,6 +67,40 @@ class WaiterTests(_Env):
         self.assertIn("[Mira]: opens the door", r.stdout)
         self.assertFalse((self.rt / ".autorun-waiter.json").exists())
 
+    def test_autorun_wait_flags_a_reply_that_never_reached_the_display(self):
+        import http.server
+        import threading
+        state = {"last_narration_at": None}
+
+        class Doctor(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                body = json.dumps(state).encode()
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *a):
+                pass
+
+        srv = http.server.HTTPServer(("127.0.0.1", 0), Doctor)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(srv.shutdown)
+        env = {**os.environ, "DNE_DISPLAY_HOST": f"127.0.0.1:{srv.server_port}"}
+        run = lambda: subprocess.run([sys.executable, str(DISPLAY / "autorun_wait.py")], capture_output=True,
+                                     encoding="utf-8", env=env, timeout=60).stdout
+        queue, delivered = self.rt / ".input_queue", self.rt / ".autorun-delivered"
+        queue.write_text("[Mira]: opens the door", encoding="utf-8")
+        self.assertIn("[Mira]", run())
+        self.assertTrue(delivered.exists())
+        out = run()                                   # no narration since: warn and return at once
+        self.assertIn("NOT ON THE DISPLAY", out)
+        self.assertFalse(delivered.exists())          # warns once only
+        queue.write_text("[Mira]: listens", encoding="utf-8")
+        run()
+        state["last_narration_at"] = 9e12             # the GM narrated
+        queue.write_text("[Mira]: steps in", encoding="utf-8")
+        self.assertEqual(run(), "[Mira]: steps in")
+
 
 class StopHookTests(_Env):
     def setUp(self):

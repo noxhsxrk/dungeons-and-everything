@@ -8,6 +8,9 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Fixed
+- **Narration that never reached the display.** When the GM answered player actions only in its chat (no `send.py`), the players saw nothing. `autorun_wait.py` now notices, on its next launch, that no narration arrived since it handed out the last actions, and tells the GM at once to send it (`NOT ON THE DISPLAY`). It warns once per turn; the Status panel's `/doctor` reports `last_narration_at`.
+
 ## [1.6.2] — 2026-11-23 — Examples in Table Settings
 
 ### Changed

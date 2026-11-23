@@ -376,6 +376,8 @@ When autorun is active, the AI DM drives the game turn loop automatically — pl
      `send.py --tutor` (e.g. *"GM: that won't be part of this story; the scene moves on."*), no lecture,
      then continue the scene in narration and relaunch `autorun_wait.py`. Never end an autorun turn with
      a reply that exists only in the chat.
+   - **If `autorun_wait.py` prints `NOT ON THE DISPLAY`,** your last narration stayed in the chat. Send it
+     now with `send.py`, then relaunch the wait loop.
    - **Backstops.** In Claude Code the Stop hook (`install_autosave_hook.py`) refuses to let an autorun
      turn end while the display is up and nothing waits for the players, and tells you to relaunch. On
      every agent, the display's **Status** panel (Settings → Status, or the phone's ⚙ → Status) shows

@@ -37,6 +37,31 @@ my_session = secrets.token_hex(8)
 with open(SESSION_FILE, "w", encoding="utf-8") as f:
     f.write(my_session)
 
+SCHEME_FILE = os.path.join(DISPLAY_DIR, ".scheme")
+SCHEME = open(SCHEME_FILE, encoding="utf-8").read().strip() if os.path.exists(SCHEME_FILE) else "http"
+CTX = None
+if SCHEME == "https":
+    CTX = ssl.create_default_context()
+    CTX.check_hostname = False
+    CTX.verify_mode = ssl.CERT_NONE
+
+# Backstop: the actions handed out last time got no narration on the display (the GM answered
+# only in its chat). Say so at once, once, instead of waiting for the next action.
+DELIVERED_FILE = os.path.join(RT, ".autorun-delivered")
+try:
+    delivered = float(open(DELIVERED_FILE, encoding="utf-8").read())
+    os.unlink(DELIVERED_FILE)
+    with urllib.request.urlopen(f"{SCHEME}://{_DISPLAY_HOST}/doctor", timeout=2, context=CTX) as r:
+        doc = json.load(r)
+    missed = "last_narration_at" in doc and (doc["last_narration_at"] or 0) < delivered  # older servers lack it
+except Exception:
+    missed = False
+if missed:
+    sys.stdout.write("NOT ON THE DISPLAY: your reply to the last player actions never reached the display "
+                     "(no send.py since they arrived), so the players have not seen it. Send that narration "
+                     "now with send.py, then run autorun_wait.py again. No new player actions yet.\n")
+    sys.exit(0)
+
 # Resolve autorun interval from the active campaign's state.md (default 60s)
 interval = 60
 try:
@@ -94,19 +119,14 @@ subprocess.run([sys.executable, PUSH, "--autorun-waiting", "false"], capture_out
 
 # Clear the display queue indicator on success
 if content:
+    with open(DELIVERED_FILE, "w", encoding="utf-8") as f:
+        f.write(str(time.time()))
     try:
-        scheme_file = os.path.join(DISPLAY_DIR, ".scheme")
-        scheme = open(scheme_file, encoding="utf-8").read().strip() if os.path.exists(scheme_file) else "http"
         token = open(os.path.join(RT, ".token"), encoding="utf-8").read().strip()
-        ctx = None
-        if scheme == "https":
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
-        req = urllib.request.Request(f"{scheme}://{_DISPLAY_HOST}/queue/consumed",
+        req = urllib.request.Request(f"{SCHEME}://{_DISPLAY_HOST}/queue/consumed",
                                      data=b"", method="POST",
                                      headers={"X-DND-Token": token})
-        urllib.request.urlopen(req, timeout=1, context=ctx)
+        urllib.request.urlopen(req, timeout=1, context=CTX)
     except Exception:
         pass
 

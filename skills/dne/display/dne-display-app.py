@@ -2830,6 +2830,7 @@ def _doctor_state() -> dict:
             "listening_for": int(now - float(waiter["since"])) if waiter else None,
             "queue_pending": queue_age is not None, "staged": staged, "players": players,
             "last_narration_age": int(now - _last_chunk_ts) if _last_chunk_ts else None,
+            "last_narration_at": _last_chunk_ts or None,
             "checks": checks}
 
 
