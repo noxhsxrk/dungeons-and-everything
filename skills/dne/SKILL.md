@@ -392,6 +392,8 @@ The engine keeps each turn whole: the table's input is stored once, a roll happe
 
 After a restart or a compaction run `turn.py -c <campaign> status` before anything else, and `resume` if a turn is open. **Limits:** on a host with no hooks, a GM that answers without running these scripts skips the engine for that turn; Claude Code's Stop hook catches an open turn, other hosts rely on the `[[GM note]]`.
 
+**Turning the world engine on for an existing campaign.** Never by editing the flag: run `python3 ${CLAUDE_SKILL_DIR}/scripts/world_migrate.py -c <campaign> inspect` and show the players what it found (names that could mean two people, NPC schedules it cannot read), then `enable` (it backs the whole campaign up first and rewrites nothing). To watch before committing: `enable --shadow` (the engine only shows what it would have told you) and `shadow --intents '[…]'` (runs actions on a throwaway copy). `disable` turns it off cleanly and leaves `world-export.md` to play on from; `restore` goes back to a backup after saying what would be lost. Ask the players before `enable`, `disable` and `restore --yes`.
+
 **Autorun / taxi mode** (`autorun: true` in `state.md → ## Session Flags`):
 
 When autorun is active, the AI DM drives the game turn loop automatically — players can play entirely through the web companion UI (`http://localhost:5001` or ngrok URL) without needing to type anything in the chat.

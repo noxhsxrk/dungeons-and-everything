@@ -324,6 +324,15 @@ def turn_parts(campaign: str, count: bool = True, text: str = "", turn: "dict | 
             import turn as _turn  # noqa: F401  (loads the engine modules, which register their providers)
         except Exception:
             pass
+    if paths.session_flag(campaign, "world_engine", "off") == "shadow":
+        try:                                      # shadow: the engine changes nothing; it only shows and logs its context
+            import scene_context
+            view = scene_context.build(campaign, text)
+            with open(paths.find_campaign(campaign) / ".world-shadow.jsonl", "a", encoding="utf-8") as f:
+                f.write(json.dumps({"input": text, "context": view}, ensure_ascii=False) + "\n")
+            parts.append((DEPTH, "(world engine, shadow) It would have told you: " + " ".join(scene_context.render(view)[:4])))
+        except Exception:
+            pass
     for provider in PROVIDERS:                    # story.py and the engine modules add their own lines
         try:
             parts += provider(campaign, text, turn) or []
