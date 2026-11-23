@@ -13,6 +13,8 @@ up a turn that a crash, a new session or a context compaction interrupted.
     turn.py -c <campaign> status | resume
     turn.py -c <campaign> finish  < narration.txt
     turn.py -c <campaign> help [action]
+    turn.py -c <campaign> log > turns.json        # what was played, without the dice
+    turn.py -c <copy> replay --log turns.json     # play it again on a copy taken at the start: same state
 
 With a display, the scripts the GM already runs carry the lifecycle: autorun_wait.py and
 check_input.py call `begin` when they hand over the players' input, and a plain send.py narration
@@ -299,7 +301,7 @@ def resolve(campaign: str, intents: list, turn_id: "str | None" = None) -> dict:
                 raise ValueError(f"unknown action {intent.get('action')!r}; `turn.py help` lists them")
             # The id comes from the intent itself: resolving the same list again is a retry, not new actions.
             # (Two identical intents in one list are two actions; a later identical one needs its own action_id.)
-            body = json.dumps(intent, ensure_ascii=False, sort_keys=True)
+            body = json.dumps({k: v for k, v in intent.items() if k != "action_id"}, ensure_ascii=False, sort_keys=True)
             nth = repeats[body] = repeats.get(body, 0) + 1
             action_id = intent.get("action_id") or f"{turn_id}-{hashlib.sha256(body.encode()).hexdigest()[:6]}-{nth}"
             db.execute("INSERT OR IGNORE INTO actions VALUES (?,?,?,?,?,?)",
@@ -470,6 +472,54 @@ def narration_sent(campaign: str, text: str) -> "dict | None":
     return finish(campaign, text, already_sent=True)
 
 
+def export_log(campaign: str) -> list:
+    """Everything needed to play this campaign's engine turns again: per turn its input, the intents that were
+    resolved (in order), the players' answers and the narration. No dice: they come back from the campaign's seed."""
+    with wdb.reader(campaign) as db:
+        if db is None:
+            return []
+        log = []
+        for t in db.execute("SELECT * FROM turns ORDER BY seq"):
+            inputs = db.execute("SELECT * FROM inputs WHERE turn_id=? ORDER BY rowid", (t["turn_id"],)).fetchall()
+            acts = db.execute("SELECT * FROM actions WHERE turn_id=? ORDER BY seq", (t["turn_id"],)).fetchall()
+            answers = db.execute("SELECT request_id, answer FROM requests WHERE turn_id=? AND status='answered' ORDER BY rowid",
+                                 (t["turn_id"],)).fetchall()
+            log.append({"turn_id": t["turn_id"], "input_id": inputs[0]["input_id"] if inputs else None,
+                        "text": inputs[0]["text"] if inputs else "", "source": inputs[0]["source"] if inputs else "chat",
+                        "intents": [{**json.loads(a["intent"]), "action_id": a["action_id"]} for a in acts],
+                        "answers": [{"request_id": r["request_id"], "value": json.loads(r["answer"])["value"]} for r in answers],
+                        "narration": t["narration"], "finished": t["status"] == "finished"})
+        return log
+
+
+def replay(campaign: str, log: list) -> dict:
+    """Play a recorded log into `campaign` (a copy taken at the snapshot the log starts from).
+
+    No model is asked anything and nothing is sent to a display: deliveries go to DNE_OUTBOX_LOG or nowhere.
+    Compare world_db.state_hash of the result with the original's."""
+    saved = os.environ.get("DNE_OUTBOX_LOG")
+    os.environ.setdefault("DNE_OUTBOX_LOG", os.devnull)
+    try:
+        for entry in log:
+            begin(campaign, entry["text"], input_id=entry["input_id"], source=entry.get("source", "chat"))
+            pending = list(entry["answers"])
+            for intent in entry["intents"]:
+                view = resolve(campaign, [intent])
+                while view.get("waiting") and pending:           # answer in the order the table did
+                    want = {w["request_id"] for w in view["waiting"]}
+                    hit = next((a for a in pending if a["request_id"] in want), None)
+                    if hit is None:
+                        break
+                    pending.remove(hit)
+                    view = answer(campaign, hit["request_id"], hit["value"])
+            if entry.get("finished"):
+                finish(campaign, entry.get("narration", ""))
+    finally:
+        if saved is None:
+            os.environ.pop("DNE_OUTBOX_LOG", None)
+    return {"turns": len(log), "state_hash": wdb.state_hash(campaign)}
+
+
 def stall_reason(campaign: str) -> "str | None":
     """For the Stop hook: a turn is open and nothing waits on a player, so the GM owes its narration."""
     if not wdb.enabled(campaign):
@@ -498,6 +548,9 @@ def main() -> int:
     sub.add_parser("resume")
     f = sub.add_parser("finish")
     f.add_argument("--narration", default=None)
+    sub.add_parser("log")
+    rp = sub.add_parser("replay")
+    rp.add_argument("--log", required=True, help="a file written by `log`")
     h = sub.add_parser("help")
     h.add_argument("action", nargs="?")
     args = p.parse_args()
@@ -524,6 +577,10 @@ def main() -> int:
             out = status(args.campaign)
         elif args.cmd == "resume":
             out = resume(args.campaign)
+        elif args.cmd == "log":
+            out = export_log(args.campaign)
+        elif args.cmd == "replay":
+            out = replay(args.campaign, json.loads(Path(args.log).read_text(encoding="utf-8")))
         else:
             out = finish(args.campaign, args.narration if args.narration is not None else sys.stdin.read())
     except (ValueError, json.JSONDecodeError) as exc:
