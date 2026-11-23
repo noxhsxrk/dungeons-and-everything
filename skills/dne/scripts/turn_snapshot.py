@@ -61,19 +61,55 @@ CAMPAIGN_FILES = [
     "worldkit.json",
     "session_tail.json",
     "session-tail.md",
+    "session-log-archive.md",
+    "npc-timeline.json",
 ]
 
 #: What snapshots tracked before "tracked" was recorded in meta.json.
 _LEGACY_TRACKED = [f for f in CAMPAIGN_FILES if f not in (
     "calendar.json", "subsystems.json", "factions.json", "dne-version.json", "xp-ledger.jsonl", "worldkit.json",
-    "session_tail.json", "session-tail.md",
+    "session_tail.json", "session-tail.md", "session-log-archive.md", "npc-timeline.json",
 )]
 
-# Optional runtime display files to snapshot alongside campaign state
+# The display's stats and feed, as dne-display-app.py names them. (They were listed as ".stats.json" and
+# ".log.json", which never existed, so an undo left the sidebar and the feed on the undone turn.)
 RUNTIME_FILES = [
-    ".stats.json",
-    ".log.json",
+    "stats.json",
+    "text_log.json",
 ]
+
+#: Folders snapshotted whole, sub-folders included. A snapshot records which of them it covers
+#: (meta "tracked_dirs"): restoring one that predates a folder leaves that folder alone.
+CAMPAIGN_DIRS = ["companions"]
+
+#: Outside every snapshot on purpose: an undo must not rewind the counter that marks it.
+TIMELINE_FILE = "timeline.json"
+
+
+def _dir_files(root: pathlib.Path) -> list:
+    """Every file under `root`, as sorted relative posix paths."""
+    return sorted(p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()) if root.is_dir() else []
+
+
+def timeline_epoch() -> int:
+    """How many times this table has been rewound or re-applied. Input queued under an older number is stale."""
+    try:
+        return int(json.loads((runtime_dir() / TIMELINE_FILE).read_text(encoding="utf-8")).get("epoch", 0))
+    except (OSError, ValueError, AttributeError, TypeError):
+        return 0
+
+
+def _new_timeline(campaign: str) -> int:
+    """Start a new timeline: bump the counter and drop the player input still queued for the old one."""
+    rdir = runtime_dir()
+    epoch = timeline_epoch() + 1
+    (rdir / TIMELINE_FILE).write_text(json.dumps({"campaign": campaign, "epoch": epoch}), encoding="utf-8")
+    for stale in (".input_queue", ".autorun-delivered"):
+        try:
+            (rdir / stale).unlink()
+        except OSError:
+            pass
+    return epoch
 
 
 def _snapshots_root(campaign: str, redo: bool = False) -> pathlib.Path:
@@ -148,6 +184,14 @@ def _write_snapshot(campaign: str, cdir: pathlib.Path, snap_dir: pathlib.Path, t
             shutil.copy2(cf, chars_dst / cf.name)
             chars_saved.append(cf.name)
 
+    dirs_saved = {}
+    for name in CAMPAIGN_DIRS:
+        dirs_saved[name] = _dir_files(cdir / name)
+        for rel in dirs_saved[name]:
+            dst = snap_dir / "campaign" / name / rel
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(cdir / name / rel, dst)
+
     # Display runtime state (stats + log) if present
     rdir = runtime_dir()
     rt_saved = []
@@ -168,6 +212,9 @@ def _write_snapshot(campaign: str, cdir: pathlib.Path, snap_dir: pathlib.Path, t
         "tracked": list(CAMPAIGN_FILES),
         "characters": chars_saved,
         "tracked_characters": True,
+        "dirs": dirs_saved,
+        "tracked_dirs": list(CAMPAIGN_DIRS),
+        "fingerprint_scope": FINGERPRINT_SCOPE,
         "runtime_files": rt_saved,
         "tracked_runtime": list(RUNTIME_FILES),
     }
@@ -261,7 +308,8 @@ def _move_snapshot(campaign: str, to_turn, dry_run: bool, notify_display: bool, 
     restored_turn = target["turn"]
     removed_files = []
 
-    if redo and target.get("state_after_undo") and target["state_after_undo"] != _fingerprint(cdir):
+    if redo and target.get("state_after_undo") and target["state_after_undo"] != _fingerprint(
+            cdir, target.get("fingerprint_scope", 1)):
         # Play continued after the undo; that play is now the timeline. Re-applying the undone
         # state would silently throw it away.
         raise RuntimeError("The campaign changed since the undo, so redo would discard that play. "
@@ -288,12 +336,14 @@ def _move_snapshot(campaign: str, to_turn, dry_run: bool, notify_display: bool, 
             meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
         if redo:
             restored_turn = inverse["turn"]
+        timeline = _new_timeline(campaign)
         display_ok = _notify_display_rollback(campaign, restored_turn) if notify_display else False
     else:
         restored_files = list(target.get("files", [])) + [
             f"characters/{c}" for c in target.get("characters", [])
-        ]
+        ] + [f"{d}/{rel}" for d, rels in (target.get("dirs") or {}).items() for rel in rels]
         display_ok = False
+        timeline = timeline_epoch()
 
     return {
         "campaign": campaign,
@@ -304,14 +354,25 @@ def _move_snapshot(campaign: str, to_turn, dry_run: bool, notify_display: bool, 
         "removed_files": removed_files,
         "dry_run": dry_run,
         "display_notified": display_ok,
+        "timeline": timeline,
+        "companions": [p for p in _dir_files(cdir / "companions") if p.endswith(".md")],
+        "companions_tracked": "companions" in (target.get("tracked_dirs") or []),
     }
 
 
-def _fingerprint(cdir: pathlib.Path) -> str:
-    """Hash of every snapshotted campaign file, to tell whether play continued after an undo."""
+FINGERPRINT_SCOPE = 2   # 1: campaign files + characters; 2: also CAMPAIGN_DIRS
+
+
+def _fingerprint(cdir: pathlib.Path, scope: int = FINGERPRINT_SCOPE) -> str:
+    """Hash of every snapshotted campaign file, to tell whether play continued after an undo.
+
+    `scope` is the one the redo frame was made with, so a frame from an older version still compares like with like.
+    """
     import hashlib
     h = hashlib.sha256()
     paths = [cdir / rel for rel in CAMPAIGN_FILES] + sorted((cdir / "characters").glob("*.md"))
+    if scope >= 2:
+        paths += [cdir / name / rel for name in CAMPAIGN_DIRS for rel in _dir_files(cdir / name)]
     for path in paths:
         h.update(str(path.relative_to(cdir)).encode())
         h.update(path.read_bytes() if path.is_file() else b"<absent>")
@@ -341,6 +402,14 @@ def _restore_snapshot(cdir: pathlib.Path, target: dict) -> tuple[list, list]:
         names = {p.name for p in snap_chars.glob("*.md")} | {p.name for p in dst_chars.glob("*.md")}
         for name in sorted(names):
             restore_file(snap_chars / name, dst_chars / name, f"characters/{name}", True)
+
+    # Whole folders: only when this snapshot covered the folder. An older snapshot knows nothing about
+    # companions/, so the sheets the table has now stay as they are.
+    for name in target.get("tracked_dirs") or []:
+        if name not in CAMPAIGN_DIRS:
+            continue
+        for rel in sorted(set(_dir_files(snap_camp / name)) | set(_dir_files(cdir / name))):
+            restore_file(snap_camp / name / rel, cdir / name / rel, f"{name}/{rel}", True)
 
     rdir = runtime_dir()
     for name in RUNTIME_FILES:
@@ -404,6 +473,14 @@ def main() -> None:
                 print(f"  Removed ({len(res['removed_files'])}): {', '.join(res['removed_files'])}")
             if not res["dry_run"]:
                 print(f"  Display refresh: {'sent' if res['display_notified'] else 'offline/skipped'}")
+                print(f"  Timeline {res['timeline']}: player actions and dice requests queued before this were dropped; "
+                      "a roll or message still arriving for them is refused. Ask again for anything you still need.")
+                if res["companions"]:
+                    how = ("restored with this turn" if res["companions_tracked"]
+                           else "left as they are: this snapshot predates companion tracking")
+                    print(f"  Companions ({how}): {', '.join(res['companions'])}. Every running companion agent still "
+                          "remembers the turns that no longer happened: stop each one and start it again from its "
+                          "sheet (SKILL-companions.md, After an undo).")
         elif args.cmd == "prune":
             n = prune_snapshots(args.campaign, keep=args.keep)
             print(f"Pruned {n} old snapshot(s).")

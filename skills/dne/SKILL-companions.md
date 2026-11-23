@@ -166,3 +166,17 @@ from your own notes, briefly.
 - **`ask <name> <message>`** — DM-side, out of character: send the message to the companion subagent as-is
   (e.g. *"what do you make of the innkeeper?"*) and show its reply. Useful to sanity-check a companion's read
   of a situation before a big scene.
+
+## After an undo
+
+`turn_snapshot.py undo` (and `redo`) restores the whole `companions/` folder with the turn, but it cannot reach
+into a running subagent: that agent still remembers the turns that no longer happened. When the script prints a
+`Companions (…)` line, for each sheet it names:
+
+- Stop sending to the old agent (never `SendMessage` to it again) and forget its id.
+- At the companion's next trigger, spawn it fresh with its restored sheet, the last 5 journal lines and the
+  briefing, exactly as on the first call of a session.
+- If the sheet was removed (the companion joined after the snapshot), that companion is not in the party on this
+  timeline; `redo` brings the sheet back.
+
+A companion you play yourself (`dm` mode) needs no restart: reread its sheet before you speak for it.

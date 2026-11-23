@@ -7479,11 +7479,16 @@ if (!_deviceId) {
   localStorage.setItem('dnd_device_id', _deviceId);
 }
 
+// Which undo/redo timeline this page has seen (sent by the stream on connect and on every rewind).
+// The server refuses player input that names an older one: it was written for turns that were undone.
+let _timelineEpoch = null;
+
 function _authHeaders() {
   return {
     'Content-Type': 'application/json',
     ...(_dndToken    ? { 'X-DND-Token':   _dndToken  } : {}),
     ...(_deviceId    ? { 'X-DND-Device':  _deviceId  } : {}),
+    ...(_timelineEpoch !== null ? { 'X-DND-Timeline': String(_timelineEpoch) } : {}),
   };
 }
 
@@ -8517,6 +8522,12 @@ async function _stageAction() {
         body: JSON.stringify({ character: _selectedChar, text }),
       });
       _lastStatus = res.status;
+      if (res.status === 409) {
+        // The GM undid a turn while this was on its way: keep the text, the player re-reads and resends.
+        _stageBtn.disabled = false;
+        _setSendNote('The story was rewound. Read the latest text and send again.');
+        return;
+      }
       if (res.status === 202) {
         // Device pending approval — persist state so it survives page reload
         localStorage.setItem('dnd_awaiting_approval', _deviceId);
@@ -8916,6 +8927,8 @@ function connect() {
   evtSource.onmessage = (e) => {
     let payload;
     try { payload = JSON.parse(e.data); } catch { return; }
+
+    if (typeof payload.timeline === 'number') _timelineEpoch = payload.timeline;
 
     if (payload.dice_request && typeof window._onDiceRequest === 'function') {
       window._onDiceRequest(payload.dice_request);

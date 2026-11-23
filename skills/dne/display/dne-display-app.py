@@ -335,7 +335,28 @@ def _device_ok(device_id: str, ip: str) -> str:
 # players mark ready, the combined action is written to TRIGGER_FILE for
 # wrapper.py to inject into Claude's PTY stdin.
 
-_staged: dict[str, dict] = {}   # {char_name: {text, ready, timestamp}}
+_staged: dict[str, dict] = {}   # {char_name: {text, ready, timestamp, epoch}}
+
+# ── Timeline (undo/redo) ─────────────────────────────────────────────────────
+# turn_snapshot.py bumps <runtime>/timeline.json on every undo and redo. Anything a player queued
+# under an older number belongs to turns that no longer happened: it is dropped, and a message or
+# roll that still arrives for it is refused. Read from the file each time, so this also holds when
+# the undo ran with --no-display or while this server was down.
+TIMELINE_FILE = rt("timeline.json")
+_request_epochs: dict = {}      # dice request_id → timeline it was asked in (newest 300)
+
+
+def _timeline_epoch() -> int:
+    try:
+        with open(TIMELINE_FILE, encoding="utf-8") as f:
+            return int(json.load(f).get("epoch", 0))
+    except (OSError, ValueError, AttributeError, TypeError):
+        return 0
+
+
+def _stale_reply():
+    return jsonify({"error": "rewound", "timeline": _timeline_epoch(),
+                    "message": "The story was rewound. Read the latest text and send again."}), 409
 _staged_lock = threading.Lock()
 _expected_count = 1             # updated when stats arrive; min 1
 _autorun_threshold: Optional[int] = None  # overrides _expected_count when set via push_stats --autorun-threshold
@@ -383,6 +404,11 @@ def _check_auto_trigger() -> None:
     This gives the DM control over when player actions enter Claude's context.
     """
     with _staged_lock:
+        if not _staged:
+            return
+        now_epoch = _timeline_epoch()
+        for name in [c for c, e in _staged.items() if e.get("epoch", now_epoch) != now_epoch]:
+            del _staged[name]                     # staged before an undo: not part of this timeline
         if not _staged:
             return
         everybody_ready = "Everybody" in _staged and _staged["Everybody"]["ready"]
@@ -2147,6 +2173,16 @@ def help_request():
     return "", 202
 
 
+@app.before_request
+def _refuse_input_from_an_undone_timeline():
+    if request.method != "POST" or not request.path.startswith("/player-input"):
+        return None
+    seen = request.headers.get("X-DND-Timeline", "")
+    if seen.isdigit() and int(seen) < _timeline_epoch():
+        return _stale_reply()
+    return None
+
+
 @app.route("/player-input", methods=["POST"])
 def player_input():
     """Queue a player action submitted from the display companion.
@@ -2206,6 +2242,10 @@ def player_dice():
     adv       = str(data.get("advantage", "normal")).strip().lower()
     label     = re.sub(r"[`\\$]", "", str(data.get("label", ""))[:60]).strip()
     req_id    = str(data.get("request_id", "")).strip()[:24]
+    if req_id and _request_epochs.get(req_id, _timeline_epoch()) != _timeline_epoch():
+        with _dice_pending_lock:                  # a roll for a request made before an undo
+            _dice_pending.pop(req_id, None)
+        return _stale_reply()
 
     m = re.fullmatch(r"(\d{1,2})d(\d{1,3})", spec)
     if not m:
@@ -2330,12 +2370,16 @@ def dice_request():
     dc_val   = int(dc) if isinstance(dc, (int, float)) else None
 
     request_id = secrets.token_hex(6)
+    _request_epochs[request_id] = _timeline_epoch()
+    for old_id in list(_request_epochs)[:-300]:
+        _request_epochs.pop(old_id, None)
 
     # Only register pending entries for explicit named targets. "any" is fire-and-forget.
     trackable = [c for c in chars if c.lower() != "any"]
     if trackable:
         with _dice_pending_lock:
             _dice_pending[request_id] = {
+                "epoch": _timeline_epoch(),
                 "chars": set(trackable),
                 "meta": {"spec": spec, "modifier": modifier, "advantage": adv, "label": label, "dc": dc_val},
                 "started_at": time.time(),
@@ -2530,6 +2574,7 @@ def stage_input():
             "text":      text,
             "ready":     solo,
             "timestamp": _time.time(),
+            "epoch":     _timeline_epoch(),
         }
         snap = _staged_snapshot()
 
@@ -3023,6 +3068,15 @@ def rollback():
     data = request.get_json(silent=True) or {}
     _load_stats()
     _load_log()
+    with _staged_lock:
+        _staged.clear()
+    with _input_lock:
+        _input_queue.clear()
+    with _dice_pending_lock:
+        _dice_pending.clear()
+    with _queue_status_lock:
+        _queue_status.clear()
+    _persist_input_queue()
     with _stats_lock:
         stats_snap = dict(_current_stats)
     with _clients_lock:
@@ -3033,8 +3087,14 @@ def rollback():
             try:
                 q.put_nowait({
                     "rollback": {"campaign": data.get("campaign", ""), "turn": data.get("turn")},
+                    "timeline": _timeline_epoch(),
                     "stats": stats_snap,
                     "replay_batch": recent,
+                    "staged_inputs": {},
+                    "pending_input": [],
+                    "queue_status": [],
+                    "dice_pending": [],
+                    "dice_request_cancelled": "all",
                 })
             except queue.Full:
                 pass
@@ -3099,7 +3159,7 @@ def stream():
     # Send the current scene immediately on connect so the browser
     # starts with the right background even mid-session.
     initial_scene = SCENES[_current_scene_name] | {"name": _current_scene_name}
-    q.put_nowait({"scene": initial_scene})
+    q.put_nowait({"scene": initial_scene, "timeline": _timeline_epoch()})
 
     # Replay recent entries so late-connecting / reconnecting browsers catch up.
     # _text_log is the durable session record (maxlen=2000); replay only the
