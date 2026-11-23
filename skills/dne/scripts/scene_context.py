@@ -217,6 +217,7 @@ def build(campaign: str, text: str = "", audience: str = "dm", budget: int = 180
         "mentioned": [{"id": e["id"], "name": e["name"], "source": e["source"]} for e in named],
         "reference": reference(campaign, text, named, here, pool) if text else None,
         "recent": _recent_events(campaign, audience),
+        "heard_here": _heard_here(campaign, here) if audience == "dm" else [],
         "rules": {k: v for k in RULE_FLAGS if (v := paths.session_flag(campaign, k, ""))},
     }
     used = len(json.dumps(view, ensure_ascii=False))
@@ -234,6 +235,20 @@ def build(campaign: str, text: str = "", audience: str = "dm", budget: int = 180
         if "recent" not in view["cut"]:
             view["cut"].append("recent")
     return view
+
+
+def _heard_here(campaign: str, here: dict) -> list[str]:
+    """What is common knowledge where the party stands (knowledge.py): the newest three things this place has heard."""
+    try:
+        place = here.get("place") or ""
+        data = json.loads((paths.find_campaign(campaign) / "world-map.json").read_text(encoding="utf-8"))
+        key = place if place in data.get("places", {}) else data.get("party_location")
+        with wdb.reader(campaign) as db:
+            rows = wdb.all_of(db, "belief") if db is not None else {}
+    except (OSError, ValueError):
+        return []
+    mine = sorted((b for k, b in rows.items() if k.startswith(f"place:{key}|")), key=lambda b: -(b.get("learned_at") or 0))
+    return [f"{b['claim']} (by {b['source']})" for b in mine[:3]]
 
 
 def _lore(campaign: str, text: str, room: int) -> str:
@@ -265,6 +280,9 @@ def render_parts(view: dict) -> list:
         parts.append((1, "Named in this input: " + "; ".join(f"{m['name']} ({m['source']})" for m in view["mentioned"]) + "."))
     if view.get("recent"):
         parts.append((1, "Just happened: " + " | ".join(view["recent"][-3:])))
+    if view.get("heard_here"):
+        parts.append((1, "People here have heard: " + " | ".join(view["heard_here"])
+                      + " Anyone elsewhere knows only what `knows` lists for them."))
     if view.get("relations"):
         parts.append((3, "Relationships here:\n" + view["relations"]))
     if view.get("lore"):

@@ -374,6 +374,8 @@ The engine keeps each turn whole: the table's input is stored once, a roll happe
 
 **Roads, caravans and markets.** `route` says who holds a road or bridge and whether it is open, tolled or closed; `market` sets up a market or quotes its prices; `caravan` puts goods on the road; `buy` / `sell` trade against the market's real stock and the character's coin. A closed road stops caravans too: what happens to the market's stock follows from whether the goods arrive. Events addressed to `party` are things the party can see where it stands; events addressed to `dm` happened elsewhere, bring them in only through what the party could notice or hear.
 
+**Who knows what.** Nobody knows a thing because you know it. Record what happened and who was there with `fact`; send word elsewhere with `news` (it arrives when the rider, rumour, phone or radio gets there, and `intercept` can stop or delay that one line); plant or correct a version with `belief`. Before an NPC, a faction or a town reacts to something, run `knows` for them and play them from that list only: a town a day's ride away has not heard today's news. A faction's `heat` in an area can rise only on something it has heard of.
+
 After a restart or a compaction run `turn.py -c <campaign> status` before anything else, and `resume` if a turn is open. **Limits:** on a host with no hooks, a GM that answers without running these scripts skips the engine for that turn; Claude Code's Stop hook catches an open turn, other hosts rely on the `[[GM note]]`.
 
 **Autorun / taxi mode** (`autorun: true` in `state.md → ## Session Flags`):
