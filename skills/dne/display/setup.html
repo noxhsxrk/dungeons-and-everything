@@ -33,6 +33,8 @@
   label.opt:has(input:checked) { border-color:var(--accent); background:var(--sel); box-shadow:inset 0 0 0 1px var(--accent); }
   label.opt:has(input:focus-visible) { outline:2px solid var(--accent); outline-offset:2px; }
   label.opt:has(input:disabled) { opacity:.45; cursor:not-allowed; }
+  .ex { font-size:.9rem; margin:10px 0 0; padding:10px 12px; border-radius:10px; background:var(--sel); }
+  .ex span { display:block; margin-top:2px; }
   .warn { color:var(--warn); font-size:.88rem; margin:10px 0 0; }
   textarea { width:100%; min-height:64px; border:1px solid var(--line); border-radius:10px; background:var(--field);
     color:var(--ink); font:inherit; padding:10px 12px; resize:vertical; }
@@ -62,52 +64,84 @@
 </div></div>
 
 <script>
-// key, title, hint, default, [value, label, description]
+// key, title, hint, default, example scene, [value, label, description, what the GM does]
 const DIALS = [
-  ["pacing", "Pacing", "How often trouble arrives that the players didn't go looking for", "mixed", [
-    ["adventure", "Adventure", "Trouble any scene, hard cuts"],
-    ["mixed", "Mixed", "At most once a scene, quiet turns between"],
-    ["slow", "Slow burn", "Rarely unasked; the players drive the story"]]],
-  ["difficulty", "Difficulty", "How hard failure bites", "standard", [
-    ["easy", "Easy", "Danger is telegraphed early"], ["standard", "Standard", ""],
-    ["hard", "Hard", "Mistakes hurt"], ["deadly", "Deadly", "Characters can die"]]],
-  ["spotlight", "Spotlight", "Who steers the story", "balanced", [
-    ["dm_led", "GM leads", "Strong, frequent hooks"], ["balanced", "Balanced", ""],
-    ["player_led", "Players lead", "The GM waits for you to pick a direction"]]],
-  ["companions", "Companions", "How often NPCs travelling with you speak up unasked", "normal", [
-    ["quiet", "Quiet", "Speak when asked or when it matters"], ["normal", "Normal", ""],
-    ["chatty", "Chatty", "Banter, opinions, asides"]]],
-  ["rolls", "Rolls", "How often the GM asks for a roll", "normal", [
-    ["few", "Few", "Only when failure really matters"], ["normal", "Normal", ""],
-    ["many", "Many", "Most risky actions"]]],
-  ["show_dc", "Show the DC", "Tell you the difficulty before you roll", "on", [
-    ["on", "Show", "e.g. DC 13"], ["off", "Hide", "Roll without knowing the number"]]],
-  ["turn_end", "End of turn", "", "open", [
-    ["open", "Open", "You decide what to do"], ["options", "Options", "2–3 numbered choices, or anything else"]]],
-  ["roll_mode", "Who rolls", "", "players", [
-    ["players", "Players roll", ""], ["auto", "GM rolls", ""]]],
-  ["content", "Content level", "Picking 18 or 20 confirms everyone at the table is that age or older", "standard", [
-    ["standard", "Standard", "Real danger, told briefly"],
-    ["18", "18+", "Blood, injury and horror on screen"],
-    ["20", "20+", "The hardest level"]]],
-  ["romance", "Romance", "Adult characters only", "fade", [
-    ["off", "Off", "No romance plots"], ["fade", "Fade", "Romance happens; intimate scenes cut away"],
-    ["open", "Open", "Intimate scenes on screen, non-explicit (needs 18/20)"]]],
-  ["success_at_cost", "Success at a cost", "A near miss can succeed for a price", "on", [["on", "On", ""], ["off", "Off", ""]]],
-  ["degrees", "Degrees of success", "Critical successes and failures on checks", "on", [["on", "On", ""], ["off", "Off", ""]]],
-  ["hero_points", "Hero Points", "Points to turn a bad moment around", "off", [["on", "On", ""], ["off", "Off", ""]]],
+  ["pacing", "Pacing", "How often trouble arrives that the players didn't go looking for", "mixed",
+   "You walk back to the inn after the job.", [
+    ["adventure", "Adventure", "Trouble any scene, hard cuts",
+     "Halfway there, a hooded figure falls into step beside you: \"You took something that isn't yours.\""],
+    ["mixed", "Mixed", "At most once a scene, quiet turns between",
+     "The walk is quiet. At the inn the barkeep mentions someone was asking about you, then you're free to rest."],
+    ["slow", "Slow burn", "Rarely unasked; the players drive the story",
+     "The walk is quiet. You eat, chat with the barkeep about the harvest and sleep. Nothing finds you unless you go looking."]]],
+  ["difficulty", "Difficulty", "How hard failure bites", "standard",
+   "You fail a climb up a wet wall.", [
+    ["easy", "Easy", "Danger is telegraphed early", "You slip and land hard, but you're fine and nobody heard."],
+    ["standard", "Standard", "", "You fall and take a little damage; a dog starts barking."],
+    ["hard", "Hard", "Mistakes hurt", "You fall, take real damage and twist an ankle; guards are coming."],
+    ["deadly", "Deadly", "Characters can die", "You fall into the yard, badly hurt, and the guards are already drawing swords."]]],
+  ["spotlight", "Spotlight", "Who steers the story", "balanced",
+   "You arrive in a new town with no plan.", [
+    ["dm_led", "GM leads", "Strong, frequent hooks", "A messenger finds you at once with a job offer and a deadline."],
+    ["balanced", "Balanced", "", "The GM shows a few things going on (a notice board, a brawl, a stranger watching you) and asks what you do."],
+    ["player_led", "Players lead", "The GM waits for you to pick a direction", "The GM describes the town and waits; the story starts wherever you go."]]],
+  ["companions", "Companions", "How often NPCs travelling with you speak up unasked", "normal",
+   "You pick a lock while your companion keeps watch.", [
+    ["quiet", "Quiet", "Speak when asked or when it matters", "She watches the corridor in silence and speaks only when a guard appears."],
+    ["normal", "Normal", "", "She mutters \"faster\" once and keeps watch."],
+    ["chatty", "Chatty", "Banter, opinions, asides", "She teases your technique, guesses what's inside and wonders aloud about dinner."]]],
+  ["rolls", "Rolls", "How often the GM asks for a roll", "normal",
+   "You climb a rope ladder on a calm day.", [
+    ["few", "Few", "Only when failure really matters", "It just works. Rolls are kept for moments when falling would matter."],
+    ["normal", "Normal", "", "On a calm day it just works; in a storm, you'd roll."],
+    ["many", "Many", "Most risky actions", "Roll Athletics. Even routine risks get a roll."]]],
+  ["show_dc", "Show the DC", "Tell you the difficulty before you roll", "on",
+   "You try to talk a guard into letting you pass.", [
+    ["on", "Show", "e.g. DC 13", "\"Roll Persuasion, DC 15.\""],
+    ["off", "Hide", "Roll without knowing the number", "\"Roll Persuasion.\" You learn how hard it was from what the guard does."]]],
+  ["turn_end", "End of turn", "", "open",
+   "A guarded bridge blocks the road.", [
+    ["open", "Open", "You decide what to do", "Two guards, one torch, the river below. What do you do?"],
+    ["options", "Options", "2–3 numbered choices, or anything else", "1) Swim under the bridge  2) Bribe the guards  3) Wait for the shift change, or something else."]]],
+  ["roll_mode", "Who rolls", "", "players",
+   "The GM calls for a Stealth check.", [
+    ["players", "Players roll", "", "You roll your own dice (or the display's) and send the result."],
+    ["auto", "GM rolls", "", "The GM rolls for you and shows the result."]]],
+  ["content", "Content level", "Picking 18 or 20 confirms everyone at the table is that age or older", "standard",
+   "A fight ends with an enemy badly wounded.", [
+    ["standard", "Standard", "Real danger, told briefly", "He goes down and doesn't get up. The scene moves on."],
+    ["18", "18+", "Blood, injury and horror on screen", "The wound is described plainly, he's gasping, and the others see what you did."],
+    ["20", "20+", "The hardest level", "The wound and his pain are shown in full, and the scene stays on them before moving on."]]],
+  ["romance", "Romance", "Adult characters only", "fade",
+   "Two adult characters share a quiet moment after a long night.", [
+    ["off", "Off", "No romance plots", "They say goodnight. Any attraction stays in the background."],
+    ["fade", "Fade", "Romance happens; intimate scenes cut away", "A kiss, then the scene cuts to the next morning, and things between them have changed."],
+    ["open", "Open", "Intimate scenes on screen, non-explicit (needs 18/20)", "The scene stays with them, told through feeling and atmosphere rather than explicit detail, then carries into the story."]]],
+  ["success_at_cost", "Success at a cost", "A near miss can succeed for a price", "on",
+   "You miss the DC by 1 picking a lock.", [
+    ["on", "On", "", "The lock opens, but your pick snaps and someone heard the click."],
+    ["off", "Off", "", "The lock holds."]]],
+  ["degrees", "Degrees of success", "Critical successes and failures on checks", "on",
+   "You beat the DC by 10 searching a room.", [
+    ["on", "On", "", "Critical success: you find what you came for and a hidden compartment too."],
+    ["off", "Off", "", "Success: you find what you came for."]]],
+  ["hero_points", "Hero Points", "Points to turn a bad moment around", "off",
+   "Your character fails a save that would knock them out.", [
+    ["on", "On", "", "You spend a Hero Point to reroll and stay on your feet."],
+    ["off", "Off", "", "The roll stands."]]],
 ];
 const LISTS = [["lines", "Lines: never in the story"], ["veils", "Veils: may happen, off screen"]];
 
 const q = new URLSearchParams(location.search);   // prefill: setup.html?pacing=slow&content=18
 const f = document.getElementById("f");
 const esc = s => s.replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
-for (const [key, title, hint, def, opts] of DIALS) {
+for (const [key, title, hint, def, scene, opts] of DIALS) {
   const cur = opts.some(o => o[0] === q.get(key)) ? q.get(key) : def;
   f.insertAdjacentHTML("beforeend", `<section><h2>${title}<code>${key}</code></h2>` +
     (hint ? `<p class="hint">${hint}</p>` : "") + `<div class="opts" role="radiogroup" aria-label="${title}">` +
     opts.map(([v, l, d]) => `<label class="opt"><input type="radio" name="${key}" value="${v}"${v === cur ? " checked" : ""}>` +
       `<b>${l}</b>${d ? `<span>${d}</span>` : ""}</label>`).join("") + `</div>` +
+    `<p class="ex"><b>Example:</b> ${esc(scene)} <span id="ex-${key}"></span></p>` +
     (key === "romance" ? `<p class="warn" id="romance-note" hidden>“Open” needs content level 18 or 20</p>` : "") + `</section>`);
 }
 f.insertAdjacentHTML("beforeend", `<section><h2>Lines &amp; Veils</h2><p class="hint">Separate with commas, e.g. spiders, animal cruelty</p><div class="two">` +
@@ -130,6 +164,9 @@ function sync() {
   open.disabled = !adult;
   if (!adult && open.checked) f.querySelector('input[name=romance][value=fade]').checked = true;
   document.getElementById("romance-note").hidden = adult;
+  const d = new FormData(f);
+  for (const [key, , , , , opts] of DIALS)
+    document.getElementById("ex-" + key).textContent = "→ " + opts.find(o => o[0] === d.get(key))[3];
   document.getElementById("out").textContent = text();
 }
 f.addEventListener("change", sync); f.addEventListener("input", sync); sync();
