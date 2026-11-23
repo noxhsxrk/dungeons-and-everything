@@ -21,6 +21,9 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
   settings, DM help, phone) with the scene name below it; Settings and Dice open as solid bottom
   sheets; settings rows share one style. The desktop rail uses the same icons.
 - **Suggested-action chips are gone**; they took room from the story and the input.
+- **The Codex reads like a page, not a markdown file.** Entries render their markdown (lists, bold,
+  `code`, tables) instead of showing `**` and `-`; NPCs show a name with the role beneath; empty tabs
+  say what will appear there. In the Plain look it is a calm reading panel with underline tabs.
 
 ### Fixed
 - **Running the tests no longer touches a live game.** Tests posted to the display at
@@ -32,6 +35,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 - **iPhone: text and buttons no longer run past the screen edge.** Closed drawers were parked just off
   the right edge, and iOS widened the page to include them; on phones they are now clipped in place.
 - The input field re-measures once the Thai webfont loads, so it no longer keeps a blank extra line.
+- Codex NPCs: a table's header and `| --- |` separator rows were listed as people (`------ — ------`),
+  and player characters appeared among the NPCs. Long entries are cut at a line break, not mid-word.
 
 ## [1.4.0] — 2026-11-23 — Living worlds, table limits, world versions
 

@@ -3965,7 +3965,17 @@ body.dialogue-bubbles .npc-block {
   padding: 10px;
 }
 .codex-card-title { font-weight: 600; color: #f1d399; font-size: 13px; margin-bottom: 4px; }
-.codex-card-text { font-size: 12px; color: #d5ccbc; line-height: 1.45; white-space: pre-wrap; }
+.codex-card-text { font-size: 12px; color: #d5ccbc; line-height: 1.45; }
+.codex-card-role { font-size: 12px; opacity: .7; margin-bottom: 6px; }
+.codex-card-text p { margin: 0 0 .5em; }
+.codex-card-text ul { margin: 0 0 .5em; padding-left: 1.1em; }
+.codex-card-text li { margin: .25em 0; }
+.codex-card-text h4 { margin: .6em 0 .3em; font-size: 1em; }
+.codex-card-text code { font-family: ui-monospace, monospace; font-size: .9em; padding: 0 .3em; border-radius: 4px; background: rgba(255,255,255,.08); }
+.codex-card-text .cx-table { overflow-x: auto; margin: .4em 0; }
+.codex-card-text table { border-collapse: collapse; font-size: .95em; }
+.codex-card-text th, .codex-card-text td { text-align: left; padding: 4px 8px; border-bottom: 1px solid rgba(255,255,255,.1); vertical-align: top; }
+.codex-empty { font-size: 13px; opacity: .7; padding: 8px 2px; }
 
 /* Game Feel / Visual Juice */
 #danger-vignette {
@@ -4435,6 +4445,34 @@ body.dialogue-bubbles .npc-block {
   }
   #text-content{ overflow-wrap: break-word; }
 
+  /* ── Plain: the Codex as a calm reading panel ── */
+  :root[data-variant="plain"] #codex-drawer{
+    background:var(--e-canvas) !important; color:var(--e-ink) !important; border-right:1px solid var(--e-hair) !important;
+    width:min(420px, 100vw) !important; padding:0 !important; box-shadow:0 0 40px rgba(0,0,0,.25); }
+  :root[data-variant="plain"] .codex-head{ padding:16px 16px 8px; margin:0; }
+  :root[data-variant="plain"] .codex-head strong{ font-size:18px; font-weight:600; color:var(--e-ink); font-size:0; }
+  :root[data-variant="plain"] .codex-head strong::after{ content:"Codex"; font-size:18px; }
+  :root[data-variant="plain"] #codex-close{ width:40px; height:40px; border-radius:10px; color:var(--e-mut) !important; font-size:18px !important; }
+  :root[data-variant="plain"] #codex-close:hover{ background:var(--p-chip) !important; color:var(--e-ink) !important; }
+  :root[data-variant="plain"] .codex-tabs{ gap:0; margin:0; padding:0 8px; border-bottom:1px solid var(--e-hair); }
+  :root[data-variant="plain"] .codex-tab{
+    flex:1; background:transparent !important; border:0 !important; border-bottom:2px solid transparent !important;
+    border-radius:0 !important; padding:12px 4px !important; font-size:14px !important; font-weight:600;
+    color:var(--p-hint) !important; min-height:44px; }
+  :root[data-variant="plain"] .codex-tab.active{ color:var(--e-ink) !important; border-bottom-color:var(--e-accent) !important; }
+  :root[data-variant="plain"] #codex-body{ padding:12px 16px max(16px, env(safe-area-inset-bottom)); gap:10px; }
+  :root[data-variant="plain"] .codex-card{
+    background:var(--e-block) !important; border:1px solid var(--e-hair) !important; border-radius:12px !important; padding:14px 16px !important; }
+  :root[data-variant="plain"] .codex-card-title{ color:var(--e-ink) !important; font-size:16px !important; font-weight:600; margin:0 0 2px; }
+  :root[data-variant="plain"] .codex-card-role{ color:var(--p-hint); opacity:1; font-size:13px; }
+  :root[data-variant="plain"] .codex-card-text{ color:var(--e-ink) !important; font-size:15px !important; line-height:1.6 !important; }
+  :root[data-variant="plain"] .codex-card-text strong{ font-weight:600; }
+  :root[data-variant="plain"] .codex-card-text ul{ padding-left:1.15em; }
+  :root[data-variant="plain"] .codex-card-text li::marker{ color:var(--p-hint); }
+  :root[data-variant="plain"] .codex-card-text code{ background:var(--p-chip); }
+  :root[data-variant="plain"] .codex-card-text th, :root[data-variant="plain"] .codex-card-text td{ border-bottom-color:var(--e-hair); }
+  :root[data-variant="plain"] .codex-empty{ color:var(--p-hint); opacity:1; }
+
   /* phone controller: whole screen, header row, tabs, then the conversation */
   :root[data-variant="plain"] body.input-only #input-panel{ background: var(--e-canvas) !important; color: var(--e-ink) !important; }
   :root[data-variant="plain"] body.input-only #input-body{
@@ -4633,7 +4671,7 @@ body.dialogue-bubbles .npc-block {
 <aside id="codex-drawer" aria-label="Adventure Codex">
   <div class="codex-head">
     <strong>📖 Adventure Codex</strong>
-    <button id="codex-close" type="button" style="background:none;border:none;color:#d6c7a9;font-size:18px;cursor:pointer">✕</button>
+    <button id="codex-close" type="button" aria-label="Close the codex" style="background:none;border:none;color:#d6c7a9;font-size:18px;cursor:pointer">✕</button>
   </div>
   <div class="codex-tabs">
     <button class="codex-tab active" data-codex="npcs" type="button">NPCs</button>
@@ -9712,6 +9750,47 @@ function _refreshQuickChips() {
   let codexCache = null;
   let activeTab = 'npcs';
 
+  // Small, safe markdown for codex entries: escapes HTML first, then lists, tables,
+  // **bold**, *italic*, `code` and #### headings. Campaign files are markdown.
+  function _codexInline(t) {
+    return t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/(^|[^*])\*(?!\s)([^*]+?)\*/g, '$1<em>$2</em>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>');
+  }
+  function _codexMd(text) {
+    const esc = String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const out = [];
+    let list = null, table = null, para = [];
+    const flushPara = () => { if (para.length) { out.push('<p>' + _codexInline(para.join(' ')) + '</p>'); para = []; } };
+    const flushList = () => { if (list) { out.push('<ul>' + list.map(li => '<li>' + _codexInline(li) + '</li>').join('') + '</ul>'); list = null; } };
+    const flushTable = () => {
+      if (table) {
+        out.push('<div class="cx-table"><table>' + table.map((r, i) =>
+          '<tr>' + r.map(c => (i === 0 ? '<th>' : '<td>') + _codexInline(c) + (i === 0 ? '</th>' : '</td>')).join('') + '</tr>').join('') + '</table></div>');
+        table = null;
+      }
+    };
+    for (const raw of esc.split('\n')) {
+      const line = raw.trim();
+      if (/^\|.*\|$/.test(line)) {
+        flushPara(); flushList();
+        const cells = line.slice(1, -1).split('|').map(c => c.trim());
+        if (cells.every(c => /^:?-{2,}:?$/.test(c) || !c)) continue;   // separator row
+        (table = table || []).push(cells);
+        continue;
+      }
+      flushTable();
+      const li = line.match(/^(?:[-*•]|\d+[.)])\s+(.*)$/);
+      if (li) { flushPara(); (list = list || []).push(li[1]); continue; }
+      const h = line.match(/^#{1,6}\s+(.*)$/);
+      if (h) { flushPara(); flushList(); out.push('<h4>' + _codexInline(h[1]) + '</h4>'); continue; }
+      if (!line) { flushPara(); flushList(); continue; }
+      flushList(); para.push(line);
+    }
+    flushPara(); flushList(); flushTable();
+    return out.join('');
+  }
+
   function renderCodexTab(tab) {
     activeTab = tab;
     document.querySelectorAll('.codex-tab').forEach(b => b.classList.toggle('active', b.dataset.codex === tab));
@@ -9720,8 +9799,10 @@ function _refreshQuickChips() {
     const items = (codexCache && codexCache[tab]) || [];
     if (!items.length) {
       const empty = document.createElement('div');
-      empty.className = 'codex-card-text';
-      empty.textContent = 'No discovered entries yet.';
+      empty.className = 'codex-empty';
+      empty.textContent = {npcs: 'No one met yet.', quests: 'No quests or leads yet.',
+                           locations: 'No places discovered yet.', factions: 'No factions known yet.'}[tab]
+                          || 'Nothing discovered yet.';
       bodyEl.appendChild(empty);
       return;
     }
@@ -9730,12 +9811,20 @@ function _refreshQuickChips() {
       card.className = 'codex-card';
       const title = document.createElement('div');
       title.className = 'codex-card-title';
-      title.textContent = it.name + (it.role ? (' — ' + it.role) : '');
-      const txt = document.createElement('div');
-      txt.className = 'codex-card-text';
-      txt.textContent = it.summary || '';
+      title.textContent = it.name;
       card.appendChild(title);
-      card.appendChild(txt);
+      if (it.role) {
+        const role = document.createElement('div');
+        role.className = 'codex-card-role';
+        role.textContent = it.role;
+        card.appendChild(role);
+      }
+      if (it.summary) {
+        const txt = document.createElement('div');
+        txt.className = 'codex-card-text';
+        txt.innerHTML = _codexMd(it.summary);   // escaped inside _codexMd
+        card.appendChild(txt);
+      }
       bodyEl.appendChild(card);
     });
   }

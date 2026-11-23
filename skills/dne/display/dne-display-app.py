@@ -2741,9 +2741,17 @@ def _parse_codex_sections(filepath: str) -> list:
     def _flush():
         nonlocal cur_title, cur_lines
         if cur_title:
-            body = _strip_dm_secrets("\n".join(cur_lines))
+            body = _strip_dm_secrets("\n".join(cur_lines)).strip()
+            if len(body) > 1200:   # cut on a line break, never mid-markdown
+                kept, total = [], 0
+                for ln in body.splitlines():
+                    if total + len(ln) > 1200 and kept:
+                        break
+                    kept.append(ln)
+                    total += len(ln) + 1
+                body = "\n".join(kept) + "\n…"
             if body and not _DM_SECRET_LINE_RE.search(cur_title):
-                items.append({"name": cur_title.strip(), "summary": body[:450]})
+                items.append({"name": cur_title.strip(), "summary": body})
         cur_title = ""
         cur_lines = []
 
@@ -2784,18 +2792,27 @@ def codex():
 
     # Parse discovered NPCs from npcs.md (surface index — never npcs-full.md)
     npcs_path = os.path.join(cdir, "npcs.md")
+    with _stats_lock:
+        pcs = {str(p.get("name", "")).strip().casefold() for p in _current_stats.get("players", [])}
     if os.path.exists(npcs_path):
         try:
-            for line in open(npcs_path, encoding="utf-8", errors="replace"):
-                s = line.strip()
-                if s.startswith("|") and not s.startswith("|---") and not s.lower().startswith("| name"):
-                    cols = [c.strip() for c in s.strip("|").split("|")]
-                    if cols and cols[0] and not _DM_SECRET_LINE_RE.search(s):
-                        npcs.append({
-                            "name": cols[0],
-                            "role": cols[1] if len(cols) > 1 else "",
-                            "summary": _strip_dm_secrets(" · ".join(c for c in cols[2:4] if c)),
-                        })
+            rows = [ln.strip() for ln in open(npcs_path, encoding="utf-8", errors="replace")]
+            for i, s in enumerate(rows):
+                if not s.startswith("|"):
+                    continue
+                cols = [re.sub(r"\*\*|__|`", "", c).strip() for c in s.strip("|").split("|")]
+                if all(re.fullmatch(r":?-{2,}:?", c) for c in cols if c):
+                    continue                                    # | --- | --- | separator
+                nxt = rows[i + 1] if i + 1 < len(rows) else ""
+                if nxt.startswith("|") and re.fullmatch(r"[|\s:-]+", nxt):
+                    continue                                    # the header row above a separator
+                if not cols or not cols[0] or cols[0].casefold() in pcs or _DM_SECRET_LINE_RE.search(s):
+                    continue
+                npcs.append({
+                    "name": cols[0],
+                    "role": cols[1] if len(cols) > 1 else "",
+                    "summary": _strip_dm_secrets(" · ".join(c for c in cols[2:4] if c)),
+                })
         except OSError:
             pass
     if not npcs:

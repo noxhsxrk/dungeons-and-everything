@@ -73,6 +73,23 @@ class DisplayWorldTests(unittest.TestCase):
         self.assertIn("Dock 9", body)
         self.assertIn("EDEN", body)
 
+    def test_codex_npc_table_skips_header_separator_and_party(self):
+        camp = pathlib.Path(os.environ["DNE_CAMPAIGN_ROOT"]) / "campaigns" / "eden"
+        (camp / "npcs.md").write_text(
+            "| ชื่อ | บทบาท | ท่าที |\n| ------ | --- | ---------- |\n"
+            "| **Rina** | Club mate | friendly |\n| Nox | the player | — |\n", encoding="utf-8")
+        with self.app._stats_lock:
+            saved = self.app._current_stats.get("players")
+            self.app._current_stats["players"] = [{"name": "Nox"}]
+        try:
+            npcs = self.client.get("/codex").get_json()["npcs"]
+        finally:
+            with self.app._stats_lock:
+                self.app._current_stats["players"] = saved or []
+            (camp / "npcs.md").unlink()
+        self.assertEqual([n["name"] for n in npcs], ["Rina"])
+        self.assertEqual(npcs[0]["role"], "Club mate")
+
     def test_no_srd_reference_link_in_world_campaign(self):
         j = self.client.get("/srd-lookup", query_string={"name": "fireball", "category": "spell"}).get_json()
         self.assertFalse(j.get("found"))
