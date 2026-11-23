@@ -105,6 +105,18 @@ def runtime_dir() -> pathlib.Path:
     return d
 
 
+def session_flag(campaign: str, key: str, default: str = "") -> str:
+    """Value of `- <key>: <value>` in the campaign's state.md, section ## Session Flags (lower-cased)."""
+    import re
+    try:
+        text = (find_campaign(campaign) / "state.md").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return default
+    flags = re.search(r"^## Session Flags[^\n]*\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+    m = flags and re.search(rf"^\s*-\s*{re.escape(key)}\s*:\s*(\S+)", flags.group(1), re.M | re.I)
+    return m.group(1).strip().lower() if m else default
+
+
 AUTORUN_WAITER = ".autorun-waiter.json"   # written by display/autorun_wait.py while it waits
 AUTORUN_WATCHDOG = ".autorun-watchdog.json"   # written by display/autorun_watchdog.py while it watches
 

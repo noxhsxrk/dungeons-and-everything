@@ -7,7 +7,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
 ---
 
 ## `/dne new <campaign-name> [theme]`
-1. **Session setup — call `AskUserQuestion`** with **two questions**:
+1. **Session setup — call `AskUserQuestion`** with **three questions**:
 
    **Q1 *"Display & input mode?"***
    - `Display + autorun (ngrok) (Recommended / Default)` → `bash ${CLAUDE_SKILL_DIR}/display/start-display.sh --ngrok`, print public ngrok HTTPS URL, set `_display_running = true`, write `autorun: true` to `state.md → ## Session Flags`, then `python3 ${CLAUDE_SKILL_DIR}/display/push_stats.py --clear`. Always enter the autorun wait loop (`autorun_wait.py`) at the end of each turn.
@@ -22,6 +22,10 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
    - `DM rolls everything openly` → write `roll_mode: auto`. You resolve PC rolls yourself with full math shown.
 
    Default to `roll_mode: players` if the question is dismissed.
+
+   **Q3 *"How much of the game runs on the rules engine?"*** — written to `state.md → ## Session Flags` in step 4; default `full` if dismissed.
+   - `Full (Recommended)` → write `engine: full`. Every fight is tracked on the scripts (HP and AC for each enemy, each attack resolved) and XP comes from the tables.
+   - `Light` → write `engine: light`. You judge fights and XP yourself and call for the rolls that matter; saves, NPC records and the in-world clock are still kept.
 2. **Ruleset selection.** Ask: *"D&D 5e ruleset for this campaign? **2014** (SRD 5.1, default — full mechanics, classic Player's Handbook structure) or **2024** (SRD 5.2, weapon mastery + origin feats + background ASIs + revised exhaustion)?"* Default to `2014` if no answer or ambiguous. Write the chosen value to `state.md` header line as `**Ruleset:** 2014` or `**Ruleset:** 2024`.
 
    If 2024 was chosen: verify the dataset exists with `ls ${CLAUDE_SKILL_DIR}/data/dnd5e_srd_2024.json`. If missing, offer to run `python3 ${CLAUDE_SKILL_DIR}/scripts/build_srd.py --ruleset 2024` (one-time, ~3 min, needs network). Until it exists, `lookup.py` uses the 2014 SRD automatically (it prints a one-line notice) — World Kit content is unaffected.
@@ -95,7 +99,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
 
 ## `/dne load <campaign-name>`
 0. **Pick the campaign if none was named.** If `<campaign-name>` was supplied (or the player clearly named one), use it. Otherwise `ls` the campaigns dir (`${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/` or `$DNE_CAMPAIGN_ROOT/campaigns/`) and **call `AskUserQuestion`**: *"Which campaign?"* with the existing campaign names as options (most-recently-played first — sort by `state.md` mtime). The player can pick "Other" to type a name. If there are no campaigns, tell them and offer `/dne new`.
-1. **Session setup — call `AskUserQuestion`** with **two questions** (not typed y/n prompts):
+1. **Session setup — call `AskUserQuestion`** with **two questions, or three when `engine` is not yet in Session Flags** (not typed y/n prompts):
 
    **Q1 *"Display & input mode?"***
    - `Display + autorun (ngrok) (Recommended / Default)` → `bash ${CLAUDE_SKILL_DIR}/display/start-display.sh --ngrok` (or `bash ${CLAUDE_SKILL_DIR}/display/start-ngrok.sh`), print public ngrok HTTPS URL, set `_display_running = true`, write `autorun: true` to `state.md → ## Session Flags`; enter the autorun wait (`autorun_wait.py`) after the recap and at the end of every turn.
@@ -109,7 +113,11 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
    - `Players roll their own` → write `roll_mode: players`. Call for each PC roll and wait — never auto-roll a PC.
    - `DM rolls everything openly` → write `roll_mode: auto`. Resolve PC rolls yourself with full math shown.
 
-   - (Defaults if the player dismisses: no display, no autorun, `roll_mode: players` — or the existing saved value.)
+   **Q3 *"How much of the game runs on the rules engine?"*** — ask only when `state.md → ## Session Flags` has no `engine:` line yet; otherwise keep the saved value (the table changes it from Table Settings).
+   - `Full (Recommended)` → write `engine: full`. Every fight is tracked on the scripts (HP and AC for each enemy, each attack resolved) and XP comes from the tables.
+   - `Light` → write `engine: light`. You judge fights and XP yourself and call for the rolls that matter; saves, NPC records and the in-world clock are still kept.
+
+   - (Defaults if the player dismisses: no display, no autorun, `roll_mode: players`, `engine: full` — or the existing saved value.)
    - **Session tail replay:** before clearing the display, check if the campaign's `session_tail.json` exists. The campaign-side path is the authoritative one — `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/session_tail.json`. **Do NOT read** the legacy/fallback at `${CLAUDE_SKILL_DIR}/display/session_tail.json`; that file may exist from older sessions or other campaigns and will mislead the replay. If the campaign-side file does not exist, skip replay (display starts blank). If it does, read it. After `--clear` and full stats push (step 4 below), replay the tail by sending each entry via the appropriate `send.py` flag. Entry type → flag mapping:
      - `player` key present → `send.py --player <name>` with text via stdin
      - `npc` key present → `send.py --npc <name>` with text via stdin
@@ -121,7 +129,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
    - Clear previous transcript: `python3 ${CLAUDE_SKILL_DIR}/display/push_stats.py --clear`
 
      ⚠ **`--clear` wipes both text log AND stats** (player card, world time, factions, quests). It must always be paired with the full `--replace-players ... --world-time ... --factions ... --quests ...` push from step 4 — otherwise the sidebar card and sheet tab render empty. Same rule applies any time you `--clear` mid-session (e.g. restoring scene state after a re-replay): always re-push the full character JSON + world-time + factions + quests in the same bash burst as the clear.
-   - Register active campaign for DM Help: `python3 ${CLAUDE_SKILL_DIR}/display/push_stats.py --set-campaign <campaign-name>`
+   - Register the active campaign: `python3 ${CLAUDE_SKILL_DIR}/display/push_stats.py --set-campaign <campaign-name>`. It marks the session start and prints the `SESSION START` checklist (what to read and run before the recap).
    - If autorun **yes** → write `autorun: true` to `state.md → ## Session Flags`; enter the autorun wait after the recap paragraph.
    - If autorun **no** → continue without autorun; DM drives turns manually.
    - **Physical dice server check (only if installed).** Skip this step unless the optional dice server is set up: probe with `test -d ~/.dne-dice || test "$DNE_DICE_PHYSICAL" = "1"` and short-circuit out if the test fails. When it passes, run `curl -sf http://localhost:7777/health` (timeout 1s). If it returns OK, fetch the LAN IP with `python3 -c "import socket; s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.connect(('8.8.8.8', 80)); print(s.getsockname()[0]); s.close()"` and announce to the table: *"Dice server is up. Each player, open `http://<ip>:7777/?player=<your-pc-name>` on your phone (lowercase name, hyphens for spaces — same name I'll use when calling for rolls) and tap **consecrate** before we begin. NPC and DM rolls auto-resolve here."* Then list the PC short-names from `characters/` so players know what to type. If the server is unreachable, skip silently — `dice.py` falls back to local random.
@@ -153,7 +161,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
 3. **Read campaign ruleset** for this session: `python3 ${CLAUDE_SKILL_DIR}/scripts/paths.py campaign-ruleset <name>` (or import `campaign_ruleset` directly). Stash the result; pass `--ruleset <value>` to `lookup.py`, `build_supplemental.py`, and `combat.py` mastery calls so they route to the correct dataset. The display companion picks up the same value automatically via `push_stats.py --set-campaign`.
 
 4. Read SKILL-scripts.md (for script syntax this session)
-5. **Mark this campaign active** (for the autosave hook): write `{"name": "<campaign-name>"}` to `$(python3 ${CLAUDE_SKILL_DIR}/scripts/paths.py runtime-dir)/active-campaign.json`. This is what `autosave_checkpoint.py` reads to know which campaign to checkpoint; a stale marker is harmless. Then read state.md, world.md, npcs.md (index only), and all characters/*.md
+5. **Mark this campaign active.** `push_stats.py --set-campaign <campaign-name>` (step 1) already did it and printed a `SESSION START` checklist: do every line of it. With `display: none`, run `python3 ${CLAUDE_SKILL_DIR}/scripts/gm_guide.py -c <campaign-name> start` instead. The marker (`active-campaign.json` in the runtime dir) names the campaign for the autosave hook and the autorun watchdog, dates the session for `save_check.py`, and records each sheet's XP as the session opens. Then read state.md, world.md, npcs.md (index only), and all characters/*.md
    - **state.md contains `## DM Style Notes`** — read and internalize before narrating anything. These are table-specific calibration patterns that override default DM instincts.
    - **state.md contains `## Glossary`** (tables playing in a language other than English) — use exactly these translations for game terms all session; add a line the first time a new term comes up.
    - **state.md contains `## Pinned Facts`** — read and keep hot for the whole session. These are stable soft facts the table has chosen never to forget (a promise made, a dead relative's name, a house rule, a running joke, a detail the player flagged as mattering). Unlike Live State Flags, they don't change turn-to-turn — they are standing canon. Weave them in when relevant and never contradict one; if a pinned fact is now wrong, correct it via `/dne pin` rather than silently overriding it. If the section reads *(none pinned yet)*, there's nothing to load.
@@ -693,7 +701,8 @@ Read `characters/<name>.md`, display cleanly. If name omitted and one character 
 
 ## `/dne npc [name]`
 - Existing → read full entry from npcs-full.md (search by name), portray in character with voice/quirk
-- New → generate full entry: role, CR-appropriate stats, demeanor, motivation, secret, speech quirk, faction (or "independent"), current goal, schedule, all four personality axes, ≥2 relationships to existing NPCs. Default attitude neutral. Append full entry to npcs-full.md; add one-line summary row to npcs.md index.
+- New → `python3 ${CLAUDE_SKILL_DIR}/scripts/npc.py -c <campaign> add --name "<Name>" --role "<role>" --cr <CR> --aliases "<names used in play>" [--faction F] [--location L] [--attitude neutral] [--notes "<one line>"]` writes the `npcs.md` row and the `npcs-full.md` entry with fair stats for that CR. Then write every `<fill: …>` part of the entry: main attack and abilities, demeanor, motivation, secret, speech quirk, current goal, schedule, all four personality axes, ≥2 relationships to existing NPCs, and `### History` (background, how they met the party). Do this the turn a named character first appears, without waiting for `/dne npc`.
+- Growing → `npc.py -c <campaign> check` lists who is due (the `npc_growth` dial); `npc.py -c <campaign> advance "<Name>" --what "<what they did meanwhile>" [--levels N]` raises CR/Level, HP and AC (never lowers them) and adds the History line. Raise the Attack line by what it prints (it only ever names increases), and update goal, location and relationships.
 
   **Name uniqueness check:** before generating, run `python3 ${CLAUDE_SKILL_DIR}/scripts/name_registry.py check "<proposed-name>"`. If duplicate (exit 1), surface the prior use to the DM and offer either: (a) proceed with the duplicate (some scenarios want recurring names — a Voss reference can be deliberate); or (b) regenerate with a different name. Whichever path is chosen, after the NPC is added to npcs.md / npcs-full.md, call `name_registry.py add --name "<name>" --type npc --campaign <name> --session <current>` to record the entry.
 
@@ -772,7 +781,7 @@ Run `scripts/dice.py <notation>`. Display output verbatim. Examples: `d20`, `2d6
 6. Step through turns using the per-turn sequence (in SKILL.md Active DM Mode).
 7. On combat end: update HP in character sheets, clear `## Active Combat`, `push_stats.py --turn-clear`, narrate aftermath, send XP summary, run `tracker.py -c <campaign> clear` (ends encounter conditions and round-long effects; minute/hour effects, exhaustion and petrification stay).
 
-**XP awards** go in the final display send:
+**XP awards:** first `python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py award --campaign <name> --characters "<PCs>" --monsters "<name>:<CR>:<count>,…"` (or `--difficulty … --type noncombat` for an objective). It works the amounts out from the tables, writes each sheet and updates the display; XP typed onto the display or into a sheet by hand is flagged on the next turn (`XP NOT AWARDED BY THE ENGINE`). Then announce its numbers in the final display send:
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/display/send.py << 'DNDEND'
 [combat aftermath narration]
@@ -1030,7 +1039,7 @@ Toggle the behind-the-scenes continuity checkpoint. Writes `autosave: on|off` to
 
 ## `/dne undo [turn-number]`
 
-Atomically roll back the campaign to the previous turn snapshot (or a specific turn number). Restores every campaign file the snapshot tracked — `state.md`, `world.md`, `world-nodes.md`, `world-map.json`, `npcs*.md`, `arc.md`, `session-log.md`, `graph.json`, `tracker.json`, `lorebook.json`, `entropy.json`, `battlemap.json`, `events.jsonl`, `.economy_ledger.json`, `calendar.json`, `xp-ledger.jsonl`, `worldkit.json`, the session tail, and all `characters/*.md` — and refreshes connected display browsers. `redo` re-applies what the last undo rolled back. The global roster (`<root>/characters/`) is not part of a campaign snapshot: re-mirror any restored character after an undo.
+Atomically roll back the campaign to the previous turn snapshot (or a specific turn number). Restores every campaign file the snapshot tracked — `state.md`, `world.md`, `world-nodes.md`, `world-map.json`, `npcs*.md`, `arc.md`, `session-log.md`, `graph.json`, `tracker.json`, `lorebook.json`, `entropy.json`, `battlemap.json`, `events.jsonl`, `.economy_ledger.json`, `calendar.json`, `xp-ledger.jsonl`, `worldkit.json`, the session tail, `npc-timeline.json`, all `characters/*.md` and the whole `companions/` folder (sheets created after the snapshot are removed, and come back on `redo`), plus the display's own stats and feed — and refreshes connected display browsers. `redo` re-applies what the last undo rolled back. **Every undo and redo starts a new timeline:** player actions and dice requests queued before it are dropped, and a message or roll that still arrives for them is refused (the phone tells the player to read the latest text and send again), so nothing from the undone turns can change the story. Ask again for any roll you still need. **Companion agents:** the script names the restored sheets; stop every running companion agent and start it again from its sheet (SKILL-companions.md → After an undo). A snapshot taken before companions were tracked leaves the sheets as they are. The global roster (`<root>/characters/`) is not part of a campaign snapshot: re-mirror any restored character after an undo.
 
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/turn_snapshot.py -c <campaign> list

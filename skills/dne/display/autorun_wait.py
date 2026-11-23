@@ -64,6 +64,7 @@ if missed:
 
 # Resolve autorun interval from the active campaign's state.md (default 60s)
 interval = 60
+camp = ""
 try:
     import re
     camp = open(os.path.join(RT, ".campaign"), encoding="utf-8").read().strip()
@@ -140,6 +141,11 @@ if content:
         if not autorun_waiter(AUTORUN_WATCHDOG):
             note += (f' The autorun watchdog is not running: also start `python3 "{os.path.join(DISPLAY_DIR, "autorun_watchdog.py")}"`'
                      " as a second background task now. It wakes you if the game stalls.")
+    except Exception:
+        pass
+    try:   # what else this turn needs: engine for fights, XP that isn't on the sheet, a save that is due
+        import gm_guide
+        note += "".join("\n- " + line for line in gm_guide.turn_notes(camp, text=content))
     except Exception:
         pass
     content = content.rstrip("\n") + "\n" + note + "]]\n"

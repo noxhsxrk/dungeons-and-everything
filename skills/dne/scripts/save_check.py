@@ -130,6 +130,18 @@ def checklist(campaign: str, since: float) -> list[tuple[bool, str]]:
         items.append((False, "Other NPCs (didn't match the narration by name; check if they took part): "
                       + now(others) + how
                       + ". Add `- **Aliases:** <names used in play>` to their npcs-full.md entry so this check finds them"))
+    try:
+        import npc
+        open_records = {**npc.backlog(camp), **{n: ["unfinished"] for n in npc.unfinished(camp)}}
+        growing = [n for n, _d, _s in npc.due(campaign)]
+        label = "NPC records: every character the story named has a full entry (stats, background, aliases) and has grown with time"
+        if open_records or growing:
+            label += (" — still open: " + "; ".join(f"{n} ({', '.join(m)})" for n, m in list(open_records.items())[:8])
+                      + ("; due to grow: " + ", ".join(growing[:8]) if growing else "")
+                      + f". Run `npc.py -c {campaign} check`; add anyone met this session with `npc.py add`")
+        items.append((not open_records and not growing, label))
+    except Exception:
+        pass
     items.append(("Faction stances" in flags or "NPC dispositions" in flags,
                   "state.md → Live State Flags: Cover, Faction stances, NPC dispositions present and current"))
     chars = sorted((camp / "characters").glob("*.md")) if (camp / "characters").is_dir() else []

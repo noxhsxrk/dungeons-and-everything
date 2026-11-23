@@ -714,6 +714,22 @@ python3 ${CLAUDE_SKILL_DIR}/display/autorun_wait.py
 When player input arrives in `.input_queue`, prints the sanitized action and exits, which wakes the host session (Antigravity system message / Claude Code task notification).
 The output ends with a `[[GM note …]]` line (not a player action): how to end the turn, and whether the watchdog needs starting.
 
+### NPC Records — `scripts/npc.py`
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/npc.py -c <campaign> add --name "<Name>" --role "<role>" --cr <CR> --aliases "<names used in play>"
+python3 ${CLAUDE_SKILL_DIR}/scripts/npc.py -c <campaign> check      # unfinished, incomplete or due to grow; exit 1 if any
+python3 ${CLAUDE_SKILL_DIR}/scripts/npc.py -c <campaign> advance "<Name>" --what "<what they did meanwhile>" [--levels N]
+```
+`add` takes typical HP, AC, attack, damage and save DC for the CR from the SRD table and leaves the prose as `<fill: …>` marks. Growth counts in-world days from `calendar.json` (`npc-timeline.json` holds each NPC's last growth); the step size is the `npc_growth` dial. Aliases are how the scripts find an NPC in narration: list the names the table actually uses, three characters or longer.
+
+### GM Guide — `scripts/gm_guide.py`
+What the scripts tell the GM, worked out from the files with real paths (for agents that read little of these docs and have no hooks).
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/gm_guide.py -c <campaign> start   # session start: marks the campaign active, lists what a load needs (push_stats.py --set-campaign prints it)
+python3 ${CLAUDE_SKILL_DIR}/scripts/gm_guide.py -c <campaign> turn    # the lines autorun_wait.py appends to each player action
+```
+Turn lines: a new character gets a record (`npc.py add`), `NPC RECORDS UNFINISHED`, `NPC GROWTH DUE` for NPCs named in the scene, `IN-WORLD CLOCK OUT OF STEP` when the display's date is not the calendar's; with `engine: full` also how a fight and a rest are run (`combat.py`, line numbers of the procedures); `XP NOT AWARDED BY THE ENGINE` when a PC's XP on the display or sheet is above the sheet's XP at session start plus this session's `xp.py award` rows; `SAVE DUE` once `DNE_AUTOSAVE_EVERY` (default 10) player turns passed without `state.md` being written (not with `autosave: off`).
+
 ### Autorun Watchdog — `display/autorun_watchdog.py`
 Second background task, started once per session with the first wait loop. Silent while the game runs; exits with `AUTORUN STALLED: …` (waking the host session) when a player action has waited 90 seconds (`DNE_AUTORUN_STALL_S`) with no `autorun_wait.py` running, autorun on and the display up. A newer watchdog replaces an older one; it ends by itself after 4 hours.
 ```bash

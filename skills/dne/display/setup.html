@@ -103,6 +103,18 @@ const DIALS = [
    "A guarded bridge blocks the road.", [
     ["open", "Open", "You decide what to do", "Two guards, one torch, the river below. What do you do?"],
     ["options", "Options", "2–3 numbered choices, or anything else", "1) Swim under the bridge  2) Bribe the guards  3) Wait for the shift change, or something else."]]],
+  ["engine", "Rules engine", "How much of the game runs on the rules scripts", "full",
+   "You pick a fight with a veteran guard captain.", [
+    ["full", "Full", "Fights tracked blow by blow, XP from the tables",
+     "The captain gets HP and AC, initiative is rolled, each attack is resolved and XP comes from his challenge rating."],
+    ["light", "Light", "The GM judges fights and XP; rolls still matter",
+     "The GM calls for a roll or two and narrates how the fight goes, then awards XP by feel."]]],
+  ["npc_growth", "NPC growth", "How fast people you know grow while you're away", "normal",
+   "You meet a rival again after four months on the road.", [
+    ["off", "Off", "They stay as you left them", "She is as strong as the day you parted."],
+    ["slow", "Slow", "A step every 120 in-world days", "She has gained a level and a new scar, and tells you how."],
+    ["normal", "Normal", "A step every 60 in-world days", "She is two levels up, leads her own crew now, and has a history you missed."],
+    ["fast", "Fast", "A step every 30 in-world days", "She is four levels up and barely the person you knew."]]],
   ["roll_mode", "Who rolls", "", "players",
    "The GM calls for a Stealth check.", [
     ["players", "Players roll", "", "You roll your own dice (or the display's) and send the result."],

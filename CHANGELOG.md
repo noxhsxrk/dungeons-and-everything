@@ -8,6 +8,20 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Added
+- **Undo covers companions, and an undone turn cannot come back (world plan, PR 1).** `turn_snapshot.py` now captures, fingerprints and restores the whole `companions/` folder (a companion who joined after the snapshot is removed and returns on `redo`), `npc-timeline.json` and the session-log archive. Every undo and redo starts a new timeline (`timeline.json` in the runtime dir): queued player actions and open dice requests are dropped, and a late message or roll for them is refused with "The story was rewound". The script tells the GM which companion agents to restart. Snapshots from older versions still open and leave the table's companion sheets alone.
+- **NPCs are created for real and grow with time.** `scripts/npc.py add` gives a character a full record the turn they appear: the `npcs.md` row and an `npcs-full.md` entry with fair stats for their CR, aliases, and a `### History` (background, how they met); the GM writes the prose. `npc.py advance` grows an NPC who has been away: CR/Level, HP and AC go up (never down) and History gets a line about what they did. `npc.py check` lists records that are unfinished, incomplete or due to grow; `save_check.py` and the session-start checklist run it.
+- **Two new dials** (Table Settings, Session Flags): `engine: full|light` (how much of play runs on the rules scripts) and `npc_growth: off|slow|normal|fast` (a step every 120 / 60 / 30 in-world days).
+- **The in-world clock is checked.** `IN-WORLD CLOCK OUT OF STEP` when the date on the display is not the calendar's, with the command for each side: NPC growth and faction turns count from `calendar.json`.
+
+### Fixed
+- **Undo left the display on the undone turn.** Snapshots listed the display's files as `.stats.json` and `.log.json`, which never existed; they are `stats.json` and `text_log.json`, so the sidebar and feed are now restored with the turn.
+- **A GM that reads no docs played without the engine.** In one session a GM ran 30 turns with only `send.py`, `push_stats.py` and `autorun_wait.py`: fights won by narration, XP typed onto the display, nothing written to disk, `/dne load` done from memory. The rules now travel in the output of those scripts (`scripts/gm_guide.py`), with real paths and line numbers:
+  - **Fights:** every player action comes with how a fight is run (`combat.py init` so each enemy has HP and AC, `combat.py attack` per attack, a typed d20 passed as `--roll`).
+  - **XP:** `XP NOT AWARDED BY THE ENGINE` when a PC's XP on the display or sheet is above what the sheet held at session start plus this session's `xp.py award` rows, with the command that fixes it.
+  - **Saves:** `SAVE DUE` once 10 player turns (`DNE_AUTOSAVE_EVERY`) passed without `state.md` being written, repeated until it is. Agents without a Stop hook had no autosave at all.
+  - **Load:** `push_stats.py --set-campaign` marks the campaign active itself (the marker was left stale, so `save_check.py` dated the session wrong) and prints a `SESSION START` checklist: what to read again and which scripts to run.
+
 ## [1.6.4] — 2026-11-24 — The game keeps going
 
 ### Fixed

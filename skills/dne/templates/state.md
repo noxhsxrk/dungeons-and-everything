@@ -174,11 +174,13 @@ revision_log: []
 - rolls: normal
 - show_dc: on
 - turn_end: open
+- engine: full
+- npc_growth: normal
 - lines: (none)
 - veils: (none)
 *(display: none|local|lan|ngrok — the mode chosen at /dne new or /dne load; autorun is only ever true with a display running. roll_mode: players|auto. tutor_mode, autorun, autorun_interval, tts_voice, sfx_languages, autosave — session-scoped flags set via /dne commands or by the display companion)*
 *(Table rules — success_at_cost: on|off (on), degrees: on|off (on), hero_points: on|off (off); see SKILL-table-rules.md.)*
-*(content: standard|18|20 (standard) · romance: off|fade|open (fade; open needs 18/20) · pacing: adventure|mixed|slow (mixed) · companions: quiet|normal|chatty · rolls: few|normal|many · show_dc: on|off · turn_end: open|options · lines: things that never appear · veils: things kept off-screen — see SKILL.md → Table Dials. A player can pause any scene with `x`.)*
+*(content: standard|18|20 (standard) · romance: off|fade|open (fade; open needs 18/20) · pacing: adventure|mixed|slow (mixed) · companions: quiet|normal|chatty · rolls: few|normal|many · show_dc: on|off · turn_end: open|options · engine: full|light (full) · npc_growth: off|slow|normal|fast (normal) · lines: things that never appear · veils: things kept off-screen — see SKILL.md → Table Dials. A player can pause any scene with `x`.)*
 *(autosave: on|off — default on. Governs the behind-the-scenes continuity checkpoint (Live State Flags + graph + session tail). Toggle with /dne autosave on|off.)*
 
 ## DM Notes (hidden from players)

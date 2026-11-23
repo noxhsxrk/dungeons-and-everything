@@ -356,6 +356,13 @@ def main() -> None:
 
     if args.set_campaign:
         payload["campaign"] = args.set_campaign
+        # Session start: mark the campaign active and tell the GM what a load still needs.
+        try:
+            sys.path.insert(0, os.path.join(_DISPLAY_DIR, "..", "scripts"))
+            import gm_guide
+            print("\n".join(gm_guide.session_start(args.set_campaign)))
+        except Exception:
+            pass
 
     if args.ruleset:
         rs = args.ruleset.strip()

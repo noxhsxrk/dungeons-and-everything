@@ -27,4 +27,8 @@
 - **Allied with:** <NPC name> — <nature of alliance — mutual benefit, loyalty, blackmail?>
 *(fill only applicable entries — minimum 2 defined relationships per NPC)*
 
+### History
+- **Background:** <where they come from and what made them who they are, 3-5 sentences>
+- <in-world date>: <what happened to them or what they did: first met, a turning point, growth while the party was away>
+
 ### Notes
