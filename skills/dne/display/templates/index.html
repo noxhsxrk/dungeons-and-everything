@@ -6314,8 +6314,30 @@ function renderXpBlock(xpData) {
 }
 
 // ── Replay batch (reconnect / session resume) ─────────────────────────
+function _wipeTranscript() {
+  // Abort any in-progress typewriter
+  charQueue        = [];
+  isTyping         = false;
+  _currentInlineEl = null;
+  if (currentCursor && currentCursor.parentNode) {
+    currentCursor.parentNode.removeChild(currentCursor);
+  }
+  currentCursor = null;
+  currentEl     = null;
+  clearTimeout(idleTimer);
+  textContent.innerHTML = '';
+}
+
 function renderReplayBatch(items) {
-  flushNewBlock();
+  // The server replays the recent log on every (re)connect, and a phone reconnects each time the
+  // player comes back from another tab or app. Replace the transcript instead of adding a second
+  // copy under it, and land where the reader was in one step: #text-scroll scrolls smoothly, and a
+  // smooth scroll across the whole replay left the view at the start of the history.
+  const keep = userScrolledUp ? textScroll.scrollTop : null;   // null = was reading the latest text
+  const proc = document.getElementById('dm-processing-indicator');
+  _wipeTranscript();
+  userScrolledUp = false;
+  textScroll.style.scrollBehavior = 'auto';
   items.forEach(item => {
     if (!item) return;
     if (item.inspiration_award) {
@@ -6365,26 +6387,19 @@ function renderReplayBatch(items) {
   div.className = 'divider';
   div.textContent = '✦';
   textContent.appendChild(div);
+  if (proc) textContent.appendChild(proc);   // the GM is still working: keep the dots
 
-  scrollToBottom();
+  textScroll.scrollTop = keep == null ? textScroll.scrollHeight : keep;
+  textScroll.style.scrollBehavior = '';
+  userScrolledUp = keep != null;
+  if (!userScrolledUp) _hideNewPill();
 }
 
 function clearDisplay(then) {
   // Fade out, wipe, fade back in, then call the callback.
   textContent.style.opacity = '0';
   setTimeout(() => {
-    // Abort any in-progress typewriter
-    charQueue        = [];
-    isTyping         = false;
-    _currentInlineEl = null;
-    if (currentCursor && currentCursor.parentNode) {
-      currentCursor.parentNode.removeChild(currentCursor);
-    }
-    currentCursor = null;
-    currentEl     = null;
-    clearTimeout(idleTimer);
-
-    textContent.innerHTML = '';
+    _wipeTranscript();
     textScroll.scrollTop  = 0;
     userScrolledUp = false;
     textContent.style.opacity = '1';
