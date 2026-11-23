@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-11-23 — A table that keeps playing
+
 ### Changed
 - **CI is quick on every push** (ubuntu + the ASCII-locale job, about a minute). macOS, Windows and
   Python 3.10 run on release tags (`v*`) and on manual runs, so every release is still tested on all
