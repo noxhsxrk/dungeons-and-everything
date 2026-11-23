@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/images/hero.jpg" alt="Dungeons & Everything — a d20 whose faces show a castle, a cyberpunk city, a starship, a wasteland robot and a haunted street" width="100%">
+  <img src="docs/images/hero.jpg" alt="Dungeons & Everything — a glowing d20 whose faces show neon Bangkok, a Thai temple, a Weird West town, a 1990s small town and a starship diving into a sun" width="100%">
 
   <h3>Describe any world. Your AI Game Master builds it, runs it, and plays everyone in it.</h3>
 
@@ -7,8 +7,9 @@
     <a href="#install">Install</a> ·
     <a href="#quick-start">Quick start</a> ·
     <a href="#the-world-kit">World Kit</a> ·
+    <a href="#table-rules">Table rules</a> ·
+    <a href="#play-together">Play together</a> ·
     <a href="#commands">Commands</a> ·
-    <a href="#the-table-display">Table display</a> ·
     <a href="#ภาษาไทย">ภาษาไทย</a>
   </p>
 </div>
@@ -19,7 +20,9 @@
 
 Campaigns persist for as long as you keep playing. Your TV becomes the story screen; every player's phone becomes their controller.
 
-<img src="docs/images/worlds.jpg" alt="Three worlds on one engine: a fantasy party at a dragon's gate, gas-masked survivors under a giant war machine, an astronaut facing a tentacled horror" width="100%">
+<img src="docs/images/worlds.jpg" alt="Five worlds on one engine: neon Bangkok 2077, a mythic Thai kingdom, a Weird West showdown, kids on bikes in a 1994 small town, a ship diving into a star" width="100%">
+
+<sub>Five worlds built and played while testing: <b>Neon Krung</b> (Bangkok 2077) · <b>Himmapan</b> (mythic Ayutthaya) · <b>Iron Hymn</b> (Weird West, 1881) · <b>Cedar Falls</b> (1994, no powers at all) · <b>Perihelion</b> (hard sci-fi on the 2024 rules).</sub>
 
 ## Why
 
@@ -28,6 +31,7 @@ Tabletop rules engines are great. Being locked into elves and fireballs is not. 
 - **Any genre.** Sci-fi, post-apocalyptic, horror, mystery, cyberpunk, western, mythic — or classic fantasy.
 - **A real rulebook per world.** Origins, classes, subclasses, backgrounds, powers, weapons, armor, currency and monsters, all generated for the world and all mechanically legal 5e.
 - **The world speaks its own language.** Mechanics "run protocols" instead of casting spells, the party "goes into lockdown" instead of taking a long rest, and the skill list says *Systems* instead of *Arcana*.
+- **The best ideas from other tables.** Close misses that succeed at a price, playbook moves and party bonds from Powered by the Apocalypse; tech levels, flaws and reaction rolls from GURPS; degrees of success, Hero Points and Victory Points from Pathfinder 2e — all rebuilt on 5e maths.
 - **A Game Master who remembers.** Factions move between sessions, NPCs hold grudges, and a three-act story arc bends around what the players actually do.
 - **Built for the couch.** A cinematic TV display, phones as controllers, spoken narration, Thai and full Unicode support.
 
@@ -50,13 +54,39 @@ The Game Master turns that into `worldkit.json` inside the campaign folder:
 | Powers | 5e spells, re-skinned | *Static Burst*, *Overclock Shield* |
 | Gear | 5e weapons and armor, world prices | Rail Pistol (1d10), Scrap Plate (AC 14 + DEX, max 2) |
 | Threats | full stat blocks, CR-correct XP, world locations | Watcher CR ¼, Reaper CR 5, Seraph CR 8, Titan CR 15 |
+| Moves | signature playbook moves per class | Soldier: *Hold the Hatch*, *Covering Fire* |
+| Quick builds | a ready ability array, skills and gear per class | Medic: WIS 15, Medicine + Insight |
+| Flaws & quirks | disadvantages players can take for story hooks | *Oxygen Debt*, *Flagged by EDEN*, *Counts the Seconds* |
+| Tech & rarity | the world's tech level; rare and unique gear | Tech level 10; the *Seraph Shard* (unique, TL 12) |
 | Language | renamed terms and skills | spell → protocol, long rest → lockdown, Arcana → Systems |
 
-Every kit is validated before play, so no monster has the wrong XP and no class has a broken chassis. From then on the character builder, the rules lookup, the encounter generator and the table display all read from your world first. Names can be in any script — Thai included.
+Every kit is validated before play, so no monster has the wrong XP and no class has a broken chassis, and every monster is checked against what SRD monsters of its CR typically have. From then on the character builder, the rules lookup, the encounter generator and the table display all read from your world first. Names can be in any script — Thai included.
 
 Say **"classic fantasy"** instead and you get traditional D&D on the bundled 5e SRD.
 
 The full EDEN kit is at [`skills/dne/templates/worldkit.example.json`](skills/dne/templates/worldkit.example.json).
+
+## Table rules
+
+<img src="docs/images/rules.jpg" alt="A game master's table: a d20 beside five glowing tokens from red to gold, a chase track, bond and flaw cards, a med kit, hero coins and a notebook of monster numbers" width="100%">
+
+Optional layers borrowed from other games and rebuilt for 5e. They're on the table, not in your way: switch them per campaign.
+
+| Roll vs DC | Outcome | What happens |
+|---|---|---|
+| beat it by 10+ | **critical success** | you get it, plus something extra |
+| meet it | **success** | you get it |
+| miss by 1–4 | **success at a cost** | you can have it — for a price you agree to |
+| miss by more | **failure** | the world makes a move |
+| miss by 10+ | **critical failure** | it goes wrong in a way that matters |
+
+- **Every roll moves the story.** The Game Master answers a failure with a move (a threat shows itself, a price comes due) instead of "nothing happens".
+- **Characters with ties.** Playbook moves per class, a one-question **bond** with every other player character, and flaws and quirks that earn Inspiration — or **Hero Points** — when they bite.
+- **Bigger than one roll, smaller than a fight.** **Victory Points** run chases, heists, infiltrations and debates; **reaction rolls** decide how a stranger first treats you.
+- **Worlds without magic still work.** **Treat Wounds** heals with Medicine, **Focus Points** fuel signature powers, and a **tech level** keeps laser rifles out of the bronze age.
+- **Balanced by measurement.** Monster numbers by CR are measured from the 334 SRD monsters, and a treasure curve keeps the party's wealth on track.
+
+Rules reference: [`skills/dne/SKILL-table-rules.md`](skills/dne/SKILL-table-rules.md).
 
 ## Install
 
@@ -138,11 +168,20 @@ Have a published adventure instead? `/dne import my-campaign path/to/module.pdf`
 | `/dne tutor on \| off` | Gentle rules hints for new players |
 | `/dne path [<dir> \| reset]` · `/dne update [--check]` | Move your data · update the skill |
 
+## Play together
+
+One computer runs the Game Master; everyone else just needs a phone.
+
+- **Same room:** start the display with `--lan`, put the story on a TV or laptop, and each player opens `http://<computer-ip>:5001/?char=<their character>` on their phone.
+- **Different places:** start it with `--ngrok` and send your friends the HTTPS link.
+- **Each phone** sends actions as that character, rolls its own dice (or lets the Game Master roll), shows the character sheet, and keeps secret checks private.
+- **Turns:** the Game Master answers queued actions in order — one story, many players.
+
 ## The table display
 
 <img src="docs/images/table.jpg" alt="Friends on a couch holding phones while a TV shows the story, a d20 roll and character portraits" width="100%">
 
-Open the display on a TV, laptop or tablet and the story types itself out on screen, with scene-aware backgrounds, dice results, a live party sidebar and optional spoken narration with sound effects. Each player opens the same link on their phone to see their character sheet, roll dice and send actions.
+Open the display on a TV, laptop or tablet and the story types itself out on screen, with dice results, a live party sidebar and optional spoken narration with sound effects. The default **Plain** look is quiet and easy to read in light or dark, with full Thai typography; the more theatrical skins are one tap away in Settings. Each player opens the same link on their phone to see their character sheet, roll dice and send actions.
 
 ```bash
 bash skills/dne/display/start-display.sh            # this computer only
@@ -170,7 +209,7 @@ python3 -m venv .venv && .venv/bin/pip install pytest flask flask-cors pyyaml
 .venv/bin/python -m pytest tests/ -q
 ```
 
-- `skills/dne/SKILL.md` — the Game Master's core rules; `SKILL-commands.md` — every `/dne` procedure; `SKILL-scripts.md` — script reference
+- `skills/dne/SKILL.md` — the Game Master's core rules; `SKILL-commands.md` — every `/dne` procedure; `SKILL-scripts.md` — script reference; `SKILL-table-rules.md` — the optional table rules
 - `skills/dne/scripts/` — the rules engine (`worldkit.py`, `character.py`, `lookup.py`, `encounter_gen.py`, `combat.py`, `dice.py`, …)
 - `skills/dne/display/` — the table display (Flask)
 - `skills/dne/data/` — bundled 5e SRD data
@@ -188,7 +227,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md).
 - เล่นต่อ: `/dne load <ชื่อแคมเปญ>` แล้วพิมพ์สิ่งที่ตัวละครทำได้เลย
 - ข้อมูลเกมทั้งหมดเก็บอยู่ที่ `~/.dne/`
 - อัปเดต: `git pull` ในโฟลเดอร์ repo (ทุก agent อัปเดตพร้อมกัน) หรือพิมพ์ `/dne update` ในเกม — ข้อมูลแคมเปญไม่ถูกแตะ
-- รองรับภาษาไทยเต็มรูปแบบ ทั้งชื่อในโลก การเล่าเรื่อง และหน้าจอแสดงผลบนทีวีและมือถือ
+- รองรับภาษาไทยเต็มรูปแบบ ทั้งชื่อในโลก การเล่าเรื่อง ปฏิทินและเวลาเป็นภาษาไทย และหน้าจอแสดงผลบนทีวีและมือถือ (ฟอนต์ไทย สระไม่ลอยไม่จม)
+- เล่นหลายคนได้: เครื่องเดียวรัน GM ผู้เล่นแต่ละคนเปิดลิงก์ `?char=<ชื่อตัวละคร>` บนมือถือตัวเอง อยู่ห้องเดียวกันใช้ `--lan` อยู่คนละที่ใช้ `--ngrok`
+- กฎเสริมจากเกมอื่น (เปิด/ปิดได้ต่อแคมเปญ): สำเร็จแบบมีราคา, ระดับความสำเร็จ 5 ขั้น, ท่าประจำอาชีพ, Bonds, ข้อเสียและนิสัยแปลก, Hero Points, Victory Points, ทอยปฏิกิริยา NPC, Treat Wounds, Focus Points, Tech Level, ตารางมอนสเตอร์ตาม CR
 
 ## License
 

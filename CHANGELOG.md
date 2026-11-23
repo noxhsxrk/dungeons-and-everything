@@ -32,6 +32,9 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 - Rules reference: `skills/dne/SKILL-table-rules.md`. No rules text from those games is copied.
 
 ### Changed
+- **README:** new Table rules and Play together sections, World Kit rows for moves, quick builds,
+  flaws and tech level, the Plain display, and five new images (the five play-tested worlds on the cover
+  and in the strip, the Plain table display, a table-rules spread).
 - **The display is plain by default.** A new **Plain** skin (Settings → Skin) is the default for new
   devices: quiet grey colours with a muted slate accent, one sans face (Noto Sans / Noto Sans Thai), no
   capitals, letter-spacing, shadows, background art or particles, in light and dark. Vellum and
