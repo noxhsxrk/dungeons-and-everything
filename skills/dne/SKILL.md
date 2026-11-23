@@ -372,6 +372,8 @@ The engine keeps each turn whole: the table's input is stored once, a roll happe
 
 **Time, rest and travel.** In an engine campaign time passes only through the engine: `{"action": "wait", "hours": 2}`, `{"action": "rest", "type": "long", "resting": [...], "watch": [...]}`, `{"action": "travel", "to": "<place>"}`. Whatever is due on the way happens; if it needs the party to decide (an event queued with `"interrupt": true`, a closed road), the clock stops at that minute and the turn waits for their choice: never finish an interrupted rest or journey for them. Set consequences in motion with `{"action": "schedule", "in_minutes": N, "text": "…", "cause": "…"}`; `calendar.py set` only corrects a wrong date.
 
+**Roads, caravans and markets.** `route` says who holds a road or bridge and whether it is open, tolled or closed; `market` sets up a market or quotes its prices; `caravan` puts goods on the road; `buy` / `sell` trade against the market's real stock and the character's coin. A closed road stops caravans too: what happens to the market's stock follows from whether the goods arrive. Events addressed to `party` are things the party can see where it stands; events addressed to `dm` happened elsewhere, bring them in only through what the party could notice or hear.
+
 After a restart or a compaction run `turn.py -c <campaign> status` before anything else, and `resume` if a turn is open. **Limits:** on a host with no hooks, a GM that answers without running these scripts skips the engine for that turn; Claude Code's Stop hook catches an open turn, other hosts rely on the `[[GM note]]`.
 
 **Autorun / taxi mode** (`autorun: true` in `state.md → ## Session Flags`):

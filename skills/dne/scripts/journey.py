@@ -228,6 +228,14 @@ def route_block(world, a: str, b: str) -> "str | None":
     return None
 
 
+def route_toll(world, a: str, b: str) -> "str | None":
+    """What is asked of travellers on the stretch between `a` and `b`, if someone takes a toll there."""
+    record = world.get("route", "|".join(sorted((a, b))))
+    if record and record.get("access") == "toll":
+        return f"{record.get('owner') or 'someone'} asks a toll" + (f" of {record['toll']}" if record.get("toll") else "")
+    return None
+
+
 def _arrive(world, key: str) -> list:
     data = world.json("world-map.json")
     place = data["places"].get(key, {})
@@ -282,10 +290,13 @@ def _travel(ctx, intent: dict) -> dict:
         st["passed_block"] = True                 # they chose to go on past whatever stopped them
     while st["i"] < len(st["legs"]):
         leg = st["legs"][st["i"]]
-        block = route_block(world, leg["a"], leg["b"]) if st["progress"] == 0 and not leg.get("returning") else None
-        if block and not st.pop("passed_block", False):
-            st["log"].append({"minute": world.minute, "blocked": [leg["a"], leg["b"]], "reason": block})
-            ask = _decide(st, f"The way from {leg['a_name']} toward {leg['b_name']} is closed: {block}", ["continue", "back", "stop"])
+        fresh = st["progress"] == 0 and not leg.get("returning")
+        block = route_block(world, leg["a"], leg["b"]) if fresh else None
+        toll = route_toll(world, leg["a"], leg["b"]) if fresh and not block else None
+        if (block or toll) and not st.pop("passed_block", False):
+            st["log"].append({"minute": world.minute, "blocked": [leg["a"], leg["b"]], "reason": block or toll})
+            ask = _decide(st, f"The way from {leg['a_name']} toward {leg['b_name']} is closed: {block}" if block else
+                          f"On the way from {leg['a_name']} toward {leg['b_name']}, {toll}", ["continue", "back", "stop"])
             world.put("journey", ctx.action_id, st)
             return {**ask, "elapsed_minutes": elapsed, "writes": world.writes(), "visible_events": visible,
                     "pending": ["adjudicate_closed_route", "resolve_remaining_journey"],
