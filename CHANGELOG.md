@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-11-23 — Table rules and the DnE engine
+
 **The DnE engine.** From this release the rules engine is our own: a d20 engine whose core is the 5e
 SRD (5.1 and 5.2, still fully compatible — every new rule is optional and switched per campaign), with
 table rules layered on top that come from other games' ideas and our own numbers.
