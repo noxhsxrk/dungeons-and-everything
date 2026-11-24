@@ -4,6 +4,9 @@ The plan's test of whether the engine is *fun*, not only correct. One town whose
 caravan, one bridge, two factions that both want the bridge. Run it with real players through the table's normal way
 in (display or chat); nobody should have to type a command to repair anything.
 
+The engine's side of all three rounds is checked by script in `tests/test_playtest_bridge.py` (no model, no
+players): what is left for a real table is the people, their answers below and the timings.
+
 ## Set up (once, then save: all three rounds start from this save)
 
 Turn the engine on for a fresh campaign (`world_migrate.py -c <campaign> enable`), make a map with Millbridge, the
