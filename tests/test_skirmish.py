@@ -119,6 +119,13 @@ class SkirmishTests(EngineCase):
         self.assertIn("DC 12 Dex or prone", used["effect"])
         self.assertIn("already been used", self.data(self.do("again", {"actor": "Mira", "action": "prop", "name": "luggage cart"}))["error"])
 
+    def test_a_cone_spreads_from_its_origin_and_a_wall_still_shelters(self):
+        back = self.data(self.do("Mira breathes fire behind her", {"action": "area", "shape": "cone", "at": [3, 5], "to": [0, 5], "feet": 15}))
+        self.assertEqual(back["inside"], ["Witness"])                   # not Mira herself, not the Guard behind her
+        roar = self.data(self.do("the Guard's cone at Mira", {"action": "area", "shape": "cone", "at": [7, 5], "to": [3, 5], "feet": 30}))
+        self.assertEqual(roar["inside"], [])
+        self.assertEqual(sorted(roar["sheltered"]), ["Mira", "Witness"])  # in the cone, behind the wall; the Sniper is off to the side
+
     def test_a_fight_told_in_words_uses_zones(self):
         self.do("a stairwell fight, no grid",
                 {"action": "fight", "objective": "reach the street",

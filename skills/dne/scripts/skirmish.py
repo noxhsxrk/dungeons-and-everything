@@ -459,12 +459,27 @@ def _damage(ctx, intent: dict) -> dict:
             "data": data, "visible_events": check_end(world)}
 
 
+def _in_cone(origin: tuple, toward: tuple, cells: int, at: tuple) -> bool:
+    """A 5e cone on the grid: within `cells` along its axis, and no further off the axis than half the distance
+    along it (it is as wide as it is long), measured between square centres with half a square of give."""
+    dx, dy = toward[0] - origin[0], toward[1] - origin[1]
+    norm = (dx * dx + dy * dy) ** 0.5
+    if not norm:
+        return False
+    vx, vy = at[0] - origin[0], at[1] - origin[1]
+    along = (vx * dx + vy * dy) / norm
+    off = abs(vx * dy - vy * dx) / norm
+    return 0 < along <= cells + 0.5 and off <= along / 2 + 0.5
+
+
 @turn.handler("area")
 def _area(ctx, intent: dict) -> dict:
     """area — who is caught in an area: {"action": "area", "shape": "sphere", "at": [6, 5], "feet": 20}
-    (shape: sphere | cube | line with "to": [x, y]; or "zone": "platform" in a fight with zones).
+    (shape: sphere | cube | line with "to": [x, y] | cone from "at" toward "to"; or "zone": "platform" in a fight
+    with zones).
 
-    A sphere or cube needs an unbroken line from its centre: a wall shelters whoever is behind it."""
+    A sphere, cube or cone needs an unbroken line from its point of origin: a wall shelters whoever is behind it.
+    A cone is as wide as it is far at every distance; its origin's own square is not in it."""
     world = _world(ctx)
     data, hit, sheltered = _map(world), [], []
     if intent.get("zone"):
@@ -477,7 +492,12 @@ def _area(ctx, intent: dict) -> dict:
     for t in data.get("tokens", []):
         if t.get("kind") == "obj" or t.get("x") is None:
             continue
-        inside = (t["x"], t["y"]) in line if line is not None else max(abs(t["x"] - cx), abs(t["y"] - cy)) <= cells
+        if line is not None:
+            inside = (t["x"], t["y"]) in line
+        elif intent.get("shape") == "cone" and intent.get("to"):
+            inside = _in_cone((cx, cy), tuple(int(v) for v in intent["to"]), cells, (t["x"], t["y"]))
+        else:
+            inside = max(abs(t["x"] - cx), abs(t["y"] - cy)) <= cells
         if not inside:
             continue
         clear = sees(world, {"x": cx, "y": cy}, {**t, "hidden": False})
