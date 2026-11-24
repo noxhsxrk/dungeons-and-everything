@@ -95,6 +95,13 @@ class LivingWorldTests(unittest.TestCase):
         db.row_factory = sqlite3.Row
         return db
 
+    def one(self, campaign, sql):
+        db = self.db(campaign)                    # closed at once: Windows will not delete a folder with an open file
+        try:
+            return dict(db.execute(sql).fetchone())
+        finally:
+            db.close()
+
     def things(self, campaign, kind):
         db = self.db(campaign)
         try:
@@ -163,8 +170,7 @@ class LivingWorldTests(unittest.TestCase):
         self.turn("forge", "ten days", [{"action": "wait", "days": 10}])
         self.turn("meddled", "[Mira]: we bribe the Tollmen to shut the road", CLOSE)
         self.turn("meddled", "ten days", [{"action": "wait", "days": 10}])
-        free_ev = self.db("forge").execute("SELECT status, note FROM events WHERE event_id='fair'").fetchone()
-        meddled_ev = self.db("meddled").execute("SELECT status, note FROM events WHERE event_id='fair'").fetchone()
+        free_ev, meddled_ev = (self.one(c, "SELECT status, note FROM events WHERE event_id='fair'") for c in ("forge", "meddled"))
         self.assertEqual(free_ev["status"], "applied")
         self.assertEqual(meddled_ev["status"], "cancelled")                # the world cancels what lost its condition
         self.assertIn("precondition no longer true", meddled_ev["note"])
