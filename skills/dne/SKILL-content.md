@@ -59,14 +59,15 @@ use them.
 - **Always:** adults only, and every partner is willing in the fiction. "Adults" means the characters:
   a school student (ประถม, มัธยม ม.1–ม.6, high school, middle school) or anyone whose age is unclear counts
   as under 18, and gets no romantic or sexual scenes, kisses included; a later age change or time skip
-  doesn't change that. No romance between family members (step and adoptive included). Consent stays
+  doesn't change that. The one thing `crush: on` allows them is a children's-story crush (SKILL.md rule 4):
+  liking each other, saying they are going out, shyness and teasing, with no kiss and no romantic touch. No romance between family members (step and adoptive included). Consent stays
   ongoing: no coercion, manipulation, or a partner who can't freely say no.
 
 ## What does not change at any level
 
 - **Sex** is never written as explicit, anatomical description; `romance` sets whether it happens
   off-screen (`fade`) or on screen in sensual, non-explicit terms (`open`).
-- **Nothing romantic or sexual involving anyone under 18**, ever, in any form; school-age or unclear-age characters count as under 18.
+- **Nothing romantic or sexual involving anyone under 18**, ever, in any form; school-age or unclear-age characters count as under 18. The only exception is the innocent crush of `crush: on`, which has no kiss, no romantic touch and no sexual element at all.
 - **Sexual violence is never shown**; it may exist in a backstory, told in one line.
 - **No real-world instructions** (making weapons, drugs, explosives, hacking, hurting people) dressed
   up as fiction; describe what a character does, not a usable procedure.

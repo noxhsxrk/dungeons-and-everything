@@ -8,6 +8,9 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Added
+- **`crush: on`** (Session Flags or the Table Settings page; off by default): two school-age characters of about the same age may have a children's-story crush, saying they like each other or are going out, blushing, walking home together, friends teasing. Never a kiss (cheek included), never holding hands or other romantic touch, never a word about their looks or bodies in that light, never with an adult, and the `content` / `romance` dials never raise it. Everything else in the under-18 rule is unchanged.
+
 ## [1.8.5] — 2026-11-24 — Thai that sounds like Thai
 
 ### Added
