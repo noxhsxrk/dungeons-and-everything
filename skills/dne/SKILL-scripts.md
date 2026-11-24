@@ -737,6 +737,7 @@ Runs for every campaign; its lines reach the GM through the `[[GM note]]`. Displ
 
 ### World Engine Migration — `scripts/world_migrate.py`
 ```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_init.py --seed <seed.json | -> [--check]   # a new campaign from one checked seed (/dne new, world engine path)
 python3 ${CLAUDE_SKILL_DIR}/scripts/world_migrate.py -c <campaign> inspect
 python3 ${CLAUDE_SKILL_DIR}/scripts/world_migrate.py -c <campaign> enable [--shadow]
 python3 ${CLAUDE_SKILL_DIR}/scripts/world_migrate.py -c <campaign> shadow --intents '<JSON list>'

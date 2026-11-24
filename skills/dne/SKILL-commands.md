@@ -7,7 +7,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
 ---
 
 ## `/dne new <campaign-name> [theme]`
-1. **Session setup — call `AskUserQuestion`** with **three questions**:
+1. **Session setup — call `AskUserQuestion`** with **four questions**:
 
    **Q1 *"Display & input mode?"***
    - `Display + autorun (ngrok) (Recommended / Default)` → `bash ${CLAUDE_SKILL_DIR}/display/start-display.sh --ngrok`, print public ngrok HTTPS URL, set `_display_running = true`, write `autorun: true` to `state.md → ## Session Flags`, then `python3 ${CLAUDE_SKILL_DIR}/display/push_stats.py --clear`. Always enter the autorun wait loop (`autorun_wait.py`) at the end of each turn.
@@ -26,6 +26,9 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
    **Q3 *"How much of the game runs on the rules engine?"*** — written to `state.md → ## Session Flags` in step 4; default `full` if dismissed.
    - `Full (Recommended)` → write `engine: full`. Every fight is tracked on the scripts (HP and AC for each enemy, each attack resolved) and XP comes from the tables.
    - `Light` → write `engine: light`. You judge fights and XP yourself and call for the rolls that matter; saves, NPC records and the in-world clock are still kept.
+   **Q4 *"Should the world live on its own?"*** (only offer it; default `No` if dismissed)
+   - `No (Recommended for now)` → the classic path below, step by step.
+   - `Yes: the world engine` → follow **World engine path** after step 16: the same questions, but what you decide is collected into one seed file that `campaign_init.py` checks and builds, so the world can run its own days from the first turn.
 2. **Ruleset selection.** Ask: *"D&D 5e ruleset for this campaign? **2014** (SRD 5.1, default — full mechanics, classic Player's Handbook structure) or **2024** (SRD 5.2, weapon mastery + origin feats + background ASIs + revised exhaustion)?"* Default to `2014` if no answer or ambiguous. Write the chosen value to `state.md` header line as `**Ruleset:** 2014` or `**Ruleset:** 2024`.
 
    If 2024 was chosen: verify the dataset exists with `ls ${CLAUDE_SKILL_DIR}/data/dnd5e_srd_2024.json`. If missing, offer to run `python3 ${CLAUDE_SKILL_DIR}/scripts/build_srd.py --ruleset 2024` (one-time, ~3 min, needs network). Until it exists, `lookup.py` uses the 2014 SRD automatically (it prints a one-line notice) — World Kit content is unaffected.
@@ -95,6 +98,17 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
 14. Write state.md with session count 0, starting location.
 15. **Physical dice server check (only if installed).** Skip this step unless the optional dice server is set up: probe with `test -d ~/.dne-dice || test "$DNE_DICE_PHYSICAL" = "1"` and short-circuit out if the test fails. When it passes, run `curl -sf http://localhost:7777/health` (timeout 1s). If it returns OK, fetch the LAN IP with `python3 -c "import socket; s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.connect(('8.8.8.8', 80)); print(s.getsockname()[0]); s.close()"` and announce: *"Dice server is up. Once each player has made a character via `/dne character new`, they should open `http://<ip>:7777/?player=<pc-name>` on their phone (lowercase, hyphens for spaces) and tap **consecrate** before play starts. NPC/DM rolls auto-resolve on the host."* If unreachable, skip silently.
 16. Confirm creation, offer `/dne character new`.
+
+### World engine path (Q4 = yes)
+
+Ask everything above in the same order, but do not create files by hand in steps 3–4, the calendar init in 7b, the `faction.py add` in 10 or the NPC records in 11. Collect them into one seed instead (format: the docstring of `${CLAUDE_SKILL_DIR}/scripts/campaign_init.py`):
+- `campaign`, `ruleset`, `flags` (Q1–Q3 and the step-6 dials, plus `world_engine: on`, and `survival: on` if the table wants supplies tracked),
+- `worldkit` (step 7, omit for classic fantasy), `calendar` (step 7b's date, months and day names),
+- `map`: the places the story starts among and the roads between them (step 8's settlement among them),
+- `npcs` (step 11: name, role, CR, aliases), `factions` (step 10: stats, goal, rivals),
+- `setup`: the world's starting state as engine actions: who holds which road (`route`), what each market has (`market`), a settlement that keeps itself alive (`settlement`), where NPCs are due (`appointment`, `npc_schedule`), what is already in motion (`schedule`). `turn.py -c <any engine campaign> help <action>` gives each action's fields.
+
+Then `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_init.py --seed - --check` with the seed on stdin. Every problem comes back with its place in the seed (`setup[2].at`, `npcs[1].cr`): fix them all and check again until it says `"ok": true`, then run it without `--check`. It builds the campaign in a staging folder and moves it into place only when everything worked; a failure leaves nothing behind, and an existing campaign of that name is never touched. Afterwards write the prose that has no seed field into the files it made — World Foundations (7b), Three Truths (8), the threat arc (9), quest seeds (12), the campaign arc (13) — and go on from step 14.
 
 ---
 

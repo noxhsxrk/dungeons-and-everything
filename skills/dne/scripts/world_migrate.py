@@ -140,15 +140,22 @@ def backup(campaign: str, why: str) -> dict:
     return {"backup": dest.name, "path": str(dest), **{k: manifest[k] for k in ("revision", "turns", "world_minute")}}
 
 
+def register(campaign: str, entities: "list | None" = None) -> dict:
+    """Create the store and note what each name means from now on (shared by `enable` and campaign_init.py)."""
+    entities = entity_index(campaign)["entities"] if entities is None else entities
+    with wdb.writer(campaign) as db:
+        for e in entities:
+            wdb.put(db, "entity", e["id"], {"name": e["name"], "aliases": e["aliases"], "source": e["source"]})
+    return {"store": str(wdb.db_path(campaign)), "entities": len(entities)}
+
+
 def enable(campaign: str, shadow: bool = False) -> dict:
     """Back up, then turn the engine on (or to shadow). The campaign's own files are not converted."""
     report = inspect(campaign)
     made = backup(campaign, "before enabling the world engine" + (" (shadow)" if shadow else ""))
     set_flag(campaign, "world_engine", "shadow" if shadow else "on")
     if not shadow:
-        with wdb.writer(campaign) as db:              # create the store and note what each name means from now on
-            for e in report["entities"]:
-                wdb.put(db, "entity", e["id"], {"name": e["name"], "aliases": e["aliases"], "source": e["source"]})
+        register(campaign, report["entities"])
     return {"enabled": "shadow" if shadow else "on", "backup": made, "unclear": report["unclear"],
             "waiting_for_the_gm": report["waiting_for_the_gm"], "notes": report["notes"]}
 
@@ -338,6 +345,7 @@ def main() -> int:
     s = sub.add_parser("shadow")
     s.add_argument("--intents", required=True)
     sub.add_parser("compare")
+    sub.add_parser("register", help="create the store for a campaign already flagged world_engine: on (campaign_init.py)")
     sub.add_parser("disable")
     sub.add_parser("backups")
     r = sub.add_parser("restore")
@@ -350,6 +358,8 @@ def main() -> int:
         out = enable(args.campaign, args.shadow)
     elif args.cmd == "shadow":
         out = shadow_run(args.campaign, json.loads(args.intents))
+    elif args.cmd == "register":
+        out = register(args.campaign)
     elif args.cmd == "compare":
         out = compare(args.campaign)
     elif args.cmd == "disable":

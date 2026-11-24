@@ -8,6 +8,10 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Added — Living World plan, PR 1: `/dne new` makes a world that is ready to run
+- **`scripts/campaign_init.py`: one seed, checked, then built.** The GM collects what `/dne new` decides (flags, ruleset, World Kit, calendar, map, NPCs, factions) and the world's starting state as engine actions (`setup`: roads, markets, settlements, appointments, what is already in motion) into one versioned seed (`seed_version: 1`). `--check` reports every problem with its place in the seed (`setup[1].between[1]: unknown place 'Atlantis'`, `npcs[1].cr`, `factions[0].rivals[0]`): duplicate names, broken references, actions the engine does not have, a system switched on without the data it needs. Building runs the same scripts the step-by-step path uses (templates, `calendar.py`, `faction.py`, `npc.py`, `campaign_version.py`, the turn runner) in a staging folder and moves the campaign into place only when every step worked: a failure leaves nothing behind and can be run again, and an existing campaign of that name is never touched. The result is plain Markdown and JSON plus `world.db`, and its days can be run at once by any agent that opens it.
+- `/dne new` asks a fourth question, whether the world should live on its own; `No` keeps the classic path. `world_migrate.py register` creates the store for a campaign (shared by `enable` and `campaign_init.py`).
+
 ## [1.8.0] — 2026-11-24 — A community that keeps itself alive
 
 The engine has a name now: the **Unrolled Engine**, DnE's d20 engine with a 5e SRD core (README).
