@@ -230,7 +230,7 @@ python3 -m venv .venv && .venv/bin/pip install pytest flask flask-cors pyyaml
 
 - `skills/dne/SKILL.md` — the Game Master's core rules; `SKILL-commands.md` — every `/dne` procedure; `SKILL-scripts.md` — script reference; `SKILL-table-rules.md` — the optional table rules; `SKILL-content.md` — running an `18` / `20` table
 - `skills/dne/scripts/` — the rules engine (`worldkit.py`, `character.py`, `lookup.py`, `encounter_gen.py`, `combat.py`, `dice.py`, …)
-- `skills/dne/scripts/world_db.py` — the world engine's store and, in its docstring, the contract engine modules keep; `turn.py` runs a turn; `scheduler.py`, `journey.py`, `trade.py`, `knowledge.py`, `routine.py`, `stakes.py`, `table.py`, `skirmish.py`, `upkeep.py`, `story.py` add the actions
+- `skills/dne/scripts/world_db.py` — the world engine's store and, in its docstring, the contract engine modules keep; `turn.py` runs a turn; `scheduler.py`, `journey.py`, `trade.py`, `knowledge.py`, `routine.py`, `stakes.py`, `table.py`, `skirmish.py`, `upkeep.py`, `story.py`, `community.py` add the actions
 - `skills/dne/display/` — the table display (Flask)
 - `skills/dne/data/` — bundled 5e SRD data
 - `dice-server/` — optional physical-dice server

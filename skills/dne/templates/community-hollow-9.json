@@ -1,0 +1,38 @@
+{
+  "name": "Hollow-9",
+  "people": 40,
+  "stores": {"food": 120, "water": 12, "parts": 0},
+  "use": {"food": 40, "water": 12},
+  "needs": {
+    "housing": {"air": 6, "priority": 1},
+    "grow-house": {"air": 4, "priority": 2}
+  },
+  "assets": {
+    "filter-main": {"label": "main air filter", "provides": {"air": 10}, "priority": 1, "condition": 38, "wear": 20,
+                    "notice_at": 40, "repair": {"skill": 2, "hours": 6, "parts": 2, "wear_after": 2}},
+    "filter-backup": {"label": "backup air filter", "provides": {"air": 6}, "backup_of": "filter-main", "priority": 1,
+                      "condition": 80, "wear": 2, "notice_at": 30, "repair": {"skill": 2, "hours": 4, "parts": 1}},
+    "pump": {"label": "water pump", "makes": {"water": 12}, "priority": 2, "condition": 90, "wear": 1, "notice_at": 30,
+             "repair": {"skill": 1, "hours": 6, "parts": 2}, "salvage": {"parts": 2}}
+  },
+  "workers": {
+    "Jonas": {"role": "mechanic", "skills": {"repair": 2}, "duties": ["repair", "rounds"],
+              "watches": ["filter-main", "filter-backup", "pump"]},
+    "Pim": {"role": "apprentice mechanic", "skills": {"repair": 1, "haul": 1}, "duties": ["haul"],
+            "learns": {"skill": "repair", "from": "Jonas", "hours": 12}},
+    "Sera": {"role": "grower", "skills": {"grow": 2}, "duties": ["grow"]},
+    "Tomas": {"role": "hauler", "skills": {"haul": 2}, "duties": ["market"]},
+    "Maren": {"role": "council chair", "skills": {"lead": 2}, "duties": ["council"]},
+    "Ilse": {"role": "carer", "skills": {"care": 2, "lead": 1}, "duties": ["care"]},
+    "Bo": {"role": "pump keeper", "skills": {"repair": 1, "pump": 2}, "duties": ["pump"], "watches": ["pump"]}
+  },
+  "offices": {
+    "council": {"label": "council seal", "succession": ["Maren", "Ilse"],
+                "rules": {"delay_shutdown_before_harvest": true, "accept_pact_when_down": true}},
+    "workshop": {"label": "workshop keys", "succession": ["Jonas", "Pim", "Bo"]}
+  },
+  "grow": {"need": "grow-house", "every": 7, "next_harvest": 2, "yield": 320, "days": 6},
+  "short": {"water": {"carry": 3, "ration_pct": 75, "households_move": 3}, "food": {"ration_pct": 75}},
+  "neighbour": {"name": "Deepwell", "has": {"parts": 4}, "wants": "shared use of the cart one day in seven",
+                "offers_after_days": 3, "pact_days": 90}
+}

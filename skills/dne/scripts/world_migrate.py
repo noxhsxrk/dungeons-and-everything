@@ -259,7 +259,8 @@ def export(campaign: str) -> str:
         for kind, title in (("route", "Roads and bridges"), ("market", "Markets"), ("caravan", "Caravans"), ("npcpos", "Where NPCs are"),
                             ("appointment", "Appointments"), ("belief", "Who believes what"), ("heat", "Heat"),
                             ("beat", "Story beats"), ("situation", "Situations"), ("case", "Cases"), ("thread", "Threads to pay back"),
-                            ("upkeep", "Supplies"), ("truce", "Truces"), ("decision", "Faction decisions")):
+                            ("upkeep", "Supplies"), ("truce", "Truces"), ("decision", "Faction decisions"),
+                            ("settlement", "Settlements"), ("chronicle", "What happened in each settlement")):
             rows = wdb.all_of(db, kind)
             if rows:
                 lines += [f"## {title}", ""] + [f"- **{k}**: {json.dumps(v, ensure_ascii=False)}" for k, v in rows.items()] + [""]
