@@ -8,6 +8,11 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.8.4] — 2026-11-24 — Checked on Windows again
+
+### Fixed
+- `tests/test_living_world.py` closes the store after each query: on Windows an open `world.db` stopped the test's temporary folder from being deleted. CI gains `windows-check`, a Windows run started by hand (`gh workflow run windows-check -f ref=<tag>`), since Windows is no longer in the regular matrix; 1.8.1 and this release pass it.
+
 ## [1.8.3] — 2026-11-24 — The bridge playtest, by script
 
 ### Added
