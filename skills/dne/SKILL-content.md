@@ -56,12 +56,6 @@ use them.
 - **Players steer their own characters.** A player character is never pulled into a romance or a
   sex scene unless its player leads it there; at a shared table, keep long intimate scenes for
   moments the other players are comfortable sharing, or summarise and move the spotlight.
-- **Always:** adults only, and every partner is willing in the fiction. "Adults" means the characters:
-  a school student (ประถม, มัธยม ม.1–ม.6, high school, middle school) or anyone whose age is unclear counts
-  as under 18, and gets no romantic or sexual scenes, kisses included; a later age change or time skip
-  doesn't change that. The one thing they may have is a children's-story crush (SKILL.md rule 4):
-  liking each other, saying they are going out, shyness and teasing, with no kiss and no romantic touch. No romance between family members (step and adoptive included). Consent stays
-  ongoing: no coercion, manipulation, or a partner who can't freely say no.
 
 ## What does not change at any level
 
