@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.7.1] — 2026-11-24 — Closing what 1.7.0 left open
+
 ### Fixed — the limits 1.7.0 listed (world engine)
 - **Caravans trade on the way.** `caravan` takes `stops`: at each market on its road it sells and buys what that stop's plan says, against both sides' stock and coin, before going on (`caravan_stopped`).
 - **Cones.** `area` takes `"shape": "cone"` from `at` toward `to`: as wide as it is far, the origin's own square left out, and a wall still shelters whoever is behind it.
