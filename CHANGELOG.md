@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.8.3] — 2026-11-24 — The bridge playtest, by script
+
 ### Added
 - The plan's section 7 playtest (the bridge at Millbridge) is played by script in `tests/test_playtest_bridge.py`: from one save, three rested days leave a held caravan and an empty market traced to the shut bridge; opening the bridge first gets the flour in at a lower price and the road's state becomes news; a split party waits for the player who has not said what they do, and their word reaches the Guild. The engine's numbers (`turn.py metrics`) come out as the playtest asks. What it cannot do is ask real players what they changed: that part stays for a real table (`docs/world-engine-playtest.md`).
 
