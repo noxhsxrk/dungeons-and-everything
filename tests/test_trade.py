@@ -231,3 +231,11 @@ class CaravanStopTests(EngineCase):
         caravan = self.thing("caravan", "flour")
         self.assertEqual(caravan["goods"]["salt"], 2)
         self.assertEqual(self.thing("market", "market")["stock"]["flour"], 2 + 15)
+
+    def test_a_stop_at_an_unknown_place_is_an_error_not_a_crash(self):
+        out = self.do("a caravan with a bad stop",
+                      {"action": "caravan", "id": "x", "from": "Millbridge", "to": "Market", "goods": {"flour": 1},
+                       "stops": [{"at": "Atlantis", "sell": {"flour": 1}}]})
+        self.assertIn("in stops", self.data(out)["error"])
+        self.assertIsNone(self.thing("caravan", "x"))
+

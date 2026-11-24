@@ -33,3 +33,29 @@ class ClockOutsideTests(EngineCase):
         self.turn.finish("oldworld", "The rider arrives.")
         view = self.turn.begin("oldworld", "[Mira]: and now?")
         self.assertFalse(any("OUTSIDE THE ENGINE" in x for x in gm_guide.engine_lines("oldworld", view)))
+
+    def no_alarm(self, text):
+        import gm_guide
+        view = self.turn.begin("oldworld", text)
+        lines = [x for x in gm_guide.engine_lines("oldworld", view) if "OUTSIDE THE ENGINE" in x]
+        self.assertEqual(lines, [], text)
+        return view
+
+    def test_time_the_engine_moves_never_raises_it(self):
+        self.flags(self.FLAGS + "- ooc_minutes: 5\n")
+        steps = [("[Mira]: we rest", {"action": "rest", "type": "short"}),
+                 ("[Mira]: we walk to the ford", {"action": "travel", "to": "The Ford"}),
+                 ("[Mira]: what time is it?", {"action": "ask", "question": "what time is it?"}),
+                 ("an hour", {"action": "wait", "hours": 1})]
+        for text, intent in steps:
+            self.no_alarm(text)
+            out = self.turn.resolve("oldworld", [intent])
+            self.assertNotEqual(out["status"], "waiting_for_player", text)
+            self.assertGreater(out["elapsed_minutes"], 0, text)
+            self.turn.finish("oldworld", "On we go.")
+        self.no_alarm("[Mira]: and then?")
+        self.turn.finish("oldworld", "Quiet.")
+        import turn_snapshot
+        turn_snapshot.undo_snapshot("oldworld", notify_display=False)     # back a turn: clock and store go back together
+        self.no_alarm("[Mira]: again")
+

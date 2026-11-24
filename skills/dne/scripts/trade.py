@@ -360,14 +360,15 @@ def _caravan(ctx, intent: dict) -> dict:
     cid = str(intent.get("id") or f"caravan-{ctx.action_id}")
     try:
         src, dst = _keys(world, [intent["from"], intent["to"]])
-    except (ValueError, KeyError) as exc:
-        return {"status": "done", "elapsed_minutes": 0, "data": {"error": str(exc)}}
+        stops = [{**s, "at": _keys(world, [s["at"]])[0]} for s in intent.get("stops") or []]
+    except (ValueError, KeyError, TypeError) as exc:
+        return {"status": "done", "elapsed_minutes": 0, "data": {"error": f"{exc}" + (" (in stops)" if intent.get("stops") else "")}}
     departs = (world.minute or 0) + int(intent.get("departs_in_minutes", 0))
     caravan = {"goods": dict(intent.get("goods") or {}), "budget": int(intent.get("budget", 0)),
                "wants": dict(intent.get("wants") or {}), "from": src, "to": dst, "at": src,
                "owner": intent.get("owner", ""), "mode": intent.get("mode", "wagon"), "status": "waiting",
                "transport": int(intent.get("transport", 0)),
-               "stops": [{**s, "at": _keys(world, [s["at"]])[0]} for s in intent.get("stops") or []],
+               "stops": stops,
                "departs": departs, "knows_closed": [list(sorted(_keys(world, pair))) for pair in intent.get("knows_closed", [])],
                "log": []}
     world.put("caravan", cid, caravan)

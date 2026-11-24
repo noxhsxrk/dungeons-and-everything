@@ -123,6 +123,18 @@ def _npc_depart(world, row, eff):
         return None
     npc, here = a["npc"], a.get("from")
     seen = "party" if _map(world).get("party_location") == here else "dm"
+    known_shut = _knows_closed(world, npc, here)
+    path = _npc_route(world, here, a["place"], known_shut, a.get("mode", "foot"))
+    if path is None:                              # they know there is no way through: no point setting out
+        other = a.get("otherwise") or {}
+        a.update(status="changed", note=f"knew the road was closed ({', '.join(sorted(known_shut))})")
+        world.put("appointment", aid, a)
+        if other.get("place"):
+            world.put("npcpos", npc, {"place": journey.place_key(_map(world), other["place"]) or other["place"],
+                                      "since": world.minute})
+        return [{"type": "npc_changed_plan", "recipient": seen, "npc": npc,
+                 "text": f"{npc} does not leave for {_pname(world, a['place'])}: the way is known to be closed. "
+                         + (f"Instead: {other.get('purpose') or other.get('place')}." if other else "They stay.")}]
     cost = dict(a.get("cost") or {})
     payer = cost.pop("payer", None)
     if payer and cost:                            # the trip costs something: paid when they set out, or not made
@@ -141,18 +153,6 @@ def _npc_depart(world, row, eff):
             f[stat] = int(f.get(stat, 0)) - int(n)
         world.touch("factions.json")
         a["paid"] = {"payer": payer, **cost}
-    known_shut = _knows_closed(world, npc, here)
-    path = _npc_route(world, here, a["place"], known_shut, a.get("mode", "foot"))
-    if path is None:                              # they know there is no way through: no point setting out
-        other = a.get("otherwise") or {}
-        a.update(status="changed", note=f"knew the road was closed ({', '.join(sorted(known_shut))})")
-        world.put("appointment", aid, a)
-        if other.get("place"):
-            world.put("npcpos", npc, {"place": journey.place_key(_map(world), other["place"]) or other["place"],
-                                      "since": world.minute})
-        return [{"type": "npc_changed_plan", "recipient": seen, "npc": npc,
-                 "text": f"{npc} does not leave for {_pname(world, a['place'])}: the way is known to be closed. "
-                         + (f"Instead: {other.get('purpose') or other.get('place')}." if other else "They stay.")}]
     for x, y, _miles, _mult in path:              # the road as it really is, which they may not know
         block = journey.route_block(world, x, y)
         if block:

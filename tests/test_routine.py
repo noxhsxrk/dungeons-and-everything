@@ -47,6 +47,14 @@ class RoutineTests(EngineCase):
         self.assertIn("could not pay", appt["note"])
         self.assertTrue(any("mend the mill wheel instead" in v.get("text", "") for v in out["visible_events"]))
 
+    def test_a_trip_he_knows_he_cannot_make_costs_nothing(self):
+        self.do("the guild pays for the stall", {**MARKET_DAY, "cost": {"payer": "Millers' Guild", "wealth": 2}})
+        self.do("the Tollmen shut the road out of town",
+                {"action": "route", "between": ["Millbridge", "The Ford"], "access": "closed", "reason": "the Tollmen hold it"})
+        self.do("the day he should leave", {"action": "wait", "minutes": 700})
+        self.assertEqual(self.thing("appointment", "market-day")["status"], "changed")
+        self.assertEqual(self.factions()["Millers' Guild"]["wealth"], 3)
+
     def test_he_cannot_be_in_two_towns_on_the_same_day(self):
         self.do("Bren plans his market day", MARKET_DAY)
         clash = self.data(self.do("and the ford an hour later?", {"action": "appointment", "npc": "Bren", "place": "The Ford",
