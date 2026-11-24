@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.8.6] — 2026-11-25 — Nothing left out of the log
+
 ### Fixed
 - A session whose save only bumped `**Session count:**` lost everything that happened in it (a won S-rank gate, two level-ups, pacts), and the next GM argued with the player who remembered it. `/dne load` (`gm_guide.py start`) now opens with a **LOG GAP** step when the header counts a session that has no `## Session N` entry in `session-log.md` / `session-log-archive.md`; `save_check.py` ticks the session-log row only when the entry for the current count exists, checks the header's `**Last session:**`, and lists earlier sessions with no entry; `/dne end` finishes by running `save_check.py` again. SKILL.md: a player's memory of past play is evidence, not a claim to argue with.
 - `campaign_graph.py scene-context` no longer fails when one `--present` name is missing from the graph: it warns with the `add-node` command and answers for the rest. `npc.py add` puts the new NPC in `graph.json` (when the graph is set up), and `npc.py check` names NPCs that are not in it.
