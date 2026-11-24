@@ -52,6 +52,16 @@ STORYTELLERS = {
 #: Telling a player what their character feels or concludes: the player's job, not the narrator's.
 TOLD_FEELINGS = ("คุณรู้สึก", "หัวใจคุณ", "หัวใจของคุณ", "คุณตระหนัก", "คุณเข้าใจแล้วว่า", "ความหวัง", "คุณอดไม่ได้ที่จะ",
                  "you feel ", "your heart ", "you realize", "you realise", "you can't help but", "a sense of ", "you know that ")
+#: Thai that reads as English thought put into Thai words: (pattern, what a Thai speaker would say instead).
+TRANSLATED_THAI = (
+    (r"เป็นของ(?:คุณ|นาย|เธอ|แก|เอ็ง)(?:อย่าง)?เต็มตัว", "\"นายเอาไปใช้ได้เต็มที่\" (not \"it's all yours\" word for word)"),
+    (r"(?:ได้)?ถูก\S{1,25}?โดย", "say who did it first: \"ยามเห็นคุณแล้ว\", not \"คุณถูกพบโดยยาม\""),
+    (r"ทำการ", "drop it: \"ตรวจ\", not \"ทำการตรวจ\""),
+    (r"ดำเนินการ", "use the plain verb: \"ไขประตู\", not \"ดำเนินการปลดล็อก\""),
+    (r"เต็มไปด้วยความ", "show it: \"ห้องเงียบจนน่าขนลุก\", not \"เต็มไปด้วยความเงียบ\""),
+    (r"ไม่เพียงแต่.{1,40}แต่ยัง", "two short sentences read more like a person"),
+    (r"อย่างมีประสิทธิภาพ", "a report's word, not a story's"),
+)
 #: Handing the player their choices at the end of a turn (fine when the table set turn_end: options).
 ASKS = ("คุณจะทำอย่างไร", "คุณจะทำอะไร", "จะทำอะไรต่อ", "คุณจะ", "หรือไม่?", "what do you do", "what will you do", "do you ")
 OPENERS = {"a smell": ("กลิ่น", "smell", "scent", "odor", "stench"), "silence": ("ความเงียบ", "เงียบ", "silence", "quiet "),
@@ -173,6 +183,10 @@ def guard(campaign: str) -> list:
     if phrases:
         notes.append(f"wording that came back in {REPEATED_IN} or more of your last {len(texts)} narrations: "
                      + ", ".join(f"\"{p}\"" for p in phrases) + ". If that is habit and not the scene's own subject, vary it")
+    stiff = [(m.group(0), fix) for pat, fix in TRANSLATED_THAI for m in [re.search(pat, " ".join(texts[-3:]))] if m]
+    if stiff:
+        notes.append("Thai that reads translated from English: " + "; ".join(f"\"{w}\" → {fix}" for w, fix in stiff[:2])
+                     + ". Write lines the way a Thai speaker would say them")
     dna = _dna(campaign)
     banned = [c for c in dna.get("taboo_cliches") or [] if any(str(c).casefold() in t.casefold() for t in texts[-3:])]
     if banned:
