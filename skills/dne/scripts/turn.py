@@ -727,7 +727,7 @@ def main() -> int:
 
 def _load_modules() -> None:
     """Engine modules register their handlers on import (rest, travel, trade, …)."""
-    for name in ("scene_context", "scheduler", "journey", "trade", "knowledge", "routine", "stakes", "table", "skirmish", "upkeep", "story", "community"):
+    for name in ("scene_context", "scheduler", "journey", "trade", "knowledge", "routine", "stakes", "table", "skirmish", "upkeep", "story", "community", "rules"):
         try:
             __import__(name)
         except ImportError:

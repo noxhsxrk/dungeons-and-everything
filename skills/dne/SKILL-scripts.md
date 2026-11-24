@@ -748,7 +748,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/world_migrate.py -c <campaign> restore [--ba
 ```
 
 ### Engine actions by module
-`turn.py -c <campaign> help` lists them all; each action's manual is `help <action>`. `journey.py` rest, travel · `trade.py` route, market, caravan, buy, sell · `knowledge.py` fact, news, intercept, belief, knows, heat · `routine.py` npc_schedule, appointment, where, faction_brief, faction_intent · `stakes.py` beat, set, situation, judge, reward · `table.py` group, case, search, tell, accuse, notice, remember, payoff · `skirmish.py` fight, combatant, advise, move, spend, damage, area, prop, round · `upkeep.py` upkeep, supply, use, conditions · `community.py` settlement, community, community_decide.
+`turn.py -c <campaign> help` lists them all; each action's manual is `help <action>`. `journey.py` rest, travel · `trade.py` route, market, caravan, buy, sell · `knowledge.py` fact, news, intercept, belief, knows, heat · `routine.py` npc_schedule, appointment, where, faction_brief, faction_intent · `stakes.py` beat, set, situation, judge, reward · `table.py` group, case, search, tell, accuse, notice, remember, payoff · `skirmish.py` fight, combatant, advise, move, spend, damage, area, prop, round · `upkeep.py` upkeep, supply, use, conditions · `community.py` settlement, community, community_decide · `rules.py` rule, agent, store, task, tasks.
 
 ### World Clock & Consequences — `scripts/scheduler.py`
 ```bash

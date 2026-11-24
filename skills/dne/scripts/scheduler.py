@@ -177,7 +177,8 @@ def cancel(db, event_id: str, reason: str) -> None:
 
 
 def _holds(world: World, cond: dict) -> bool:
-    """One precondition or `when` trigger: {"thing": [kind, id], "path": "a.b", "equals": v} or {"event": id, "status": s}."""
+    """One precondition or `when` trigger: {"thing": [kind, id], "path": "a.b", "equals" | "not" | "at_least" |
+    "at_most": v} or {"event": id, "status": s}."""
     if "event" in cond:
         row = world.db.execute("SELECT status FROM events WHERE event_id=?", (cond["event"],)).fetchone()
         return bool(row) and row["status"] == cond.get("status", "applied")
@@ -190,6 +191,10 @@ def _holds(world: World, cond: dict) -> bool:
             return value == cond["equals"]
         if "not" in cond:
             return value != cond["not"]
+        if "at_least" in cond:
+            return isinstance(value, (int, float)) and value >= cond["at_least"]
+        if "at_most" in cond:
+            return isinstance(value, (int, float)) and value <= cond["at_most"]
         return bool(value)
     return True
 
