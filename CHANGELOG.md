@@ -8,15 +8,10 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
-## [1.8.7] — 2026-11-24 — A young crush, no switch needed
+## [1.8.5] — 2026-11-24 — Prompt improvements
 
 ### Changed
-- The children's-story crush for school-age characters is no longer a dial: it is allowed by default (saying they like each other or are going out, shyness, friends teasing). The `crush` flag, its Table Settings card and its state.md line are gone. Kisses, romantic touch and anything sexual with anyone under 18 stay out at every setting.
-
-## [1.8.6] — 2026-11-24 — A young crush, and where it stops
-
-### Added
-- **`crush: on`** (Session Flags or the Table Settings page; off by default): two school-age characters of about the same age may have a children's-story crush, saying they like each other or are going out, blushing, walking home together, friends teasing. Never a kiss (cheek included), never holding hands or other romantic touch, never a word about their looks or bodies in that light, never with an adult, and the `content` / `romance` dials never raise it. Everything else in the under-18 rule is unchanged.
+- School-age characters may have a children's-story crush by default: saying they like each other or are going out, blushing, walking home together, friends teasing. Never a kiss (cheek included), never holding hands or other romantic touch, never a word about their looks or bodies in that light, never with an adult; the `content` / `romance` dials never raise it. Everything else in the under-18 rule is unchanged.
 
 ## [1.8.4] — 2026-11-24 — Checked on Windows again
 
