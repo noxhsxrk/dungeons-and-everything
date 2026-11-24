@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.8.7] — 2026-11-24 — A young crush, no switch needed
+
 ### Changed
 - The children's-story crush for school-age characters is no longer a dial: it is allowed by default (saying they like each other or are going out, shyness, friends teasing). The `crush` flag, its Table Settings card and its state.md line are gone. Kisses, romantic touch and anything sexual with anyone under 18 stay out at every setting.
 
