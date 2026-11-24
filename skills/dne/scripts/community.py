@@ -17,7 +17,9 @@ those rows; Python moves the state.
 
 Who does a job: someone with the skill it asks at full speed; else someone one level below at half speed,
 chosen as the one whose own work matters least (that work goes undone that day, on record). An office goes to
-the first person in its line who is present; with nobody, what needs it waits. The council rules by its
+the first person in its line who is present; with nobody, what needs it waits. A worker is away when marked so,
+or when `routine.py` puts them elsewhere (an appointment, a schedule block, their last known place); `where`
+answers for a worker routine knows nothing about with their settlement. The council rules by its
 written rules unless the GM has ruled on that matter (`community_decide`); when the party is there it stops
 the clock once to let them weigh in.
 
@@ -40,6 +42,7 @@ import gm_guide  # noqa: E402
 import scheduler  # noqa: E402
 import trade  # noqa: E402
 import turn  # noqa: E402
+import routine  # noqa: E402  (after turn: its engine modules load in order)
 import world_db as wdb  # noqa: E402
 
 sys.modules.setdefault("community", sys.modules[__name__])
@@ -59,7 +62,8 @@ def _key(world, ref: str) -> str:
 
 
 def _here(s: dict, name: str) -> bool:
-    return name in s["workers"] and not s["workers"][name].get("away")
+    w = s["workers"].get(name)
+    return w is not None and not w.get("away") and not w.get("elsewhere")
 
 
 def _acting(s: dict, office: str) -> "str | None":
@@ -469,6 +473,15 @@ def _community_day(world, row, eff):
         return None
     d = int(eff.get("day", s.get("day", 0) + 1))
     day = Day(s, d, trade._sees(world, key) == "party")
+    for name, w in s["workers"].items():          # an NPC whose appointment or schedule puts them elsewhere is away
+        found = _routine_where(world, name)
+        gone = found.get("why") != "unknown" and found.get("place") != key and (found.get("place") or found.get("between"))
+        was = w.pop("elsewhere", None)
+        if gone:
+            w["elsewhere"] = found.get("place") or "on the road"
+            if not was:
+                day.note(name, f"is away: {found.get('activity') or w['elsewhere']}", found.get("why", ""),
+                         left="their work here waits or passes to someone else")
     for step in (_harvest, _offices, _rounds, _wear, _notice, _council, _work, _air, _supplies, _standing):
         step(day)
     s["day"] = d
@@ -488,6 +501,26 @@ def _community_day(world, row, eff):
                     "text": f"{s['name']}'s council must rule on {matter}. The party is here: let them weigh in, then "
                             f"record the ruling with community_decide (or wait and the council's own rule decides tomorrow)."})
     return out
+
+
+# ── where the workers are, for routine.where ────────────────────────────────────
+
+_routine_where = routine.where
+
+
+def _where(world, npc: str, minute: "int | None" = None) -> dict:
+    """routine.where, and for a settlement's worker nothing else accounts for: at work in their settlement."""
+    found = _routine_where(world, npc, minute)
+    if found.get("why") != "unknown":
+        return found
+    for key, s in sorted(world.all("settlement").items()):
+        w = (s.get("workers") or {}).get(npc)
+        if w and not w.get("away"):
+            return {"place": key, "activity": f"{w.get('role') or 'working'} in {s['name']}", "why": f"works in {s['name']}"}
+    return found
+
+
+routine.where = _where
 
 
 # ── reading it back ───────────────────────────────────────────────────────────

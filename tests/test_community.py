@@ -94,6 +94,18 @@ class CommunityTests(EngineCase):
         for row in ra + rb + rc:                     # every row answers who, did what, why
             self.assertTrue(row["who"] and row["did"] and row["why"], row)
 
+    def test_an_appointment_elsewhere_takes_the_mechanic_away(self):
+        self.do("Jonas has business at the market",
+                {"action": "appointment", "id": "jonas-market", "npc": "Jonas", "from": AT, "place": "Market",
+                 "in_minutes": 1500, "stays_minutes": 3000, "purpose": "buy filter cloth"})
+        self.do("two days", {"action": "wait", "days": 2})
+        rows = self.data(self.do("report", {"action": "community", "at": AT, "since_day": 0}))["chronicle"]
+        self.assertIn("appointment jonas-market", self.first(rows, "Jonas", "is away")["why"])
+        self.assertIsNone(self.first(rows, did="asked to stop"))          # nobody did the rounds
+        self.assertTrue(self.first(rows, "Pim", "holds the workshop keys"))
+        where = self.data(self.do("where is Pim", {"action": "where", "npc": "Pim"}))
+        self.assertEqual((where["place"], where["why"]), ("ford", "works in Hollow-9"))
+
     def test_a_month_at_once_equals_a_month_of_days(self):
         shutil.copytree(self.camp, self.root / "campaigns" / "daily")
         self.do("a month", {"action": "wait", "days": 30})
