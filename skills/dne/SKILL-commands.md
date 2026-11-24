@@ -102,13 +102,13 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
 ### World engine path (Q4 = yes)
 
 Ask everything above in the same order, but do not create files by hand in steps 3–4, the calendar init in 7b, the `faction.py add` in 10 or the NPC records in 11. Collect them into one seed instead (format: the docstring of `${CLAUDE_SKILL_DIR}/scripts/campaign_init.py`):
-- `campaign`, `ruleset`, `flags` (Q1–Q3 and the step-6 dials, plus `world_engine: on`, and `survival: on` if the table wants supplies tracked),
+- `campaign`, `ruleset`, `party_size`, `starting_level` (step 5), `flags` (Q1–Q3 and the step-6 dials, plus `world_engine: on`, and `survival: on` if the table wants supplies tracked),
 - `worldkit` (step 7, omit for classic fantasy), `calendar` (step 7b's date, months and day names),
 - `map`: the places the story starts among and the roads between them (step 8's settlement among them),
 - `npcs` (step 11: name, role, CR, aliases), `factions` (step 10: stats, goal, rivals),
 - `setup`: the world's starting state as engine actions: who holds which road (`route`), what each market has (`market`), a settlement that keeps itself alive (`settlement`), where NPCs are due (`appointment`, `npc_schedule`), what is already in motion (`schedule`). `turn.py -c <any engine campaign> help <action>` gives each action's fields.
 
-Then `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_init.py --seed - --check` with the seed on stdin. Every problem comes back with its place in the seed (`setup[2].at`, `npcs[1].cr`): fix them all and check again until it says `"ok": true`, then run it without `--check`. It builds the campaign in a staging folder and moves it into place only when everything worked; a failure leaves nothing behind, and an existing campaign of that name is never touched. Afterwards write the prose that has no seed field into the files it made — World Foundations (7b), Three Truths (8), the threat arc (9), quest seeds (12), the campaign arc (13) — and go on from step 14.
+Then `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_init.py --seed - --check` with the seed on stdin. Every problem comes back with its place in the seed (`setup[2].at`, `npcs[1].cr`): fix them all and check again until it says `"ok": true`, then run it without `--check`. `warnings` are not blocking: a flag the engine does not read, an NPC name another campaign uses (rename it if it is a clash). The build also records the NPCs in the name registry. It builds the campaign in a staging folder and moves it into place only when everything worked; a failure leaves nothing behind, and an existing campaign of that name is never touched. Afterwards write the prose that has no seed field into the files it made — World Foundations (7b), Three Truths (8), the threat arc (9), quest seeds (12), the campaign arc (13) — and go on from step 14.
 
 ---
 

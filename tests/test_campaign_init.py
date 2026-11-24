@@ -15,6 +15,8 @@ import unittest
 HERE = pathlib.Path(__file__).resolve().parent
 SCRIPTS = HERE.parent / "skills" / "dne" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
+sys.path.insert(0, str(HERE))
+from _unicode import needs_unicode_fs  # noqa: E402
 
 SEED = {
     "seed_version": 1, "campaign": "hollow", "ruleset": "2014",
@@ -128,6 +130,42 @@ class CampaignInitTests(unittest.TestCase):
         self.assertFalse((self.root / "campaigns" / "hollow").exists())
         self.assertEqual([p.name for p in self.root.iterdir() if p.name.startswith(".dne-init")], [])
         self.assertTrue(self.ci.build(copy.deepcopy(SEED))["ok"])
+
+
+    def test_with_the_display_defaults_nothing_of_the_build_reaches_a_screen(self):
+        seed = copy.deepcopy(SEED)
+        seed["flags"].update(display="ngrok", autorun="true")
+        self.assertTrue(self.ci.build(seed)["ok"])
+        import sqlite3
+        db = sqlite3.connect(str(self.root / "campaigns" / "hollow" / "world.db"))
+        try:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM outbox").fetchone()[0], 0)
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM turns WHERE status != 'finished'").fetchone()[0], 0)
+        finally:
+            db.close()
+
+    def test_commas_and_unknown_flags(self):
+        seed = copy.deepcopy(SEED)
+        seed["npcs"][0]["aliases"] = ["Jo, the mechanic"]
+        seed["flags"]["wordl_engine"] = "on"
+        self.assertIn("npcs[0].aliases[0]", {e["path"] for e in self.ci.check(seed)})
+        self.assertIn("flags.wordl_engine", {w["path"] for w in self.ci.warnings(seed)})
+
+    @needs_unicode_fs
+    def test_a_thai_world(self):
+        seed = copy.deepcopy(SEED)
+        seed["campaign"] = "krung"
+        seed["calendar"] = {"date": "1 เมษายน 2567", "months": ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน"], "month_length": 30}
+        seed["map"]["places"]["ford"]["name"] = "ท่าน้ำ"
+        seed["npcs"] = [{"name": "ช่างโจ", "role": "ช่างซ่อม", "cr": "1/2", "aliases": ["โจ"]}]
+        seed["factions"] = [{"name": "กลุ่มเรือจ้าง", "force": 2, "wealth": 3, "influence": 2}]
+        seed["setup"] = [{"action": "settlement", "at": "ท่าน้ำ", "template": "hollow-9"}]
+        out = self.ci.build(seed)
+        self.assertTrue(out["ok"], out)
+        camp = self.root / "campaigns" / "krung"
+        self.assertIn("## ช่างโจ", (camp / "npcs-full.md").read_text(encoding="utf-8"))
+        self.assertIn("กลุ่มเรือจ้าง", (camp / "factions.json").read_text(encoding="utf-8"))
+        self.assertIn("เมษายน", (camp / "calendar.json").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

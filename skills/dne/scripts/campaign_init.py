@@ -13,7 +13,7 @@ never touched.
 Seed, version 1 (only `seed_version` and `campaign` are required; each system's data is needed only when that
 system is on):
 
-  {"seed_version": 1, "campaign": "hollow", "ruleset": "2014",
+  {"seed_version": 1, "campaign": "hollow", "ruleset": "2014", "party_size": 3, "starting_level": 1,
    "flags": {"display": "none", "roll_mode": "players", "engine": "full", "world_engine": "on", "survival": "off"},
    "calendar": {"date": "1 Thaw 412", "time": "morning", "months": ["Thaw", "Bloom"], "month_length": 30,
                 "day_names": [...], "gregorian": false},
@@ -47,8 +47,15 @@ import paths  # noqa: E402
 
 SEED_VERSION = 1
 TEMPLATES = ("state.md", "world.md", "npcs.md", "npcs-full.md", "session-log.md")
-PLACE_FIELDS = ("at", "place", "from", "to")
+#: Fields that name a map place, per action. Other actions are checked when they run (errors come back by index).
+PLACE_FIELDS = {"settlement": ("at",), "market": ("at",), "caravan": ("from", "to"), "appointment": ("place", "from"),
+                "community": ("at",), "travel": ("to",)}
 FACTION_STATS = ("force", "wealth", "influence")
+#: Session Flags the engine reads. Anything else is kept but reported, in case it is a typo.
+KNOWN_FLAGS = {"display", "roll_mode", "autorun", "autorun_interval", "autosave", "tutor_mode", "tts_voice", "sfx_languages",
+               "difficulty", "survival", "beat_policy", "cover_rule", "ooc_minutes", "spotlight", "content", "romance",
+               "pacing", "companions", "rolls", "show_dc", "turn_end", "engine", "npc_growth", "world_engine", "sparks",
+               "style_guard", "storyteller", "lines", "veils", "success_at_cost", "degrees", "hero_points"}
 
 
 def _err(out: list, path: str, msg: str) -> None:
@@ -63,6 +70,20 @@ def _place_key(places: dict, ref) -> "str | None":
         if low in (key.casefold(), str((p or {}).get("name", "")).casefold()):
             return key
     return None
+
+
+def warnings(seed) -> list:
+    """Things that are allowed but probably not meant: a flag the engine does not read, an NPC name another
+    campaign already uses."""
+    flags = seed.get("flags") if isinstance(seed, dict) and isinstance(seed.get("flags"), dict) else {}
+    out = [{"path": f"flags.{k}", "warning": "not a flag the engine reads (kept as written): a typo?"}
+           for k in sorted(flags) if k not in KNOWN_FLAGS]
+    for i, n in enumerate(seed.get("npcs") or [] if isinstance(seed, dict) else []):
+        if isinstance(n, dict) and n.get("name"):
+            code, text = _run({**os.environ, "PYTHONIOENCODING": "utf-8"}, "name_registry.py", "check", str(n["name"]), "--json")
+            if code:
+                out.append({"path": f"npcs[{i}].name", "warning": f"{n['name']!r} is already used: {text[:200]}"})
+    return out
 
 
 def check(seed) -> list:
@@ -124,6 +145,17 @@ def check(seed) -> list:
             if mp.get("party_location") and mp["party_location"] not in places:
                 _err(errors, "map.party_location", "not a place key in map.places")
 
+    for where, items in ([("calendar.months", (cal or {}).get("months") if isinstance(cal, dict) else None),
+                          ("calendar.day_names", (cal or {}).get("day_names") if isinstance(cal, dict) else None)]
+                         + [(f"npcs[{i}].aliases", n.get("aliases")) for i, n in enumerate(seed.get("npcs") or []) if isinstance(n, dict)]
+                         + [(f"factions[{i}].rivals", f.get("rivals")) for i, f in enumerate(seed.get("factions") or []) if isinstance(f, dict)]):
+        for j, item in enumerate(items or []):
+            if "," in str(item):
+                _err(errors, f"{where}[{j}]", "no commas inside one name (the list is passed comma-separated)")
+    for i, f in enumerate(seed.get("factions") or []):
+        if isinstance(f, dict) and "," in str(f.get("name", "")):
+            _err(errors, f"factions[{i}].name", "no commas in a faction name (rival lists are comma-separated)")
+
     npc_names: set = set()
     for i, n in enumerate(seed.get("npcs") or []):
         if not isinstance(n, dict) or not str(n.get("name", "")).strip():
@@ -167,13 +199,14 @@ def check(seed) -> list:
             if not isinstance(intent, dict) or intent.get("action") not in turn.HANDLERS:
                 _err(errors, f"setup[{i}].action", "not an engine action (`turn.py -c <campaign> help` lists them)")
                 continue
-            for field in PLACE_FIELDS:
+            for field in PLACE_FIELDS.get(intent["action"], ()):
                 if field in intent and isinstance(intent[field], str):
                     if not places and intent["action"] != "settlement":
                         _err(errors, f"setup[{i}].{field}", "names a place but the seed has no map")
                     elif places and not _place_key(places, intent[field]):
                         _err(errors, f"setup[{i}].{field}", f"unknown place {intent[field]!r}")
-            for j, ref in enumerate(intent.get("between") or [] if isinstance(intent.get("between"), list) else []):
+            between = intent.get("between") if intent["action"] == "route" and isinstance(intent.get("between"), list) else []
+            for j, ref in enumerate(between):
                 if not _place_key(places, ref):
                     _err(errors, f"setup[{i}].between[{j}]", f"unknown place {ref!r}")
             if isinstance(intent.get("npc"), str) and intent["npc"].casefold() not in npc_names:
@@ -212,6 +245,8 @@ def build(seed: dict) -> dict:
             text = text.replace("<campaign-name>", name).replace("<date>", today).replace("# Campaign: <name>", f"# Campaign: {name}")
             if t == "state.md":
                 text = text.replace("**Ruleset:** 2014", f"**Ruleset:** {seed.get('ruleset', '2014')}")
+                text = text.replace("**Party size:** <N>", f"**Party size:** {seed.get('party_size', '<N>')}")
+                text = text.replace("**Starting level:** <N>", f"**Starting level:** {seed.get('starting_level', '<N>')}")
                 if seed.get("worldkit") is not None:
                     text = text.replace("<worldkit.json | none — classic SRD fantasy>", "worldkit.json")
             (camp / t).write_text(text, encoding="utf-8")
@@ -309,7 +344,13 @@ def build(seed: dict) -> dict:
         if dest.exists():
             return {"ok": False, "errors": [{"path": "campaign", "error": f"{name!r} appeared while building: left as it is"}]}
         os.replace(camp, dest)
-        return {"ok": True, "campaign": str(dest), "steps": steps,
+        notes = warnings(seed)
+        for n in seed.get("npcs") or []:          # the registry lives at the real root, so this comes after the move
+            code, out = _run({**os.environ, "PYTHONIOENCODING": "utf-8"}, "name_registry.py", "add", "--name", n["name"],
+                             "--type", "npc", "--campaign", name, "--session", "0")
+            if code:
+                notes.append({"path": "npcs", "warning": f"name registry: {out}"})
+        return {"ok": True, "campaign": str(dest), "steps": steps, "warnings": notes,
                 "next": f"/dne load {name} — or play on: the world engine is {'on' if engine_on else 'off'}"}
     finally:
         shutil.rmtree(stage_root, ignore_errors=True)
@@ -338,7 +379,16 @@ def _setup(env: dict, name: str, setup: list) -> list:
     if errors:
         return errors
     code, out = _run(env, "turn.py", "-c", name, "finish", "--narration", "The world is set up.")
-    return [{"path": "setup", "error": f"turn finish: {out}"}] if code else []
+    if code:
+        return [{"path": "setup", "error": f"turn finish: {out}"}]
+    import sqlite3
+    db = sqlite3.connect(str(Path(env["DNE_CAMPAIGN_ROOT"]) / "campaigns" / name / "world.db"))
+    try:                                          # the build is not a scene: nothing of it goes to the table's screens
+        with db:
+            db.execute("DELETE FROM outbox")
+    finally:
+        db.close()
+    return []
 
 
 def _complete(camp: Path, seed: dict) -> list:
@@ -350,7 +400,18 @@ def _complete(camp: Path, seed: dict) -> list:
         missing.append("world.db")
     if not (camp / "dne-version.json").is_file():
         missing.append("dne-version.json")
-    return [{"path": "", "error": f"not created: {m}"} for m in missing]
+    out = [{"path": "", "error": f"not created: {m}"} for m in missing]
+    if (camp / "world.db").is_file():
+        import sqlite3
+        db = sqlite3.connect(str(camp / "world.db"))
+        try:
+            open_turns = db.execute("SELECT COUNT(*) FROM turns WHERE status != 'finished'").fetchone()[0]
+            waiting = db.execute("SELECT COUNT(*) FROM outbox").fetchone()[0]
+        finally:
+            db.close()
+        if open_turns or waiting:
+            out.append({"path": "setup", "error": f"the build left {open_turns} open turn(s) and {waiting} message(s) to send"})
+    return out
 
 
 def main() -> int:
@@ -366,7 +427,7 @@ def main() -> int:
         return 1
     if a.check:
         errs = check(seed)
-        out = {"ok": not errs, "errors": errs}
+        out = {"ok": not errs, "errors": errs, "warnings": warnings(seed)}
     else:
         out = build(seed)
     print(json.dumps(out, ensure_ascii=False, indent=1))
