@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.8.1] — 2026-11-24 — A world that is ready to run, and runs its own work
+
 ### Added — Living World plan, PR 3: each campaign declares its own rules of work
 - **`scripts/rules.py`.** A world says what work it has (`rule`: who may do it by skill or right, the conditions it needs, what it costs, how long it takes, what it gives or sets, what cancels it), who can do it (`agent`) and what there is to do it with (`store`). A `task` is that work under way: `blocked` while something is missing (and started by itself when it turns up), `started` with its materials *reserved*, `done` when its time is up and its conditions still hold (materials used once, gains added), or held `blocked` with its materials until they hold again; `cancelled` the moment a `cancel_if` is true, materials given back. Every change is logged with its reason and what caused it (a finished task that unblocks another is named as the cause). Tasks are looked at in a fixed order, and none changes status more than four times in one look, so rules cannot loop. Conditions are the scheduler's own, now with `at_least` / `at_most`. Tests run two worlds with different rules (a forge fed by a coal haul over a road that can close; a ferry that cannot land in a flood) on the one clock, and a month at once equals a month of days.
 
