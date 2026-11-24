@@ -16,7 +16,7 @@
 
 ---
 
-**Dungeons & Everything** is a Game Master skill for **any AI coding agent** — Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot, Cursor and more. You tell it what world you want to play in — a survivor colony hiding from a rogue AI, a derelict starship, a noir megacity, a classic dungeon — and it builds that world's whole rulebook: who the people are, what jobs they can have, what powers exist, what the gear costs, and what hunts them in the dark. Underneath, every roll runs on the **DnE engine** — a d20 engine with the 5e SRD at its core — so combat, levelling and balance just work, and anything written for 5e still fits.
+**Dungeons & Everything** is a Game Master skill for **any AI coding agent** — Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot, Cursor and more. You tell it what world you want to play in — a survivor colony hiding from a rogue AI, a derelict starship, a noir megacity, a classic dungeon — and it builds that world's whole rulebook: who the people are, what jobs they can have, what powers exist, what the gear costs, and what hunts them in the dark. Underneath, every roll runs on the **Unrolled Engine**, DnE's d20 engine with the 5e SRD at its core, so combat, levelling and balance just work, and anything written for 5e still fits. The name is a nod to the big game engines: a world that hasn't been rolled yet, and that unrolls one day at a time, with or without the party.
 
 Campaigns persist for as long as you keep playing. Your TV becomes the story screen; every player's phone becomes their controller.
 
@@ -26,7 +26,7 @@ Campaigns persist for as long as you keep playing. Your TV becomes the story scr
 
 ## Why
 
-Tabletop rules engines are great. Being locked into elves and fireballs is not. The DnE engine keeps the part of the 5e SRD that makes a game fair — ability scores, proficiency, hit dice, spell slots, challenge ratings, XP budgets — adds optional rules from other great tables, and lets everything on top of it be whatever your table imagines.
+Tabletop rules engines are great. Being locked into elves and fireballs is not. The Unrolled Engine keeps the part of the 5e SRD that makes a game fair — ability scores, proficiency, hit dice, spell slots, challenge ratings, XP budgets — adds optional rules from other great tables, and lets everything on top of it be whatever your table imagines.
 
 - **Any genre.** Sci-fi, post-apocalyptic, horror, mystery, cyberpunk, western, mythic — or classic fantasy.
 - **A real rulebook per world.** Origins, classes, subclasses, backgrounds, powers, weapons, armor, currency and monsters, all generated for the world and all mechanically sound on the engine's 5e SRD core.
@@ -70,7 +70,7 @@ The full EDEN kit is at [`skills/dne/templates/worldkit.example.json`](skills/dn
 
 <img src="docs/images/rules.jpg" alt="A game master's table: a d20 beside five glowing tokens from red to gold, a chase track, bond and flaw cards, a med kit, hero coins and a notebook of monster numbers" width="100%">
 
-Optional layers borrowed from other games and rebuilt on the DnE engine's d20 core. They're on the table, not in your way: switch them per campaign.
+Optional layers borrowed from other games and rebuilt on the Unrolled Engine's d20 core. They're on the table, not in your way: switch them per campaign.
 
 | Roll vs DC | Outcome | What happens |
 |---|---|---|
@@ -239,7 +239,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## ภาษาไทย
 
-**Dungeons & Everything** คือ AI Game Master ที่ใช้ได้กับ AI agent ทุกตัว (Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot, Cursor ฯลฯ) และไม่จำกัดอยู่แค่โลกแฟนตาซี — เล่าโลกที่อยากเล่นได้เลย จะเป็นไซไฟ หลังวันสิ้นโลก สยองขวัญ หรือสืบสวน แล้ว AI จะสร้างโครงสร้างของโลกใบนั้นให้ครบ ทั้งเผ่า อาชีพ สายย่อย พลังพิเศษ อุปกรณ์ สกุลเงิน และสัตว์ประหลาด โดยทุกอย่างรันบน DnE engine — เอนจิน d20 ที่มีแกนกฎจาก 5e SRD และมีกฎเสริมจากเกมอื่นให้เปิดใช้ได้ — จึงต่อสู้ เลเวลอัป และบาลานซ์ได้ถูกต้อง
+**Dungeons & Everything** คือ AI Game Master ที่ใช้ได้กับ AI agent ทุกตัว (Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot, Cursor ฯลฯ) และไม่จำกัดอยู่แค่โลกแฟนตาซี — เล่าโลกที่อยากเล่นได้เลย จะเป็นไซไฟ หลังวันสิ้นโลก สยองขวัญ หรือสืบสวน แล้ว AI จะสร้างโครงสร้างของโลกใบนั้นให้ครบ ทั้งเผ่า อาชีพ สายย่อย พลังพิเศษ อุปกรณ์ สกุลเงิน และสัตว์ประหลาด โดยทุกอย่างรันบน **Unrolled Engine** — เอนจิน d20 ของ DnE ที่มีแกนกฎจาก 5e SRD และมีกฎเสริมจากเกมอื่นให้เปิดใช้ได้ — จึงต่อสู้ เลเวลอัป และบาลานซ์ได้ถูกต้อง
 
 - ติดตั้ง: `git clone` repo แล้วรัน `python3 install.py` — ตั้งค่าให้ทุก agent ที่เจอในเครื่องในครั้งเดียว
 - เริ่มเกม: `/dne new <ชื่อแคมเปญ>` แล้วเล่าโลกของคุณ
