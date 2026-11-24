@@ -69,6 +69,11 @@ _FIRST = [
     "Sorin", "Talin", "Tamsyn", "Theron", "Tiernan", "Tordis", "Trevin", "Ulric",
     "Valen", "Vellin", "Verra", "Wendel", "Wren", "Xira", "Yael", "Yarrick",
     "Ysolde", "Zephir", "Auren", "Brel", "Cyrith", "Dorvel", "Fellan", "Hesta",
+    "Ailwin", "Beren", "Bram", "Callum", "Ciaran", "Cora", "Davin", "Declan",
+    "Edric", "Elara", "Evander", "Finnian", "Gideon", "Griffin", "Hollis", "Iona",
+    "Ivor", "Jareth", "Kestrel", "Leander", "Linnea", "Lucian", "Maeve", "Morwen",
+    "Nolan", "Osric", "Petra", "Quillan", "Ronan", "Rowan", "Sabine", "Stellan",
+    "Sylvie", "Torin", "Tristan", "Vesper", "Willa", "Wynne", "Zane", "Zora",
 ]
 
 _LAST = [
@@ -82,6 +87,13 @@ _LAST = [
     "Stormcrest", "Tallowmere", "Thornwell", "Tindalbrook", "Underwich", "Vaelmoor",
     "Vexworth", "Whitethorn", "Wilderbrook", "Yarrowfield", "Zorrenglade", "Brackleaf",
     "Coalwarden", "Drosspike", "Greengrave", "Hexmere", "Lampwood", "Pinegate",
+    "Alderwick", "Barrowdale", "Birchstead", "Brambleford", "Briarwood", "Chalkridge",
+    "Cragshaw", "Dunford", "Eldercrest", "Fallowmead", "Flintridge", "Foxhollow",
+    "Galewatch", "Gallowcroft", "Gorsewick", "Grimshaw", "Hawkridge", "Hazelwood",
+    "Heathcote", "Highbarrow", "Kestrelfell", "Kettlewell", "Mireholt", "Mossgrave",
+    "Nettleton", "Northwick", "Redcliffe", "Rimeford", "Rushmoor", "Sedgewick",
+    "Shalebrook", "Slateford", "Sootwell", "Spindlewick", "Staghorn", "Thistlewood",
+    "Vaneward", "Wainwright", "Winterbourne", "Wrenshaw",
 ]
 
 

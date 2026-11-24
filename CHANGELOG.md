@@ -18,6 +18,9 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 - `verify_tail.sh` reports a tail written before this session's `/dne load` as STALE (exit 1), so last session's beats are not passed off as this one's.
 - `calendar.py set --hour` takes minutes (`--hour 8:10`).
 
+### Changed
+- `npc_rename.py` draws from a larger name pool (120 first names, 100 surnames), so renamed NPCs repeat less.
+
 ## [1.8.5] — 2026-11-24 — Prompt improvements
 
 ### Changed
