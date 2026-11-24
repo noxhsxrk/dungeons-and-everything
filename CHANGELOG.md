@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.8.2] — 2026-11-24 — Off-screen lives, tested end to end
+
 ### Fixed (1.8.1)
 - The engine's block in `state.md` no longer resets the save reminders: the file keeps the modified time the GM gave it, so `SAVE DUE` still counts the turns since the GM last saved.
 - "Coming up" in that block lists only what someone set in motion (events with text), not the world's own daily rhythm.
@@ -24,7 +26,6 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 - **Quiet and small over a long run.** Routine choices and finished routine work are not announced (only cancelled, postponed, handed over or stopped work is); a finished duty becomes a count on its agent (`done_count`), so a season of daily work stays a handful of records. A duty whose `cancel_if` holds is passed over with that reason instead of being started and cancelled again and again. `wait` says plainly when a busy world stopped at its batch, and how many minutes are left to run.
 - **Seeds are checked for what the rules point at:** a rule spending from a store nobody creates, or a duty naming an undeclared rule, comes back with its place in the seed.
 - **Reasons on record.** Every choice keeps what was chosen, why, and each duty passed over with its reason; a hand-over records who, to whom and why. A faction is an agent too (`holder: "faction:<name>"`), planning from its own beliefs. Any action that takes no time (a belief, a store filled, someone sent away) makes the agents look again.
-
 
 ## [1.8.1] — 2026-11-24 — A world that is ready to run, and runs its own work
 
