@@ -8,6 +8,12 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Added — Living World plan, PR 4: NPCs and factions work and change plans off-screen
+- **Duties.** An `agent` can have duties (`rules.py`): when free, they take the highest-priority one they can do now, as far as *they* know. A rule's `unless_known` facts are read from the agent's own beliefs (`knowledge.py`), so a false rumour changes a plan and the truth does not reach anyone who has not heard it. Work put on hold comes back before anything new.
+- **Plans that change midway.** When the actor of a task under way learns one of those facts (`on_learn`) or is called away (`on_actor_gone`), the rule decides: postpone (materials back; it starts again when it can), cancel, or hand it over to someone free who can do it.
+- **Reasons on record.** Every choice keeps what was chosen, why, and each duty passed over with its reason; a hand-over records who, to whom and why. A faction is an agent too (`holder: "faction:<name>"`), planning from its own beliefs. Any action that takes no time (a belief, a store filled, someone sent away) makes the agents look again.
+
+
 ## [1.8.1] — 2026-11-24 — A world that is ready to run, and runs its own work
 
 ### Added — Living World plan, PR 3: each campaign declares its own rules of work

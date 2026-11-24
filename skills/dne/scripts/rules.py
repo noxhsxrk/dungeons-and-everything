@@ -10,8 +10,11 @@ scheduler's `set`. No code per campaign.
 
 Records:
   rule   "<id>"  {label, actor: {skill, min} | {right}, requires: [cond], cost: {store: {item: n}}, minutes,
-                  gives: {store: {item: n}}, sets: [{thing: [kind, id], data: {…}}], cancel_if: [cond]}
-  agent  "<name>" {skills: {skill: level}, rights: [..], busy: task id | null}
+                  gives: {store: {item: n}}, sets: [{thing: [kind, id], data: {…}}], cancel_if: [cond],
+                  unless_known: [fact id], on_learn / on_actor_gone: postpone | cancel | hand_over}
+  agent  "<name>" {skills: {skill: level}, rights: [..], busy: task id | null, away: false | "why",
+                  holder: "npc:<name>" | "faction:<name>" (whose beliefs are theirs),
+                  duties: [{rule, priority, when: [cond], repeat: true}], decisions: [{minute, task, because, skipped}]}
   store  "<id>"  {items: {item: n}, reserved: {task id: {item: n}}}
   task   "<id>"  {rule, actor, status: waiting | started | blocked | done | cancelled, why, since, ends,
                   caused_by, log: [{minute, status, why}]}
@@ -22,6 +25,13 @@ at the end its conditions are checked again: `done` (cost used, gains added, set
 reservation is kept; it finishes when the condition is back) → `cancelled` at any point when a `cancel_if` holds,
 which gives the reservation back. Each change is logged with its reason and the event or task that caused it.
 
+Agents with duties choose their own work when they are free: their duties by priority, the first they can do
+as far as THEY know (a rule's `unless_known` facts are read from their beliefs, not from the truth). Work they
+had to put on hold comes before anything new. Under way, a task reacts to its actor learning one of those facts
+(`on_learn`) or leaving (`on_actor_gone`): postponed (materials back, it goes again when it can), cancelled, or
+handed over to someone else who can do it. Every choice keeps what was chosen, why, and each duty passed over
+with its reason. A faction is an agent too (`holder: "faction:<name>"`).
+
 Order and loops: tasks are looked at in id order; a change one task makes can unblock or cancel another in the
 same minute (the cause is recorded), but in one look at the world no task changes status more than LOOP_LIMIT
 times: past that it is left `blocked` with the reason "stopped a loop", for the GM to look at.
@@ -31,7 +41,8 @@ Engine actions:
    "requires": [{"thing": ["store", "forge"], "path": "items.ore", "at_least": 2}],
    "cost": {"forge": {"ore": 2, "coal": 1}}, "minutes": 480, "gives": {"forge": {"iron": 1}},
    "cancel_if": [{"thing": ["route", "ford|millbridge"], "path": "access", "equals": "closed"}]}
-  {"action": "agent", "name": "Bren", "skills": {"smith": 2}, "rights": ["guild"]}
+  {"action": "agent", "name": "Bren", "skills": {"smith": 2}, "rights": ["guild"],
+   "duties": [{"rule": "smelt", "priority": 5}], "away": false}
   {"action": "store", "id": "forge", "items": {"ore": 4, "coal": 2}}            (adds; negative takes away)
   {"action": "task", "rule": "smelt", "actor": "Bren", "id": "smelt-1"}         (or "cancel": "smelt-1")
   {"action": "tasks"}                                                            (what is under way, and why)
@@ -77,6 +88,8 @@ def _who_cannot(world, rule: dict, actor: str, task_id: str) -> "str | None":
     a = world.get("agent", actor)
     if not a:
         return f"{actor} is not an agent of this world"
+    if a.get("away"):
+        return f"{actor} is away" + (f" ({a['away']})" if isinstance(a["away"], str) else "")
     if a.get("busy") and a["busy"] != task_id:
         return f"{actor} is busy with {a['busy']}"
     if need.get("skill") and int((a.get("skills") or {}).get(need["skill"], 0)) < int(need.get("min", 1)):
@@ -130,7 +143,7 @@ def _step(world, tid: str, task: dict, cause: str, moves: dict) -> bool:
     if any(scheduler._holds(world, c) for c in rule.get("cancel_if") or []):
         if task["status"] == "started":
             _release(world, tid, rule.get("cost"), use=False)
-            scheduler.cancel(world.db, f"task-end-{tid}", "the task was cancelled")
+            scheduler.cancel(world.db, task.get("end_event", f"task-end-{tid}"), "the task was cancelled")
         _free_actor(world, task)
         hit = next(c for c in rule["cancel_if"] if scheduler._holds(world, c))
         _log(task, minute, "cancelled", f"cancel_if holds: {_say(hit)}", cause)
@@ -146,9 +159,13 @@ def _step(world, tid: str, task: dict, cause: str, moves: dict) -> bool:
                 a["busy"] = tid
                 world.put("agent", task["actor"], a)
             task["ends"] = minute + int(rule.get("minutes", 0))
-            scheduler.schedule(world.db, f"task-end-{tid}", task["ends"], {"type": "task_end", "id": tid},
+            task["starts"] = int(task.get("starts", 0)) + 1
+            task["end_event"] = f"task-end-{tid}" + (f"-{task['starts']}" if task["starts"] > 1 else "")
+            scheduler.schedule(world.db, task["end_event"], task["ends"], {"type": "task_end", "id": tid},
                                cause_id=tid, priority=2)
             _log(task, minute, "started", f"{task['actor']} began; materials reserved", cause)
+    elif task["status"] == "started" and not task.get("ended"):
+        _midway(world, tid, task, rule, cause)
     elif task["status"] == "blocked" and task.get("ended"):          # finished its time, waiting on a condition
         broken = [c for c in rule.get("requires") or [] if not scheduler._holds(world, c)]
         if not broken:
@@ -160,6 +177,128 @@ def _step(world, tid: str, task: dict, cause: str, moves: dict) -> bool:
     return changed
 
 
+def _holder(world, name: str) -> str:
+    a = world.get("agent", name) or {}
+    return a.get("holder") or f"npc:{name}"
+
+
+def _knows(world, name: str, rule: dict) -> "str | None":
+    """The first of the rule's `unless_known` facts this agent believes (their own beliefs, not the truth)."""
+    holder = _holder(world, name)
+    for fact in rule.get("unless_known") or []:
+        b = world.get("belief", f"{holder}|{fact}")
+        if b and float(b.get("confidence", 1)) > 0:
+            return fact
+    return None
+
+
+def _stop(world, tid: str, task: dict, rule: dict, status: str, why: str, cause: str) -> None:
+    """Take a started task off its actor: materials back, end event cancelled."""
+    _release(world, tid, rule.get("cost"), use=False)
+    scheduler.cancel(world.db, task.get("end_event", f"task-end-{tid}"), why)
+    _free_actor(world, task)
+    _log(task, world.minute, status, why, cause)
+
+
+def _midway(world, tid: str, task: dict, rule: dict, cause: str) -> None:
+    """While the work is under way: the actor learns something that rules it out, or is no longer there.
+    What happens is the rule's own: `on_learn` / `on_actor_gone` = postpone (default) | cancel | hand_over."""
+    actor = task["actor"]
+    a = world.get("agent", actor) or {}
+    known = _knows(world, actor, rule)
+    if known:
+        how, why = rule.get("on_learn", "postpone"), f"{actor} learned {known}"
+    elif a.get("away"):
+        how, why = rule.get("on_actor_gone", "postpone"), f"{actor} is away"
+    else:
+        return
+    if how == "hand_over":
+        other = _stand_in(world, rule, tid, actor)
+        if other:
+            _free_actor(world, task)
+            b = world.get("agent", other)
+            b["busy"] = tid
+            world.put("agent", other, b)
+            task["actor"] = other
+            task.setdefault("handed", []).append({"minute": world.minute, "from": actor, "to": other, "why": why})
+            task["why"] = f"handed over from {actor} to {other}: {why}"
+            task["log"].append({"minute": world.minute, "status": "started", "why": task["why"], **({"cause": cause} if cause else {})})
+            return
+        why += "; nobody free to take it over"
+    if how == "cancel":
+        _stop(world, tid, task, rule, "cancelled", why, cause)
+    else:
+        _stop(world, tid, task, rule, "blocked", f"postponed: {why}", cause)
+
+
+def _stand_in(world, rule: dict, tid: str, leaving: str) -> "str | None":
+    """Who else could carry the work on: free, there, able, and not knowing what would stop them."""
+    for name in sorted(world.all("agent")):
+        if name != leaving and not _who_cannot(world, rule, name, tid) and not _knows(world, name, rule):
+            return name
+    return None
+
+
+def plan(world, cause: str = "") -> list:
+    """Agents with duties and nothing to do pick their next work: their duties in priority order, the first one
+    they can do as far as they know. The choice and every duty passed over are kept with the reason."""
+    out = []
+    minute = world.minute
+    open_by = {(t["actor"], t["rule"]): t for t in world.all("task").values() if t["status"] in OPEN}
+    for name, a in sorted(world.all("agent").items()):
+        if not a.get("duties") or a.get("busy") or a.get("away") or a.get("picked") == minute:
+            continue
+        held = [(tid, tk) for tid, tk in sorted(world.all("task").items())
+                if tk["actor"] == name and tk["status"] in ("waiting", "blocked") and not tk.get("ended")]
+        if any(not _missing(world, world.get("rule", tk["rule"]) or {}, tk, tid) for tid, tk in held):
+            continue                              # work put on hold can go again: that comes before anything new
+        skipped, chosen = [], None
+        for i, d in sorted(enumerate(a["duties"]), key=lambda kv: (-int(kv[1].get("priority", 0)), kv[0])):
+            rule = world.get("rule", d.get("rule", ""))
+            if not rule:
+                skipped.append({"rule": d.get("rule"), "why": "no such rule"})
+                continue
+            mine = open_by.get((name, d["rule"]))
+            if mine:
+                skipped.append({"rule": d["rule"], "why": "already on it" if mine["status"] == "started" else f"on hold: {mine['why']}"})
+                continue
+            if not d.get("repeat", True) and d["rule"] in (a.get("done") or []):
+                continue
+            when = [c for c in d.get("when") or [] if not scheduler._holds(world, c)]
+            if when:
+                skipped.append({"rule": d["rule"], "why": f"not now: {_say(when[0])}"})
+                continue
+            why = _missing(world, rule, {"actor": name}, "")
+            if why:
+                skipped.append({"rule": d["rule"], "why": why})
+                continue
+            chosen = d
+            break
+        if chosen is None:
+            if skipped != a.get("last_skipped"):
+                a["last_skipped"] = skipped
+                _decide(a, minute, None, "nothing it can do now", skipped)
+                world.put("agent", name, a)
+            continue
+        tid = f"{name}-{chosen['rule']}-{minute}"
+        world.put("task", tid, {"id": tid, "rule": chosen["rule"], "actor": name,
+                                "label": (world.get("rule", chosen["rule"]) or {}).get("label", ""),
+                                "status": "waiting", "why": "chosen as a duty", "since": minute,
+                                "caused_by": cause or "duty", "log": []})
+        a["picked"], a["last_skipped"] = minute, None
+        a.setdefault("done", [])
+        _decide(a, minute, tid, f"duty {chosen['rule']} (priority {chosen.get('priority', 0)}): it can be done now", skipped)
+        world.put("agent", name, a)
+        out.append({"type": "decision", "recipient": "dm", "agent": name, "task": tid,
+                    "text": f"{name} takes up {chosen['rule']}" + (f" (passed over: {'; '.join(s['rule'] + ' — ' + s['why'] for s in skipped)})" if skipped else "")})
+    return out
+
+
+def _decide(a: dict, minute, task, because: str, skipped: list) -> None:
+    a.setdefault("decisions", []).append({"minute": minute, "task": task, "because": because, "skipped": skipped})
+    del a["decisions"][:-20]
+
+
 def _missing(world, rule: dict, task: dict, tid: str) -> "str | None":
     broken = [c for c in rule.get("requires") or [] if not scheduler._holds(world, c)]
     if broken:
@@ -167,6 +306,9 @@ def _missing(world, rule: dict, task: dict, tid: str) -> "str | None":
     who = _who_cannot(world, rule, task["actor"], tid)
     if who:
         return who
+    known = _knows(world, task["actor"], rule)
+    if known:
+        return f"{task['actor']} knows {known}: will not start it"
     short = _short(world, rule.get("cost"), tid)
     return ("short: " + "; ".join(short)) if short else None
 
@@ -194,6 +336,10 @@ def _complete(world, tid: str, task: dict, rule: dict, cause: str) -> None:
         rec.update(s.get("data") or {})
         world.put(kind, id_, rec)
     _free_actor(world, task)
+    a = world.get("agent", task.get("actor", ""))
+    if a is not None and task["rule"] not in (a.get("done") or []):
+        a.setdefault("done", []).append(task["rule"])
+        world.put("agent", task["actor"], a)
     _log(task, world.minute, "done", f"{rule.get('label', task['rule'])} finished", cause)
 
 
@@ -202,7 +348,9 @@ def settle(world, cause: str = "") -> list:
     moves: dict = {}
     out = []
     for _round in range(LOOP_LIMIT + 1):
-        changed = False
+        picked = plan(world, cause)
+        out += picked
+        changed = bool(picked)
         for tid, task in sorted(world.all("task").items()):
             if task["status"] in OPEN:
                 task.setdefault("id", tid)
@@ -240,6 +388,19 @@ def _task_end(world, row, eff):
 scheduler.AFTER_CHANGE.append(lambda world: settle(world, getattr(world, "cause", "")))
 
 
+def _after_action(ctx, intent: dict, out: dict) -> None:
+    """Any action that took no time (a belief learned, a store filled, someone sent away) may change what
+    agents can do or know: look again. Actions that moved the clock have looked on the way already."""
+    if out.get("elapsed_minutes") or intent.get("action") in ("rule", "agent", "store", "task", "tasks"):
+        return
+    seen = settle(scheduler.World(ctx.campaign, ctx.db), ctx.action_id)
+    if seen:
+        out["visible_events"] = list(out.get("visible_events") or []) + seen
+
+
+turn.AFTER_ACTION.append(_after_action)
+
+
 # ── actions ───────────────────────────────────────────────────────────────────
 
 def _done(data: dict, visible: "list | None" = None, world=None) -> dict:
@@ -260,7 +421,11 @@ def _rule(ctx, intent: dict) -> dict:
     rid = str(intent.get("id", "")).strip()
     if not rid:
         return _done({"error": "a rule needs an id"})
-    rule = {k: intent[k] for k in ("label", "actor", "requires", "cost", "minutes", "gives", "sets", "cancel_if") if k in intent}
+    rule = {k: intent[k] for k in ("label", "actor", "requires", "cost", "minutes", "gives", "sets", "cancel_if",
+                                   "unless_known", "on_learn", "on_actor_gone") if k in intent}
+    for field in ("on_learn", "on_actor_gone"):
+        if rule.get(field, "postpone") not in ("postpone", "cancel", "hand_over"):
+            return _done({"error": f"{field}: postpone, cancel or hand_over"})
     for field in ("requires", "cancel_if"):
         for i, c in enumerate(rule.get(field) or []):
             if not isinstance(c, dict) or not ("thing" in c or "event" in c):
@@ -279,7 +444,9 @@ def _rule(ctx, intent: dict) -> dict:
 @turn.handler("agent")
 def _agent(ctx, intent: dict) -> dict:
     """agent — someone who can do this world's work: {"action": "agent", "name": "Bren", "skills": {"smith": 2},
-    "rights": ["guild"]}. Fields merge into what is already known about them."""
+    "rights": ["guild"], "duties": [{"rule": "smelt", "priority": 5, "when": [cond], "repeat": true}],
+    "away": "at the council" | false, "holder": "faction:Tollmen"}. Fields merge into what is known about them.
+    With duties they pick their own work when free; `away` takes them off it (their rule says what happens to it)."""
     name = str(intent.get("name", "")).strip()
     if not name:
         return _done({"error": "an agent needs a name"})
@@ -287,6 +454,9 @@ def _agent(ctx, intent: dict) -> dict:
     a = world.get("agent", name) or {"skills": {}, "rights": [], "busy": None}
     a["skills"].update(intent.get("skills") or {})
     a["rights"] = sorted(set(a.get("rights") or []) | set(intent.get("rights") or []))
+    for field in ("duties", "holder", "away"):
+        if field in intent:
+            a[field] = intent[field]
     world.put("agent", name, a)
     return _done({"agent": name, **a}, settle(world, f"agent:{name}"), world)
 
@@ -324,7 +494,7 @@ def _task(ctx, intent: dict) -> dict:
             return _done({"error": f"no task {tid} under way"})
         if task["status"] == "started":
             _release(world, tid, (world.get("rule", task["rule"]) or {}).get("cost"), use=False)
-            scheduler.cancel(ctx.db, f"task-end-{tid}", "the task was cancelled")
+            scheduler.cancel(ctx.db, task.get("end_event", f"task-end-{tid}"), "the task was cancelled")
         _free_actor(world, task)
         _log(task, world.minute, "cancelled", str(intent.get("why") or "called off"), ctx.action_id)
         world.put("task", tid, task)
