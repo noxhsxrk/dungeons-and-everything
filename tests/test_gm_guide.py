@@ -114,6 +114,16 @@ class GuideTests(unittest.TestCase):
             self.assertIn(script, out)
         self.assertNotIn("calendar.py", out)                            # no calendar.json in this campaign
 
+    def test_session_start_flags_a_session_the_header_counts_but_the_log_lacks(self):
+        # A GM bumped Session count to 2 at /dne end and wrote no log: the session's wins were lost.
+        self.state.write_text("# Campaign: eden\n**Session count:** 2\n## Session Flags\n", encoding="utf-8")
+        (self.camp / "session-log-archive.md").write_text("# Archive\n## Session 1 — x\n### Recap\nok\n", encoding="utf-8")
+        out = self.run_py(DISPLAY / "push_stats.py", "--set-campaign", "eden")
+        self.assertIn("1. LOG GAP", out)
+        self.assertIn("entry for session 2.", out)
+        (self.camp / "session-log.md").write_text("# Log\n## Session 2 — y\n### Recap\nok\n", encoding="utf-8")
+        self.assertNotIn("LOG GAP", self.run_py(DISPLAY / "push_stats.py", "--set-campaign", "eden"))
+
     def test_the_line_ranges_point_at_the_right_sections(self):
         sys.path.insert(0, str(SCRIPTS))
         import gm_guide

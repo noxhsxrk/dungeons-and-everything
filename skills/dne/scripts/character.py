@@ -1114,6 +1114,7 @@ def do_points(pool: str, args: list[str]) -> None:
     parser.add_argument("action", choices=actions)
     parser.add_argument("--char", required=True)
     parser.add_argument("-c", "--campaign", required=True)
+    parser.add_argument("--reason", default="", help="why: shown in the output")
     if not hero:
         parser.add_argument("--max", type=int, help="Set the maximum when resetting Focus Points")
     opts = parser.parse_args(args)
@@ -1169,7 +1170,7 @@ def do_points(pool: str, args: list[str]) -> None:
     result = f"{opts.char}: {label} {current} / {maximum}"
     if opts.action == "recover":
         result += " — stable at 0 HP"
-    print(result)
+    print(result + (f" ({opts.reason})" if opts.reason else ""))
 
 
 if __name__ == "__main__":

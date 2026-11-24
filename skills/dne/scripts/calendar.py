@@ -318,6 +318,15 @@ def cmd_now(campaign: str) -> None:
         print(_format_date(cal))
 
 
+def _clock(s: str) -> tuple:
+    """'8' or '8:10' -> (8, 10)."""
+    h, _, m = s.partition(":")
+    try:
+        return int(h), int(m or 0)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"time must look like 8 or 8:10, not {s!r}") from None
+
+
 def cmd_set(campaign: str, date_str: str, time_str: str, hour=None) -> None:
     cal = _load(campaign) or {"months": [], "day_names": WEEKDAYS[:], "month_length": 30, "events": []}
     if len(date_str.split()) == 1:
@@ -326,9 +335,10 @@ def cmd_set(campaign: str, date_str: str, time_str: str, hour=None) -> None:
     if time_str:
         cal.update(hour=_time_hour(time_str), minute=0)
     if hour is not None:
-        if not 0 <= hour <= 23:
-            raise ValueError("Hour must be between 0 and 23")
-        cal.update(hour=hour, minute=0)
+        h, m = hour if isinstance(hour, tuple) else (hour, 0)
+        if not (0 <= h <= 23 and 0 <= m <= 59):
+            raise ValueError("Time must be between 0:00 and 23:59")
+        cal.update(hour=h, minute=m)
     if _engine_on(campaign) and _load(campaign):  # a correction, not time passing: queued events keep their distance
         import scheduler
         delta = scheduler._minutes_of(cal) - scheduler._minutes_of(_load(campaign))
@@ -396,7 +406,8 @@ def main() -> None:
     sub.add_parser("now", help="Print current date/time")
 
     st = sub.add_parser("set", help="Set the current date/time directly")
-    st.add_argument("--hour", type=int, choices=range(24))
+    st.add_argument("--hour", type=_clock, metavar="H[:MM]",
+                    help="exact time, e.g. 8 or 8:10 (a time-of-day word alone resets to the start of that period)")
     st.add_argument("date",      help="Date string, e.g. '22 Harvestmoon 1247'")
     st.add_argument("time", nargs="?", default="",
                     help="Time of day (optional)")

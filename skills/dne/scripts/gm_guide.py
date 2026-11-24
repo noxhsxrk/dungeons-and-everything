@@ -77,6 +77,18 @@ def session_start(campaign: str) -> list[str]:
         f"{_py('migrate_ruleset.py')} {campaign} --check",
         f"{_py('campaign_version.py')} -c {campaign} check",
     ]
+    try:
+        import save_check
+        gaps = save_check.missing_sessions(camp)
+    except Exception:
+        gaps = []
+    if gaps:
+        # A save that only bumped the header lost a whole session once (wins, level-ups, pacts): catch it before play.
+        steps.insert(0, f"LOG GAP: state.md counts {save_check.session_count(camp)} sessions but session-log.md / "
+                        f"session-log-archive.md have no `## Session N` entry for session {', '.join(map(str, gaps))}. "
+                        "Before the opening scene, tell the players and ask what happened in it (fights won, levels, "
+                        "items, pacts, people met); also use characters/*.md, xp-ledger.jsonl and session_tail.json. "
+                        "Write the entry, and pin its lasting facts to state.md → ## Pinned Facts.")
     engine = paths.session_flag(campaign, "world_engine", "off") == "on"
     if engine:
         steps.append(f"{_py('turn.py')} -c {campaign} status   (world engine: if a turn is open, run `resume` and finish it "

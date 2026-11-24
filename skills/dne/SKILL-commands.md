@@ -526,6 +526,7 @@ If `graph.json` doesn't exist yet for this campaign, skip the sweep entirely (no
    rm -f ${CLAUDE_SKILL_DIR}/display/app.pid
    ```
 3. **Post-kill tail re-verification:** run `verify_tail.sh` once more after the kill. If it now reports unhealthy (file got truncated by a final write race), restore from the canonical version written in step 1f.
+4. **Last: run `save_check.py -c <campaign>` again.** The session is not ended while its session-log row is ☐: a `## Session N` entry must exist for the header's Session count. A header bumped without the entry is how a whole session's wins and level-ups were lost; the next `/dne load` reports it as a LOG GAP.
 
 ---
 

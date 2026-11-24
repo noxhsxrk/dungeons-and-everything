@@ -131,14 +131,26 @@ def unfinished(camp: Path) -> dict:
     return out
 
 
+def graph_names(camp: Path) -> "set | None":
+    """Lower-cased node names in graph.json, or None when the campaign has no graph yet."""
+    try:
+        nodes = json.loads((camp / "graph.json").read_text(encoding="utf-8")).get("nodes") or []
+    except (OSError, ValueError, AttributeError):
+        return None
+    return {str(n.get("name", "")).casefold() for n in nodes if isinstance(n, dict)} if nodes else None
+
+
 def backlog(camp: Path) -> dict:
     """{name: [what is missing]} for records that predate this script: no entry, no history, no aliases."""
     full = entries(camp)
+    graph = graph_names(camp)
     out = {}
     for name in index_names(camp):
+        if graph is not None and name.casefold() not in graph:
+            out.setdefault(name, []).append("not in graph.json")
         entry = full.get(name)
         if entry is None:
-            out[name] = ["no entry in npcs-full.md"]
+            out.setdefault(name, []).append("no entry in npcs-full.md")
             continue
         missing = []
         if not re.search(r"\*\*HP:\*\*\s*\d", entry):
@@ -148,7 +160,7 @@ def backlog(camp: Path) -> dict:
         if "**Aliases:**" not in entry:
             missing.append("aliases")
         if missing:
-            out[name] = missing
+            out.setdefault(name, []).extend(missing)
     return out
 
 
@@ -265,6 +277,14 @@ def cmd_add(campaign: str, args) -> int:
         line = _timeline(camp)
         line[name] = {"grown": now[0]}
         _save_timeline(camp, line)
+    graph = graph_names(camp)
+    if graph is not None and name.casefold() not in graph:   # scene-context finds them from the first scene on
+        import campaign_graph
+        data = campaign_graph._load(campaign)
+        node_id = f"npc_{campaign_graph._slug(name)}"
+        if not campaign_graph._node_by_id(data, node_id):
+            data["nodes"].append({"id": node_id, "type": "npc", "name": name})
+            campaign_graph._save(campaign, data)
     print(f"Created {name}: CR {worldkit.format_cr(key)}, HP {stats['hp']}, AC {stats['ac']}, attack +{stats['attack']} "
           f"({stats['damage']} damage), save DC {stats['dc']}.")
     print(f"Now write every `<fill: …>` part of `## {name}` in {full}: "
@@ -288,7 +308,8 @@ def cmd_check(campaign: str) -> int:
         return 0
     if old:
         print(f"\nIncomplete records: add what is missing in {camp / 'npcs-full.md'} "
-              "(`### History` with a **Background:** line, `- **Aliases:**` with the names used in play, an HP/AC line).")
+              "(`### History` with a **Background:** line, `- **Aliases:**` with the names used in play, an HP/AC line). "
+              f"Not in graph.json: `campaign_graph.py add-node --campaign {campaign} --type npc --name \"<Name>\"`.")
     if grow:
         print(f'\nGrow one: python3 "{Path(__file__).resolve()}" -c {campaign} advance "<Name>" --what "<what they did meanwhile>"'
               "  (--levels 0 for someone who changed but did not get stronger)")

@@ -56,6 +56,34 @@ def _section(text: str, title: str) -> str:
     return m.group(1) if m else ""
 
 
+def session_count(camp: Path) -> int | None:
+    """`**Session count:** N` from the state.md header, or None."""
+    try:
+        m = re.search(r"\*\*Session count:\*\*\s*(\d+)", (camp / "state.md").read_text(encoding="utf-8"))
+    except OSError:
+        return None
+    return int(m.group(1)) if m else None
+
+
+def logged_sessions(camp: Path) -> set[int]:
+    """Session numbers with a `## Session N` entry in session-log.md or session-log-archive.md."""
+    found: set[int] = set()
+    for name in ("session-log.md", "session-log-archive.md"):
+        try:
+            text = (camp / name).read_text(encoding="utf-8")
+        except OSError:
+            continue
+        found.update(int(n) for n in re.findall(r"^## Session (\d+)\b", text, re.M))
+    return found
+
+
+def missing_sessions(camp: Path) -> list[int]:
+    """Sessions the header counts that have no log entry: what a save that skipped the log leaves behind."""
+    count = session_count(camp) or 0
+    logged = logged_sessions(camp)
+    return [n for n in range(1, count + 1) if n not in logged]
+
+
 def npc_index(camp: Path) -> list[dict]:
     """NPCs from npcs.md (name, attitude) plus any `**Aliases:**` from npcs-full.md."""
     npcs = []
@@ -108,7 +136,22 @@ def checklist(campaign: str, since: float) -> list[tuple[bool, str]]:
         raise ValueError(f"no campaign folder {camp}")
     done = lambda name: (_mtime(camp / name) or 0) >= since  # noqa: E731
     items: list[tuple[bool, str]] = []
-    items.append((done("session-log.md"), "session-log.md: this session's entry (events, rolls that changed things, open threads)"))
+    count = session_count(camp)
+    today = datetime.now().strftime("%Y-%m-%d")
+    try:
+        header_today = f"**Last session:** {today}" in (camp / "state.md").read_text(encoding="utf-8")
+    except OSError:
+        header_today = False
+    items.append((header_today, f"state.md header: on the first save of a session, `**Session count:**` +1 and "
+                                f"`**Last session:** {today}`"))
+    if count:
+        # A header bumped with no `## Session N` entry is how a whole session's events got lost: tick on the entry, not the file time.
+        items.append((done("session-log.md") and count in logged_sessions(camp),
+                      f"session-log.md: a `## Session {count}` entry for this session (Session count is {count}) with "
+                      "Recap, Key Events, XP, Loot, Open Threads. Every win, level-up, pact and item that matters "
+                      "later also goes to state.md → ## Pinned Facts"))
+    else:
+        items.append((done("session-log.md"), "session-log.md: this session's entry (events, rolls that changed things, open threads)"))
     items.append((done("state.md"), "state.md: Current Situation (location, time, party HP/resources, Inspiration), "
                                     "Recent Events, Active Quests, Open Threads"))
     state = (camp / "state.md").read_text(encoding="utf-8") if (camp / "state.md").exists() else ""
@@ -175,8 +218,12 @@ def main() -> int:
           f"{len(items) - todo} done, {todo} to do")
     for ok, label in items:
         print(f"{'✓' if ok else '☐'} {label}")
+    gaps = missing_sessions(find_campaign(args.campaign))
+    if gaps:
+        print(f"\n☐ Earlier sessions with no log entry: {', '.join(map(str, gaps))}. Write them now (ask the players what happened).")
     if todo:
-        print("\nEvery ☐ must be updated now, or named in your save summary with the reason it didn't change.")
+        print("\nEvery ☐ must be updated now, or named in your save summary with the reason it didn't change. "
+              "/dne end is not finished while the session-log row is ☐.")
     return 0
 
 

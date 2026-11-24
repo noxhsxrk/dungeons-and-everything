@@ -574,6 +574,9 @@ def main() -> None:
             for r in results:
                 ch = ", ".join(f"{k}={v}" for k, v in r["changes"].items()) or "already full"
                 print(f"[{args.type.upper()} REST] {r['character']}: {ch}")
+            if (find_campaign(args.campaign) / "calendar.json").exists():
+                print(f"  Clock not moved (this writes the sheets only): now run "
+                      f"`calendar.py -c {args.campaign} rest {args.type}`.")
         elif args.cmd == "treat":
             rec = treat_wounds(args.campaign, args.char, args.total, args.dc, args.natural, args.heal, args.force)
             print(f"[TREAT WOUNDS] {rec['character']}: {rec['degree']} — HP {rec['hp']}")

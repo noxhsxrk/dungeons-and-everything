@@ -5,7 +5,8 @@
 #   bash verify_tail.sh <campaign-name>
 #
 # Exit 0 = healthy (file exists, > 50 bytes, parses as a non-empty JSON list)
-# Exit 1 = unhealthy (missing, empty/[], unparseable, or wrong shape)
+# Exit 1 = unhealthy (missing, empty/[], unparseable, wrong shape, or stale:
+#          last written before this session's /dne load, i.e. last session's beats)
 #
 # Used by SKILL-commands.md /dne save and /dne end to detect the wipe-bug
 # state before it's too late to recover. When this returns 1, the DM is
@@ -40,10 +41,12 @@ if (( SIZE < 50 )); then
   exit 1
 fi
 
+MARKER="${DNE_RUNTIME_DIR:-${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/.runtime}/active-campaign.json"
+
 # Parse + shape check via Python (already a dependency of the skill).
-python3 - "$TAIL" <<'PY'
-import json, sys
-path = sys.argv[1]
+python3 - "$TAIL" "$MARKER" "$CAMP" <<'PY'
+import json, os, sys
+path, marker, camp = sys.argv[1:4]
 try:
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
@@ -59,6 +62,14 @@ if not data:
 if not all(isinstance(e, dict) and ("text" in e or "player" in e or "npc" in e or "dice" in e) for e in data):
     print(f"verify_tail.sh: {path} — entries not in expected shape")
     sys.exit(1)
+try:
+    with open(marker, encoding="utf-8") as f:
+        active = json.load(f).get("name") == camp
+    if active and os.path.getmtime(path) < os.path.getmtime(marker):
+        print(f"verify_tail.sh: {path} — STALE (written before this session's /dne load: last session's beats)")
+        sys.exit(1)
+except (OSError, ValueError, AttributeError):
+    pass   # no session marker: nothing to compare against
 print(f"verify_tail.sh: {path} — HEALTHY ({len(data)} entries)")
 sys.exit(0)
 PY

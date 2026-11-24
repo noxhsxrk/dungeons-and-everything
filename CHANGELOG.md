@@ -8,6 +8,14 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Fixed
+- A session whose save only bumped `**Session count:**` lost everything that happened in it (a won S-rank gate, two level-ups, pacts), and the next GM argued with the player who remembered it. `/dne load` (`gm_guide.py start`) now opens with a **LOG GAP** step when the header counts a session that has no `## Session N` entry in `session-log.md` / `session-log-archive.md`; `save_check.py` ticks the session-log row only when the entry for the current count exists, checks the header's `**Last session:**`, and lists earlier sessions with no entry; `/dne end` finishes by running `save_check.py` again. SKILL.md: a player's memory of past play is evidence, not a claim to argue with.
+- `campaign_graph.py scene-context` no longer fails when one `--present` name is missing from the graph: it warns with the `add-node` command and answers for the rest. `npc.py add` puts the new NPC in `graph.json` (when the graph is set up), and `npc.py check` names NPCs that are not in it.
+- `economy.py rest` says the clock did not move and names the `calendar.py rest` command to run (the rest stays split: sheets in one script, the clock in the other).
+- `character.py hero` accepts `--reason`.
+- `verify_tail.sh` reports a tail written before this session's `/dne load` as STALE (exit 1), so last session's beats are not passed off as this one's.
+- `calendar.py set --hour` takes minutes (`--hour 8:10`).
+
 ## [1.8.5] — 2026-11-24 — Prompt improvements
 
 ### Changed

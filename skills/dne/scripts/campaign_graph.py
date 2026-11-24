@@ -498,9 +498,21 @@ def cmd_scene_context(args) -> int:
         if place:
             seeds.append(place)
         else:
-            print(f"warning: place {args.place!r} is not in the graph; continuing")
-    if args.present:
-        seeds.extend(_resolve_csv(data, args.present, "present"))
+            print(f"warning: place {args.place!r} is not in the graph; add it: campaign_graph.py add-node "
+                  f"--campaign {args.campaign} --type place --name {args.place!r}")
+    for ref in (r.strip() for r in (args.present or "").split(",")):
+        if not ref:
+            continue
+        try:
+            node = _resolve_node(data, ref)
+        except ValueError as e:
+            print(f"warning: {e}")
+            continue
+        if node:
+            seeds.append(node)
+        else:   # one unknown name used to fail the whole call; the GM then dropped them and forgot to add them
+            print(f"warning: present {ref!r} is not in the graph; add it: campaign_graph.py add-node "
+                  f"--campaign {args.campaign} --type npc --name {ref!r}")
     if args.threads:
         seeds.extend(_resolve_csv(data, args.threads, "thread"))
     if not seeds and args.place:

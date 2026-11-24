@@ -64,6 +64,19 @@ class SaveCheckTests(unittest.TestCase):
         self.assertIn("☐ Other NPCs", out)
         self.assertIn("✓ characters/nox.md", out)
 
+    def test_session_log_row_needs_the_entry_for_the_header_count(self):
+        today = time.strftime("%Y-%m-%d")
+        (self.camp / "state.md").write_text(f"# C\n**Last session:** {today}  **Session count:** 3\n", encoding="utf-8")
+        (self.camp / "session-log.md").write_text("# Log\n## Session 2 — old\n", encoding="utf-8")   # written now, wrong entry
+        out = self.run_check()
+        self.assertIn("✓ state.md header", out)
+        self.assertIn("☐ session-log.md: a `## Session 3` entry", out)
+        self.assertIn("Earlier sessions with no log entry: 1, 3", out)
+        (self.camp / "session-log.md").write_text("# Log\n## Session 1\n## Session 2\n## Session 3 — now\n", encoding="utf-8")
+        out = self.run_check()
+        self.assertIn("✓ session-log.md: a `## Session 3` entry", out)
+        self.assertNotIn("Earlier sessions", out)
+
     def test_bad_since_is_an_error(self):
         r = subprocess.run([sys.executable, str(SCRIPTS / "save_check.py"), "-c", "glitch", "--since", "yesterday"],
                            capture_output=True, encoding="utf-8", env=self.env)
