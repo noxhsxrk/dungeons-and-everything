@@ -149,12 +149,25 @@ def _offices(day: Day) -> None:
 
 
 def _rounds(day: Day) -> None:
-    """What the workers see: each one present updates what is known of the machines they watch."""
-    for name, w in day.s["workers"].items():
-        if _here(day.s, name):
-            for aid in w.get("watches", []):
-                if aid in day.s["assets"]:
-                    day.s["assets"][aid]["known"] = day.s["assets"][aid]["condition"]
+    """What the workers see: each one present updates what is known of the machines they watch. A machine whose
+    watchers are all away is watched by whoever present repairs best, while that lasts."""
+    s = day.s
+    for aid, a in s["assets"].items():
+        watchers = [n for n, w in s["workers"].items() if aid in w.get("watches", [])]
+        if any(_here(s, n) for n in watchers):
+            seen_by = next(n for n in watchers if _here(s, n))
+        else:
+            best = sorted((-int(w.get("skills", {}).get("repair", 0)), _missed(w), n) for n, w in s["workers"].items()
+                          if _here(s, n) and int(w.get("skills", {}).get("repair", 0)) >= 1)
+            seen_by = best[0][2] if best else None
+            if seen_by and watchers and day.streak(f"cover:{aid}:{seen_by}"):
+                day.note(seen_by, f"took over the rounds on the {a['label']}", f"{', '.join(watchers)} away and {seen_by} repairs best of those here",
+                         left=f"{seen_by} reads the {a['label']} until they are back")
+            elif seen_by:
+                day.streak(f"cover:{aid}:{seen_by}")
+        if seen_by:
+            a["known"] = a["condition"]
+            a["seen_by"] = seen_by
 
 
 def _wear(day: Day) -> None:
@@ -185,8 +198,8 @@ def _notice(day: Day) -> None:
         if a.get("status") != "running" or int(a.get("known", a["condition"])) > int(a.get("notice_at", 0)) \
                 or any(j.get("asset") == aid for j in s["jobs"].values()):
             continue
-        who = next((n for n, w in s["workers"].items() if aid in w.get("watches", []) and _here(s, n)
-                    and int(w.get("skills", {}).get("repair", 0)) >= 1), None)
+        who = a.get("seen_by")
+        who = who if who and _here(s, who) and int(s["workers"][who].get("skills", {}).get("repair", 0)) >= 1 else None
         if not who:
             continue
         s["jobs"][f"repair:{aid}"] = {"asset": aid, "opened": day.d, "service": True, "noticed_by": who}
@@ -237,13 +250,14 @@ def _council(day: Day) -> None:
                          left=f"the {a['label']} keeps running at {a['condition']}%")
             continue
         decision, who, why = r
+        if decision != "delay":                   # a ruling is used once; the next request is ruled on afresh
+            s.setdefault("decisions", {}).pop(f"service:{job['asset']}", None)
         if decision == "approve":
             job["approved"] = True
-            a["status"] = "service"
-            day.note(who, f"approved stopping the {a['label']}", why, left=f"the {a['label']} is off for service")
+            day.note(who, f"approved stopping the {a['label']}", why,
+                     left=f"it stops once the parts and hands are ready; until then it runs at {a['condition']}%")
         elif decision == "deny":
             del s["jobs"][jid]
-            s.setdefault("decisions", {}).pop(f"service:{job['asset']}", None)
             day.note(who, f"refused to stop the {a['label']}", why, left=f"it runs on at {a['condition']}%")
         elif job.get("waiting") != "delay":
             job["waiting"] = "delay"
@@ -255,7 +269,8 @@ def _offer(day: Day) -> None:
     s, n = day.s, day.s.get("neighbour")
     if not n or n.get("pact") or n.get("refused"):
         return
-    stuck = [j for j in s["jobs"].values() if j.get("blocked") == "parts" and int(j.get("blocked_days", 0)) >= int(n.get("offers_after_days", 3))]
+    stuck = [j for j in s["jobs"].values() if j.get("blocked") == "parts" and int(j.get("blocked_days", 0)) >= int(n.get("offers_after_days", 3))
+             and s["assets"][j["asset"]].get("status") != "running"]      # word spreads when something has stopped
     if not stuck:
         return
     a = s["assets"][stuck[0]["asset"]]
@@ -269,6 +284,7 @@ def _offer(day: Day) -> None:
     if r is None:
         return
     decision, who, why = r
+    s.setdefault("decisions", {}).pop(f"pact:{n['name']}", None)
     if decision != "approve":
         n["refused"] = day.d
         day.note(who, f"turned down {n['name']}'s offer", why, left="the parts must come from somewhere else", lasting=True)
@@ -282,16 +298,20 @@ def _offer(day: Day) -> None:
              left=f"the pact holds until day {n['pact']['until']}", lasting=True)
 
 
+def _missed(w: dict) -> int:
+    """How much the settlement misses this worker's own work when they are pulled off it."""
+    return max([DUTY_WEIGHT.get(x, 5) for x in w.get("duties", []) if x not in ("repair", "rounds")] or [0])
+
+
 def _pick(day: Day, need: int) -> "tuple | None":
     """(worker, full_speed) for a repair needing skill `need`: full skill first, then the least missed of those
     one level below; within that, whoever's own work matters least."""
     s, best = day.s, None
-    for i, (name, w) in enumerate(s["workers"].items()):
+    for name, w in s["workers"].items():
         lvl = int(w.get("skills", {}).get("repair", 0))
         if not _here(s, name) or day.free(name) <= 0 or lvl < need - 1 or lvl < 1:
             continue
-        cost = max([DUTY_WEIGHT.get(x, 5) for x in w.get("duties", []) if x not in ("repair", "rounds")] or [0])
-        rank = (lvl < need, cost, i)
+        rank = (lvl < need, _missed(w), name)
         if best is None or rank < best[0]:
             best = (rank, name, lvl >= need)
     return best and (best[1], best[2])
@@ -345,6 +365,10 @@ def _work(day: Day) -> None:
                 job["blocked_days"] = int(job.get("blocked_days", 0)) + 1
                 continue
         job.pop("blocked", None)
+        if a.get("status") == "running":          # an approved service stops the machine only now, parts in hand
+            a["status"] = "service"
+            day.note(who, f"stopped the {a['label']} for service", "the council approved it and the parts are here",
+                     left=f"the {a['label']} is off until the work is done")
         left = hours - int(job.get("done", 0))
         spent = min(day.free(who), left if full else 2 * left)
         job["done"] = int(job.get("done", 0)) + (spent if full else spent // 2)

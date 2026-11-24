@@ -68,10 +68,10 @@ class CommunityTests(EngineCase):
         self.assertTrue(all(x["status"] == "running" for x in a["assets"].values()))
         self.assertTrue(self.first(ra, "Tomas", "ran the cart for Deepwell"))
 
-        # Mechanic gone: nobody sees the failure coming, the apprentice holds the keys and covers at half speed,
+        # Mechanic gone: the apprentice takes over his rounds and his keys, covers the repair at half speed,
         # and his own hauling falls behind.
-        self.assertIsNone(self.first(rb, did="asked to stop"))
-        self.assertIn("Jonas away", self.first(rb, "main air filter", "failed")["why"])
+        self.assertIn("Jonas away", self.first(rb, "Pim", "took over the rounds on the main air filter")["why"])
+        self.assertIn("Pim read it at 38%", self.first(rb, "Pim", "asked to stop")["why"])
         self.assertEqual(self.first(rb, "Pim", "holds the workshop keys")["day"], 1)
         fixed_b = self.first(rb, "Pim", "repaired the main air filter")
         self.assertIn("half speed", fixed_b["why"])
@@ -101,10 +101,26 @@ class CommunityTests(EngineCase):
         self.do("two days", {"action": "wait", "days": 2})
         rows = self.data(self.do("report", {"action": "community", "at": AT, "since_day": 0}))["chronicle"]
         self.assertIn("appointment jonas-market", self.first(rows, "Jonas", "is away")["why"])
-        self.assertIsNone(self.first(rows, did="asked to stop"))          # nobody did the rounds
+        self.assertTrue(self.first(rows, "Pim", "took over the rounds"))   # someone else reads the machines
         self.assertTrue(self.first(rows, "Pim", "holds the workshop keys"))
         where = self.data(self.do("where is Pim", {"action": "where", "npc": "Pim"}))
         self.assertEqual((where["place"], where["why"]), ("ford", "works in Hollow-9"))
+
+    def test_with_nobody_to_read_the_machines_the_failure_comes_unseen(self):
+        self.do("all the mechanics are gone", {"action": "settlement", "at": AT, "workers": {
+            "Jonas": {"away": True}, "Pim": {"away": True}, "Bo": {"away": True}}})
+        self.do("two days", {"action": "wait", "days": 2})
+        rows = self.data(self.do("report", {"action": "community", "at": AT, "since_day": 0}))["chronicle"]
+        self.assertIn("nobody had seen it coming", self.first(rows, "main air filter", "failed")["why"])
+        self.assertIn("no one present has repair", self.first(rows, "nobody", "could start on the main air filter")["why"])
+
+    def test_an_approved_service_waits_for_parts_and_a_ruling_is_used_once(self):
+        self.do("Jonas asks on day 1", {"action": "wait", "days": 1})
+        self.do("the GM rules", {"action": "community_decide", "at": AT, "matter": "service:filter-main",
+                                 "decision": "approve", "why": "the party will cover the grow-house"})
+        s = self.thing("settlement", "ford")
+        self.assertEqual(s["decisions"], {})
+        self.assertEqual(s["assets"]["filter-main"]["status"], "running")    # no parts yet: it keeps going
 
     def test_a_month_at_once_equals_a_month_of_days(self):
         shutil.copytree(self.camp, self.root / "campaigns" / "daily")

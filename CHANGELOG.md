@@ -13,7 +13,9 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 - `world_migrate.py disable` writes settlements and their chronicles into `world-export.md`.
 - **Workers are NPCs.** A worker whose appointment, schedule or last known place puts them elsewhere is away from the settlement for that day (the chronicle says where and why, and the next in line takes their office); `where` answers for a worker routine knows nothing else about with their settlement.
 
-Known limits: one settlement's own economy; the neighbour is a record, not a second simulated community; workers are not created as `npcs-full.md` records; no link to a `trade` market at the same place.
+- **Who takes over.** A machine whose watchers are all away is read by whoever present repairs best (and whose own work is least missed); an approved service stops the machine only once the parts and hands are ready, so it keeps running (and wearing) until then; a GM ruling on a matter is used once.
+
+Known limits: one settlement's own economy; the neighbour is a record, not a second simulated community; workers are not created as `npcs-full.md` records; no link to a `trade` market at the same place; in a world with no map the party is never "at" a settlement, so there is no council stop and no arrival line (use `community` to read it).
 
 ## [1.7.1] — 2026-11-24 — Closing what 1.7.0 left open
 
