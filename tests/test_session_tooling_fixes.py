@@ -102,13 +102,15 @@ class SessionToolingTests(unittest.TestCase):
         os.utime(tail, (old, old))
         verify = lambda: subprocess.run(["bash", str(DISPLAY / "verify_tail.sh"), "eden"], capture_output=True,  # noqa: E731
                                         encoding="utf-8", env=self.env)
-        self.assertEqual(verify().returncode, 0)                       # no session marker: shape check only
+        r = verify()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)          # no session marker: shape check only
         (self.rt / "active-campaign.json").write_text(json.dumps({"name": "eden"}), encoding="utf-8")
         r = verify()
-        self.assertEqual(r.returncode, 1)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
         self.assertIn("STALE", r.stdout)
         os.utime(tail, None)                                           # written this session
-        self.assertEqual(verify().returncode, 0)
+        r = verify()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
 
 if __name__ == "__main__":
