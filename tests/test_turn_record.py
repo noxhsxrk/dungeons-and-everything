@@ -106,3 +106,12 @@ class TurnRecordTests(EngineCase):
         self.assertIsNone(self.thing("route", "ford|millbridge"))
         self.assertIsNone(self.event("rider"))
         self.assertEqual(self.block(), before_block)
+
+    def test_the_engine_block_does_not_count_as_the_gm_saving(self):
+        state = self.camp / "state.md"
+        os.utime(state, (1_000_000, 1_000_000))
+        self.do("[Mira]: shut it", CLOSE)
+        self.turn.finish("oldworld", "Shut.")
+        self.assertIn("closed", self.block())
+        self.assertEqual(state.stat().st_mtime, 1_000_000)          # SAVE DUE still counts the turns since the GM saved
+

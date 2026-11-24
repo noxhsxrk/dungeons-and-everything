@@ -151,6 +151,16 @@ class CampaignInitTests(unittest.TestCase):
         self.assertIn("npcs[0].aliases[0]", {e["path"] for e in self.ci.check(seed)})
         self.assertIn("flags.wordl_engine", {w["path"] for w in self.ci.warnings(seed)})
 
+    def test_rules_must_point_at_stores_and_duties_at_rules(self):
+        seed = copy.deepcopy(SEED)
+        seed["setup"] += [{"action": "rule", "id": "smelt", "cost": {"forje": {"ore": 2}}, "minutes": 60},
+                          {"action": "agent", "name": "Bren", "skills": {"smith": 1}, "duties": [{"rule": "smelting"}]}]
+        out = self.ci.build(seed)
+        self.assertFalse(out["ok"])
+        where = {e["path"] for e in out["errors"]}
+        self.assertTrue({"setup[5].cost.forje", "setup[6].duties[0].rule"} <= where, out["errors"])
+        self.assertFalse((self.root / "campaigns" / "hollow").exists())
+
     @needs_unicode_fs
     def test_a_thai_world(self):
         seed = copy.deepcopy(SEED)

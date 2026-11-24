@@ -523,9 +523,9 @@ def world_block(campaign: str, db, turn_id: str, record: dict) -> str:
         lines.append(f"- **In-world time:** {scheduler._calendar_module()._format_date(cal)}")
     except (OSError, ValueError):
         now = None
-    due = db.execute("SELECT event_id, due_minute, effect FROM events WHERE status='pending' AND due_minute IS NOT NULL "
-                     "AND event_id NOT LIKE 'community-day-%' AND event_id NOT LIKE 'market-day-%' "
-                     "ORDER BY due_minute, event_id LIMIT 5").fetchall()
+    due = [r for r in db.execute("SELECT event_id, due_minute, effect FROM events WHERE status='pending' "
+                                 "AND due_minute IS NOT NULL ORDER BY due_minute, event_id LIMIT 300")
+           if json.loads(r["effect"]).get("text")][:5]   # what someone set in motion, not the world's own rhythm
     if due:
         def when(m):
             if now is None:
@@ -533,7 +533,7 @@ def world_block(campaign: str, db, turn_id: str, record: dict) -> str:
             h = max(0, m - now) // 60
             return f"in {h // 24}d {h % 24}h" if h >= 24 else f"in {h}h"
         lines.append("- **Coming up (GM only):** " + "; ".join(
-            f"{when(r['due_minute'])}: {json.loads(r['effect']).get('text') or json.loads(r['effect']).get('type')} ({r['event_id']})"
+            f"{when(r['due_minute'])}: {json.loads(r['effect'])['text']} ({r['event_id']})"
             for r in due))
     shut = [f"{k} {v.get('access')}" + (f" ({v['reason']})" if v.get("reason") else "")
             for k, v in sorted(wdb.all_of(db, "route").items()) if v.get("access") not in (None, "open")]

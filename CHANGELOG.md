@@ -8,6 +8,11 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Fixed (1.8.1)
+- The engine's block in `state.md` no longer resets the save reminders: the file keeps the modified time the GM gave it, so `SAVE DUE` still counts the turns since the GM last saved.
+- "Coming up" in that block lists only what someone set in motion (events with text), not the world's own daily rhythm.
+- CI: Windows jobs are dropped from the release matrix (they took about eight minutes); the ASCII-locale job keeps the encoding checks.
+
 ### Added — Living World plan, PR 5: the whole loop, tested end to end
 - `tests/test_living_world.py` drives the normal way in, one new process per step as a fresh agent would: a seed through `campaign_init.py`, a turn that changes the world, a month passing, then the save read back (`status`, the engine's block in `state.md`, `turn.py log`). Two worlds of different shapes (a forge town with duties, a market and a caravan; Hollow-9) each run 30 days with no model call: nothing due is left behind, no material is used twice. From one save, a free run and one where the players shut the road differ, and the difference traces to the closure (a cancelled event with its reason, cancelled work naming the condition, less iron). A month stopped by a crash halfway through resumes to the same world; an undo takes the month back.
 
@@ -15,6 +20,9 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 ### Added — Living World plan, PR 4: NPCs and factions work and change plans off-screen
 - **Duties.** An `agent` can have duties (`rules.py`): when free, they take the highest-priority one they can do now, as far as *they* know. A rule's `unless_known` facts are read from the agent's own beliefs (`knowledge.py`), so a false rumour changes a plan and the truth does not reach anyone who has not heard it. Work put on hold comes back before anything new.
 - **Plans that change midway.** When the actor of a task under way learns one of those facts (`on_learn`) or is called away (`on_actor_gone`), the rule decides: postpone (materials back; it starts again when it can), cancel, or hand it over to someone free who can do it.
+- **Appointments are commitments.** An agent with a place of work (`at`) is away from it whenever `routine.py` puts them elsewhere (an appointment, a schedule block): their work there waits or goes on without them, as its rule says. A fourth answer, `ask_help`, puts the work on hold until someone free who can do it comes to help.
+- **Quiet and small over a long run.** Routine choices and finished routine work are not announced (only cancelled, postponed, handed over or stopped work is); a finished duty becomes a count on its agent (`done_count`), so a season of daily work stays a handful of records. A duty whose `cancel_if` holds is passed over with that reason instead of being started and cancelled again and again. `wait` says plainly when a busy world stopped at its batch, and how many minutes are left to run.
+- **Seeds are checked for what the rules point at:** a rule spending from a store nobody creates, or a duty naming an undeclared rule, comes back with its place in the seed.
 - **Reasons on record.** Every choice keeps what was chosen, why, and each duty passed over with its reason; a hand-over records who, to whom and why. A faction is an agent too (`holder: "faction:<name>"`), planning from its own beliefs. Any action that takes no time (a belief, a store filled, someone sent away) makes the agents look again.
 
 

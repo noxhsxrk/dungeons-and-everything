@@ -235,12 +235,20 @@ def stage_writes(db, action_id: str, writes: dict) -> None:
                    (action_id, rel, text, hashlib.sha256(text.encode("utf-8")).hexdigest()))
 
 
+#: Files the engine writes only a part of: their modified time stays the GM's, because "state.md changed" is
+#: how the save reminders (gm_guide, save_check) know the GM saved.
+KEEP_MTIME = {"state.md"}
+
+
 def _replace(campaign: str, rel: str, text: str) -> None:
     target = paths.find_campaign(campaign) / rel
     target.parent.mkdir(parents=True, exist_ok=True)
+    before = target.stat() if rel in KEEP_MTIME and target.exists() else None
     tmp = target.with_name(target.name + ".world-tmp")
     tmp.write_text(text, encoding="utf-8")
     os.replace(tmp, target)
+    if before is not None:
+        os.utime(target, ns=(before.st_atime_ns, before.st_mtime_ns))
 
 
 def _recover(db, campaign: str) -> None:

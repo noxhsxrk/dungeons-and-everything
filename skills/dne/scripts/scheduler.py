@@ -389,8 +389,14 @@ def _register() -> None:
         minutes = int(intent.get("minutes", 0)) + 60 * int(intent.get("hours", 0)) + 1440 * int(intent.get("days", 0))
         world = World(ctx.campaign, ctx.db)
         out = advance(world, (world.minute or 0) + minutes, int(intent.get("batch", 200)))
+        data = {k: out[k] for k in ("from", "to", "applied", "remaining", "interrupted")}
+        if out["remaining"] and not out["interrupted"]:   # a busy world: the clock stopped at the batch, say so plainly
+            left = minutes - out["elapsed_minutes"]
+            data["note"] = (f"stopped after {len(out['applied'])} events with {out['remaining']} more due: only "
+                            f"{out['elapsed_minutes']} of {minutes} minutes passed. Run wait again for the other {left}.")
+            data["left_minutes"] = left
         return {"status": "done", "elapsed_minutes": out["elapsed_minutes"], "writes": world.writes(),
-                "visible_events": out["visible_events"], "data": {k: out[k] for k in ("from", "to", "applied", "remaining", "interrupted")}}
+                "visible_events": out["visible_events"], "data": data}
 
     @turn.handler("schedule")
     def _schedule(ctx, intent: dict) -> dict:

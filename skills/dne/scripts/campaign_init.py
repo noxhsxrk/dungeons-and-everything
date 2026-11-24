@@ -411,6 +411,36 @@ def _complete(camp: Path, seed: dict) -> list:
             db.close()
         if open_turns or waiting:
             out.append({"path": "setup", "error": f"the build left {open_turns} open turn(s) and {waiting} message(s) to send"})
+        out += _references(camp / "world.db", seed)
+    return out
+
+
+def _references(db_file: Path, seed: dict) -> list:
+    """What the world's rules point at must exist: stores a rule spends or fills, rules an agent's duties name."""
+    import sqlite3
+    db = sqlite3.connect(str(db_file))
+    try:
+        rows = {(k, i): json.loads(d) for k, i, d in db.execute("SELECT kind, id, data FROM things WHERE kind IN ('rule','store','agent')")}
+    finally:
+        db.close()
+    stores = {i for k, i in rows if k == "store"}
+    rules = {i for k, i in rows if k == "rule"}
+    where = {}
+    for n, intent in enumerate(seed.get("setup") or []):
+        if isinstance(intent, dict) and intent.get("action") in ("rule", "agent"):
+            where[(intent["action"], str(intent.get("id") or intent.get("name")))] = n
+    out = []
+    for (kind, ident), rec in sorted(rows.items()):
+        at = f"setup[{where.get((kind, ident), '?')}]"
+        if kind == "rule":
+            for field in ("cost", "gives"):
+                for sid in rec.get(field) or {}:
+                    if sid not in stores:
+                        out.append({"path": f"{at}.{field}.{sid}", "error": f"rule {ident!r} uses store {sid!r}, which no store action creates"})
+        if kind == "agent":
+            for j, d in enumerate(rec.get("duties") or []):
+                if d.get("rule") not in rules:
+                    out.append({"path": f"{at}.duties[{j}].rule", "error": f"{ident}'s duty names rule {d.get('rule')!r}, which is not declared"})
     return out
 
 

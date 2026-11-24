@@ -129,10 +129,10 @@ class LivingWorldTests(unittest.TestCase):
         self.assertEqual(month["elapsed_minutes"], 30 * 1440)
         self.assertEqual(self.overdue("forge"), 0)                        # nothing due was left behind
         forge = self.things("forge", "store")["forge"]["items"]
-        hauls = [t for t in self.things("forge", "task").values() if t["rule"] == "haul-coal" and t["status"] == "done"]
+        hauls = self.things("forge", "agent")["Tam"]["done_count"]["haul-coal"]
         self.assertEqual(forge["iron"], 5)                                # ten ore, two a time
         self.assertEqual(forge["ore"] + 2 * forge["iron"], 10)          # nothing used twice
-        self.assertEqual(forge["coal"], 2 * len(hauls) - forge["iron"])
+        self.assertEqual(forge["coal"], 2 * hauls - forge["iron"])
         self.assertEqual(self.things("forge", "caravan")["flour"]["status"], "arrived")
         # A new agent opens the save and can tell the story from it.
         status = self.run_py("turn.py", "-c", "forge", "status")
