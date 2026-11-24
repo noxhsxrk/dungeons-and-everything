@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.8.5] — 2026-11-24 — Thai that sounds like Thai
+
 ### Added
 - **The style guard catches Thai that reads translated from English** ("เป็นของนายเต็มตัว" for "it's all yours", "ถูก…โดย" passives, ทำการ / ดำเนินการ in front of a verb, "เต็มไปด้วยความ…", "ไม่เพียงแต่…แต่ยัง") and says what a Thai speaker would write instead. SKILL.md's *Telling it well* gains a short "Playing in Thai" rule with examples.
 
