@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [1.8.0] — 2026-11-24 — A community that keeps itself alive
+
 The engine has a name now: the **Unrolled Engine**, DnE's d20 engine with a 5e SRD core (README).
 
 ### Added — the world engine (`world_engine: on`, experimental)

@@ -13,7 +13,7 @@
       "name": "dne",
       "source": "./",
       "description": "Game Master for persistent 5e-rules campaigns in any world the players describe — the AI generates origins, classes, powers, gear and monsters to fit. Campaign/character management, combat, NPCs, dice, an optional live display companion, and full session state across sessions.",
-      "version": "1.7.1",
+      "version": "1.8.0",
       "license": "AGPL-3.0-or-later",
       "keywords": ["ttrpg", "5e", "game-master", "worldbuilding", "game", "dnd"]
     }
