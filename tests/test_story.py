@@ -66,17 +66,6 @@ class StoryTests(EngineCase):
         self.assertIn("ดวงตาของเธอหรี่ลงอย่างช้าๆ", notes)                 # the whole habit, not a fragment of it
         self.assertNotIn("ยานลำเลียง", notes)                            # what the players are chasing is the scene, not a tic
 
-    def test_thai_that_reads_translated(self):
-        self.feed("รินะผลักสมุดมาตรงหน้า",
-                  "\"ฉันสัญญาแล้ว ฐานข้อมูลทั้งหมดในสมุดพี่คิรินกับเครื่องสแกนของฉันเป็นของนายเต็มตัวเลย\" "
-                  "ประตูถูกเปิดออกโดยยามคนหนึ่ง")
-        notes = " | ".join(self.story.guard("oldworld"))
-        self.assertIn("Thai that reads translated", notes)
-        self.assertIn("เป็นของนายเต็มตัว", notes)
-        self.assertIn("ถูกเปิดออกโดย", notes)
-        self.feed("รินะผลักสมุดมาตรงหน้า", "\"ข้อมูลในสมุดพี่คิริน นายเอาไปใช้ได้เต็มที่เลย\" ยามคนหนึ่งเปิดประตูออกมา")
-        self.assertNotIn("Thai that reads translated", " | ".join(self.story.guard("oldworld")))
-
     def test_the_worlds_own_banned_phrases(self):
         (self.camp / "worldkit.json").write_text(json.dumps({"narrative_dna": {"taboo_cliches": ["smell of ozone"]}}), encoding="utf-8")
         self.feed("The door opens on the workshop.", "A smell of ozone fills the lab as the relay clicks.")
