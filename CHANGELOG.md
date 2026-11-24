@@ -8,6 +8,10 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Added — Living World plan, PR 5: the whole loop, tested end to end
+- `tests/test_living_world.py` drives the normal way in, one new process per step as a fresh agent would: a seed through `campaign_init.py`, a turn that changes the world, a month passing, then the save read back (`status`, the engine's block in `state.md`, `turn.py log`). Two worlds of different shapes (a forge town with duties, a market and a caravan; Hollow-9) each run 30 days with no model call: nothing due is left behind, no material is used twice. From one save, a free run and one where the players shut the road differ, and the difference traces to the closure (a cancelled event with its reason, cancelled work naming the condition, less iron). A month stopped by a crash halfway through resumes to the same world; an undo takes the month back.
+
+
 ### Added — Living World plan, PR 4: NPCs and factions work and change plans off-screen
 - **Duties.** An `agent` can have duties (`rules.py`): when free, they take the highest-priority one they can do now, as far as *they* know. A rule's `unless_known` facts are read from the agent's own beliefs (`knowledge.py`), so a false rumour changes a plan and the truth does not reach anyone who has not heard it. Work put on hold comes back before anything new.
 - **Plans that change midway.** When the actor of a task under way learns one of those facts (`on_learn`) or is called away (`on_actor_gone`), the rule decides: postpone (materials back; it starts again when it can), cancel, or hand it over to someone free who can do it.
