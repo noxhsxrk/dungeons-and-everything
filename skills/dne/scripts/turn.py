@@ -465,6 +465,16 @@ def finish(campaign: str, narration: str, turn_id: "str | None" = None, already_
             return _turn_view(db, turn, finished=False,
                               note="not finished: " + "; ".join(w["question"] or w["request_id"] for w in waiting)
                               if waiting else "not finished: actions still pending, run `resume`")
+        record = _committed(db, turn["turn_id"])
+        if record["actions"]:                      # the narration stands on these; the GM's prose is not checked
+            wdb.put(db, "turn_record", turn["turn_id"], record)
+            state = paths.find_campaign(campaign) / "state.md"
+            if state.exists():
+                text = state.read_text(encoding="utf-8")
+                block = world_block(campaign, db, turn["turn_id"], record)
+                new = with_block(text, block)
+                if new != text:
+                    wdb.stage_writes(db, f"{turn['turn_id']}-finish", {"state.md": new})
         if not already_sent and narration.strip():
             _queue(db, turn["turn_id"], f"{turn['turn_id']}-final", narration.strip())
         db.execute("UPDATE turns SET status='finished', narration=? WHERE turn_id=?", (narration.strip(), turn["turn_id"]))
@@ -474,11 +484,93 @@ def finish(campaign: str, narration: str, turn_id: "str | None" = None, already_
             scene_context.remember_mentions(db, narration, campaign, turn["seq"])
         except Exception:
             pass
+    wdb.crash_point("after_commit_before_apply")
+    wdb.apply_staged(campaign)                    # the record is on disk before anyone reads the narration
     wdb.crash_point("after_commit_before_send")
     sent = deliver(campaign)
     with wdb.reader(campaign) as db:
         turn = db.execute("SELECT * FROM turns WHERE turn_id=?", (turn_id,)).fetchone()
-        return _turn_view(db, turn, finished=True, sent=sent)
+        return _turn_view(db, turn, finished=True, sent=sent, committed=wdb.get(db, "turn_record", turn_id))
+
+
+BLOCK = ("<!-- unrolled:world -->", "<!-- /unrolled:world -->")
+
+
+def _committed(db, turn_id: str) -> dict:
+    """What this turn changed, by id: its actions and the events they applied."""
+    actions, events = [], []
+    for a in db.execute("SELECT action_id, intent, status, result FROM actions WHERE turn_id=? ORDER BY seq", (turn_id,)):
+        if a["status"] != "done":
+            continue
+        intent = json.loads(a["intent"] or "{}")
+        res = json.loads(a["result"] or "{}")
+        actions.append({"action_id": a["action_id"], "action": intent.get("action"), "actor": intent.get("actor")})
+        for e in ((res.get("data") or {}).get("applied") or []) + [v.get("event_id") for v in res.get("visible_events") or []]:
+            if e and e not in events:
+                events.append(e)
+    return {"actions": actions, "events": events}
+
+
+def world_block(campaign: str, db, turn_id: str, record: dict) -> str:
+    """The engine's part of state.md: what is true in world.db now, in a few lines the GM and any agent can read."""
+    import scheduler
+    camp = paths.find_campaign(campaign)
+    lines = [BLOCK[0], "*Written by the Unrolled Engine from world.db when a turn finishes. Edits inside this block are "
+                       "replaced: change the world with engine actions.*"]
+    try:
+        cal = json.loads((camp / "calendar.json").read_text(encoding="utf-8"))
+        now = scheduler._minutes_of(cal)
+        lines.append(f"- **In-world time:** {scheduler._calendar_module()._format_date(cal)}")
+    except (OSError, ValueError):
+        now = None
+    due = db.execute("SELECT event_id, due_minute, effect FROM events WHERE status='pending' AND due_minute IS NOT NULL "
+                     "AND event_id NOT LIKE 'community-day-%' AND event_id NOT LIKE 'market-day-%' "
+                     "ORDER BY due_minute, event_id LIMIT 5").fetchall()
+    if due:
+        def when(m):
+            if now is None:
+                return f"minute {m}"
+            h = max(0, m - now) // 60
+            return f"in {h // 24}d {h % 24}h" if h >= 24 else f"in {h}h"
+        lines.append("- **Coming up (GM only):** " + "; ".join(
+            f"{when(r['due_minute'])}: {json.loads(r['effect']).get('text') or json.loads(r['effect']).get('type')} ({r['event_id']})"
+            for r in due))
+    shut = [f"{k} {v.get('access')}" + (f" ({v['reason']})" if v.get("reason") else "")
+            for k, v in sorted(wdb.all_of(db, "route").items()) if v.get("access") not in (None, "open")]
+    if shut:
+        lines.append("- **Roads:** " + "; ".join(shut))
+    low = []
+    for k, m in sorted(wdb.all_of(db, "market").items()):
+        for item, n in sorted((m.get("stock") or {}).items()):
+            want = int((m.get("target") or {}).get(item, 0))
+            if int(n) <= 0 or (want and int(n) * 5 <= want):
+                low.append(f"{k}: {item} {n}")
+    if low:
+        lines.append("- **Markets running low:** " + "; ".join(low))
+    for k, s in sorted(wdb.all_of(db, "settlement").items()):
+        down = [a["label"] for a in s.get("assets", {}).values() if a.get("status") != "running"]
+        bits = [f"day {s.get('day', 0)}"] + ([f"down: {', '.join(down)}"] if down else []) \
+            + ([f"rota: {', '.join(s['rota'])}"] if s.get("rota") else []) + ([f"pacts: {', '.join(s['pacts'])}"] if s.get("pacts") else [])
+        lines.append(f"- **{s.get('name', k)}:** " + "; ".join(bits))
+    acts = ", ".join(a["action"] or "?" for a in record["actions"])
+    lines.append(f"- **Last engine turn:** {turn_id}: {acts}" + (f"; events {', '.join(record['events'][:8])}" if record["events"] else ""))
+    lines.append(BLOCK[1])
+    return "\n".join(lines)
+
+
+def with_block(text: str, block: str) -> str:
+    """state.md with the engine's block replaced, or put at the top of ## World State; every other line kept."""
+    start, end = text.find(BLOCK[0]), text.find(BLOCK[1])
+    if start != -1 and end > start:
+        return text[:start] + block + text[end + len(BLOCK[1]):]
+    head = text.find("## World State\n")
+    if head != -1:
+        cut = head + len("## World State\n")
+        return text[:cut] + block + "\n" + text[cut:]
+    flags = text.find("## Session Flags")           # Session Flags stays the last section: tools append to it
+    if flags != -1:
+        return text[:flags] + "## World State\n" + block + "\n\n" + text[flags:]
+    return text.rstrip("\n") + "\n\n## World State\n" + block + "\n"
 
 
 def narration_sent(campaign: str, text: str) -> "dict | None":

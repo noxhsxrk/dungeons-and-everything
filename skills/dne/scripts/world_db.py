@@ -35,6 +35,27 @@ Crash      `crash_point(name)` stops the process when DNE_CRASH_AT names it. Poi
 Handlers   Engine actions are functions `fn(ctx, intent) -> dict` registered in turn.HANDLERS. They
            call pure rules functions (never a cmd_* that prints or pushes to the display) and return
            {status, elapsed_minutes, writes, visible_events, requests, data}.
+Finish     `turn.finish` records which actions and events the narration stands on (`things`
+           kind `turn_record`), stages the engine's block in state.md in the same transaction, applies it,
+           and only then sends the narration. Crash point: after_commit_before_apply.
+
+WHO OWNS WHAT (with the engine on; the one place each fact is written)
+
+  in-world time               calendar.json      the engine (scheduler.advance; calendar.py set = correction)
+  what is due, and why        world.db events    the engine (schedule, effects, triggers)
+  roads, markets, caravans,   world.db things    the engine's actions (route, market, caravan, settlement …)
+  settlements, beliefs, NPC
+  places and appointments
+  factions' numbers           factions.json      the engine's faction week; faction.py by hand
+  a character's HP, coin,     characters/*.md    the sheet; engine actions write it through `writes`
+  gear and conditions         tracker.json       (buy, sell, damage, rest)
+  turns, rolls, questions,    world.db           the turn runner
+  messages to the display
+  the story so far            session-log.md,    the GM (prose); the engine never edits it
+                              world.md, npcs*.md
+  state.md                    both               the GM's prose everywhere except the block between
+                                                 <!-- unrolled:world --> and <!-- /unrolled:world -->,
+                                                 which the engine rewrites from world.db at every finish
 """
 from __future__ import annotations
 
