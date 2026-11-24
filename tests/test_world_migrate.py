@@ -78,6 +78,22 @@ class MigrateTests(EngineCase):
         self.assertEqual((self.camp / "calendar.json").read_bytes(), calendar)   # the GM's own rest is the only one
         self.assertEqual(self.files(), before)
 
+    def test_compare_shows_where_the_gm_and_the_engine_differ(self):
+        self.m.enable("oldworld", shadow=True)
+        self.assertIn("no shadow run", self.m.compare("oldworld")["error"])
+        ran = self.m.shadow_run("oldworld", [{"action": "rest", "type": "long"}])
+        self.assertIn("compare", ran["next"])
+        cal = json.loads((self.camp / "calendar.json").read_text(encoding="utf-8"))
+        cal["hour"] = (int(cal.get("hour", 0)) + 4) % 24                       # the GM rests only four hours
+        (self.camp / "calendar.json").write_text(json.dumps(cal, indent=2), encoding="utf-8")
+        (self.camp / "notes.md").write_text("the GM's own note\n", encoding="utf-8")
+        got = self.m.compare("oldworld")
+        self.assertFalse(got["same"])
+        self.assertIn("calendar.json", got["differ"])
+        self.assertTrue(any(line.startswith("-") or line.startswith("+") for line in got["differ"]["calendar.json"]))
+        self.assertIn("notes.md", got["gm_only"])
+        self.assertNotIn("state.md", got["gm_only"] + list(got["engine_only"]))
+
     def test_disable_leaves_nothing_half_done_and_a_page_to_run_from(self):
         self.m.enable("oldworld")
         self.flags(self.FLAGS.replace("roll_mode: auto", "roll_mode: players") + "- world_engine: on\n")

@@ -227,6 +227,9 @@ def _engine_parts(campaign: str, view: "dict | None") -> list:
                                    f"total {d['total']}{verdict}. Narrate from this result; do not ask again."))
     if view.get("duplicate"):
         parts.append((DUE, f"This input was already received as {view['turn_id']}: do not resolve it a second time."))
+    moved = _clock_moved_by_hand(campaign)
+    if moved:
+        parts.append((DUE, moved))
     context = view.get("context")
     if context:
         try:
@@ -243,6 +246,27 @@ def _engine_parts(campaign: str, view: "dict | None") -> list:
                         f"`{_py('turn.py')} -c {campaign} resolve --intents '[...]'` (`{_py('turn.py')} -c {campaign} help` "
                         "lists the actions); your plain send.py narration closes the turn."))
     return parts
+
+
+def _clock_moved_by_hand(campaign: str) -> "str | None":
+    """The calendar is not where the engine last left it: time was moved around the engine (a hand edit, or a
+    turn answered without the scripts), so whatever was due in between has not happened."""
+    try:
+        import world_db as wdb
+        with wdb.reader(campaign) as db:
+            left = wdb.meta(db, "clock_minute") if db is not None else ""
+        now = wdb.now_minute(campaign)
+    except Exception:
+        return None
+    if not left or now is None or int(left) == now:
+        return None
+    gap = now - int(left)
+    py = _py("turn.py")
+    return (f"IN-WORLD TIME MOVED OUTSIDE THE ENGINE ({'+' if gap > 0 else ''}{gap} min since the engine last moved the clock): "
+            f"what was due in that time has not happened. If the time really passed, run `{py} -c {campaign} resolve "
+            f"--intents '[{{\"action\": \"wait\", \"minutes\": 0}}]'` now so it does; if the date was simply wrong, "
+            f"`{_py('calendar.py')} -c {campaign} set …` records it as a correction. From now on move time only with "
+            "wait / rest / travel.")
 
 
 def engine_lines(campaign: str, view: "dict | None") -> list[str]:

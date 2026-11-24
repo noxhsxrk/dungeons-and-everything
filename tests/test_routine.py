@@ -33,6 +33,20 @@ class RoutineTests(EngineCase):
         self.assertEqual(self.thing("appointment", "market-day")["status"], "kept")
         self.assertTrue(any(v["type"] == "npc_arrived" and "sell cartwheels" in v["text"] for v in out["visible_events"]))
 
+    def test_a_trip_that_costs_is_paid_when_he_sets_out_or_not_made(self):
+        self.do("the guild pays for the stall", {**MARKET_DAY, "cost": {"payer": "Millers' Guild", "wealth": 2}})
+        self.do("he sets out", {"action": "wait", "minutes": 1000})
+        self.assertEqual(self.factions()["Millers' Guild"]["wealth"], 1)
+        self.assertEqual(self.thing("appointment", "market-day")["paid"], {"payer": "Millers' Guild", "wealth": 2})
+        out = self.do("again next week, dearer", {**MARKET_DAY, "id": "market-again", "in_minutes": 9000,
+                                                  "cost": {"payer": "Millers' Guild", "wealth": 2}})
+        self.assertTrue(self.data(out)["made"])
+        out = self.do("a week", {"action": "wait", "minutes": 9000})
+        appt = self.thing("appointment", "market-again")
+        self.assertEqual(appt["status"], "changed")
+        self.assertIn("could not pay", appt["note"])
+        self.assertTrue(any("mend the mill wheel instead" in v.get("text", "") for v in out["visible_events"]))
+
     def test_he_cannot_be_in_two_towns_on_the_same_day(self):
         self.do("Bren plans his market day", MARKET_DAY)
         clash = self.data(self.do("and the ford an hour later?", {"action": "appointment", "npc": "Bren", "place": "The Ford",

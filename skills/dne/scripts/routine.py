@@ -122,9 +122,27 @@ def _npc_depart(world, row, eff):
     if not a or a["status"] != "planned":
         return None
     npc, here = a["npc"], a.get("from")
+    seen = "party" if _map(world).get("party_location") == here else "dm"
+    cost = dict(a.get("cost") or {})
+    payer = cost.pop("payer", None)
+    if payer and cost:                            # the trip costs something: paid when they set out, or not made
+        data = world.json("factions.json")
+        f = (data.get("factions") or {}).get(payer)
+        short = [f"{stat} {f.get(stat, 0) if f else 0} of {n}" for stat, n in sorted(cost.items())
+                 if not f or int(f.get(stat, 0)) < int(n)]
+        if short:
+            other = a.get("otherwise") or {}
+            a.update(status="changed", note=f"{payer} could not pay for it: " + ", ".join(short))
+            world.put("appointment", aid, a)
+            return [{"type": "npc_changed_plan", "recipient": seen, "npc": npc,
+                     "text": f"{npc} does not go to {_pname(world, a['place'])}: {payer} cannot pay for it ({', '.join(short)}). "
+                             + (f"Instead: {other.get('purpose') or other.get('place')}." if other else "They stay.")}]
+        for stat, n in cost.items():
+            f[stat] = int(f.get(stat, 0)) - int(n)
+        world.touch("factions.json")
+        a["paid"] = {"payer": payer, **cost}
     known_shut = _knows_closed(world, npc, here)
     path = _npc_route(world, here, a["place"], known_shut, a.get("mode", "foot"))
-    seen = "party" if _map(world).get("party_location") == here else "dm"
     if path is None:                              # they know there is no way through: no point setting out
         other = a.get("otherwise") or {}
         a.update(status="changed", note=f"knew the road was closed ({', '.join(sorted(known_shut))})")
@@ -215,7 +233,9 @@ def _appointment(ctx, intent: dict) -> dict:
     {"action": "appointment", "id": "wheelwright-market", "npc": "Bren", "place": "Market", "in_minutes": 1500,
      "purpose": "sell cartwheels", "from": "Millbridge", "mode": "foot",
      "otherwise": {"place": "Millbridge", "purpose": "mend the mill wheel instead"},
-     "on_meet": {"with": "Rina Saelim", "tell": ["mill-fire"], "relation": "owes"}}
+     "on_meet": {"with": "Rina Saelim", "tell": ["mill-fire"], "relation": "owes"},
+     "cost": {"payer": "Millers' Guild", "wealth": 1}}
+    `cost` is paid from the payer faction's stats when they set out; if it cannot pay, they follow `otherwise`.
     They leave in time to arrive. Refused if another appointment makes it impossible to get there. If they know
     the road is closed they follow `otherwise`; if they do not know, they set out and are turned back."""
     world = _world(ctx)
@@ -237,7 +257,7 @@ def _appointment(ctx, intent: dict) -> dict:
     aid = str(intent.get("id") or f"appt-{ctx.action_id}")
     record = {"npc": npc, "place": place, "from": start, "at_minute": at, "departs": at - need, "mode": mode,
               "purpose": str(intent.get("purpose", "")), "otherwise": intent.get("otherwise"), "on_meet": intent.get("on_meet"),
-              "stays_minutes": int(intent.get("stays_minutes", 120)), "status": "planned", "note": ""}
+              "cost": intent.get("cost"), "stays_minutes": int(intent.get("stays_minutes", 120)), "status": "planned", "note": ""}
     world.put("appointment", aid, record)
     if world.get("npcpos", npc) is None:
         world.put("npcpos", npc, {"place": start, "since": world.minute})

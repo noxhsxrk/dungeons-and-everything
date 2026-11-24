@@ -8,6 +8,15 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Fixed — the limits 1.7.0 listed (world engine)
+- **Caravans trade on the way.** `caravan` takes `stops`: at each market on its road it sells and buys what that stop's plan says, against both sides' stock and coin, before going on (`caravan_stopped`).
+- **Cones.** `area` takes `"shape": "cone"` from `at` toward `to`: as wide as it is far, the origin's own square left out, and a wall still shelters whoever is behind it.
+- **Appointments can cost something.** `appointment` takes `"cost": {"payer": "<faction>", "wealth": 1}`: paid from the faction's stats when the NPC sets out; if it cannot pay, the NPC follows `otherwise` and the reason is on record.
+- **Shadow mode compares.** After `shadow --intents`, resolve the same thing by hand and run `world_migrate.py -c <campaign> compare`: file by file, where the engine and the GM agree, differ (with the lines), or only one of them changed something. The record lives in the runtime folder; the campaign is not touched.
+- **Time moved around the engine is caught.** On a host with no hooks the GM can move the calendar without the engine. The next engine turn's `[[GM note]]` says how far the clock moved outside it, that what was due meanwhile has not happened, and the fix: a zero-minute `wait` runs everything overdue without adding time; `calendar.py set` records a plain correction.
+
+Still a limit: on a host with no hooks a GM that skips the scripts entirely is only caught when it moves the clock; other hand edits are its own.
+
 ## [1.7.0] — 2026-11-24 — A world that moves, a GM that listens
 
 Two things in this release. The first is on for every campaign: the Game Master is told more by the scripts it already runs, and watched by a style guard. The second is the **world engine**, off unless a campaign opts in (`world_migrate.py -c <campaign> enable`), and experimental: it implements the twelve steps of the world plan.

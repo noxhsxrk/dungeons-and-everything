@@ -740,6 +740,7 @@ Runs for every campaign; its lines reach the GM through the `[[GM note]]`. Displ
 python3 ${CLAUDE_SKILL_DIR}/scripts/world_migrate.py -c <campaign> inspect
 python3 ${CLAUDE_SKILL_DIR}/scripts/world_migrate.py -c <campaign> enable [--shadow]
 python3 ${CLAUDE_SKILL_DIR}/scripts/world_migrate.py -c <campaign> shadow --intents '<JSON list>'
+python3 ${CLAUDE_SKILL_DIR}/scripts/world_migrate.py -c <campaign> compare
 python3 ${CLAUDE_SKILL_DIR}/scripts/world_migrate.py -c <campaign> disable
 python3 ${CLAUDE_SKILL_DIR}/scripts/world_migrate.py -c <campaign> backups
 python3 ${CLAUDE_SKILL_DIR}/scripts/world_migrate.py -c <campaign> restore [--backup <stamp>] [--yes]

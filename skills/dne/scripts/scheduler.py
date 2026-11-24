@@ -282,6 +282,7 @@ def advance(world: World, until: int, batch: int = 200) -> dict:
         world.move_clock(until - world.minute)    # the rest of the stretch is quiet
     for who, name in world.expired:
         visible.append({"type": "effect_expired", "recipient": "party", "text": f"{who}: {name} ran out"})
+    wdb.set_meta(world.db, "clock_minute", world.minute)    # where the engine left the clock: a hand edit shows up
     return {"from": start, "to": world.minute, "elapsed_minutes": world.minute - start, "applied": applied,
             "visible_events": visible, "remaining": remaining, "interrupted": interrupted}
 
@@ -342,6 +343,7 @@ def correct(world: World, minutes: int) -> dict:
     log = world.get("clock", "corrections") or {"log": []}
     log["log"].append({"from": before, "to": world.minute})
     world.put("clock", "corrections", log)
+    wdb.set_meta(world.db, "clock_minute", world.minute)
     return {"from": before, "to": world.minute, "corrected_by": minutes}
 
 

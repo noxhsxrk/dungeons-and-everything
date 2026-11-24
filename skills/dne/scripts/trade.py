@@ -12,7 +12,8 @@ Engine actions:
   {"action": "market", "at": "Market", "stock": {"flour": 3}, "base": {"flour": 5}, "target": {"flour": 20},
    "cash": 500, "eats": {"flour": 1}}
   {"action": "caravan", "id": "flour", "from": "Millbridge", "to": "Market", "goods": {"flour": 20},
-   "budget": 200, "departs_in_minutes": 600, "owner": "Millers' Guild"}
+   "budget": 200, "departs_in_minutes": 600, "owner": "Millers' Guild",
+   "stops": [{"at": "The Ford", "sell": {"flour": 5}, "buy": {"salt": 2}}]}
   {"actor": "Mira", "action": "buy", "item": "flour", "qty": 1, "at": "Market"}     (and "sell")
 
 PRICE  base × scarcity, where scarcity = target ÷ stock, kept between ½ and 3 (out of stock: 3, nothing to buy).
@@ -159,33 +160,35 @@ def _step(world, cid: str, caravan: dict, now: int, seq: int) -> list:
     return out
 
 
-def _arrive(world, cid: str, caravan: dict) -> list:
-    key = caravan["to"]
+def _trade(world, caravan: dict, key: str, sell: dict, buy: dict) -> tuple:
+    """Sell up to `sell` into the market at `key` while it has coin, then buy up to `buy` while the caravan has
+    coin. Both sides' stock and coin change. Returns (sold, bought) with each price's reason."""
     market = world.get("market", key) or {"stock": {}, "base": {}, "target": {}, "cash": 0}
     sold, earned = {}, 0
-    for item, qty in sorted((caravan.get("goods") or {}).items()):
+    for item, want in sorted(sell.items()):
+        qty = min(int(want), int((caravan.get("goods") or {}).get(item, 0)))
         each, why = price(market, item)
-        if each is None:
+        if each is None or qty <= 0:
             continue
         carry = int(caravan.get("transport", 0))             # what it cost to bring each one here
         each += carry
-        can = min(int(qty), int(market.get("cash", 0)) // each) if each else int(qty)
-        if can < int(qty) and market.get("when_broke") == "credit":
-            market["owes"] = int(market.get("owes", 0)) + (int(qty) - can) * each     # the rest on account
-            market["cash"] = int(market.get("cash", 0)) + (int(qty) - can) * each
-            can = int(qty)
+        can = min(qty, int(market.get("cash", 0)) // each) if each else qty
+        if can < qty and market.get("when_broke") == "credit":
+            market["owes"] = int(market.get("owes", 0)) + (qty - can) * each     # the rest on account
+            market["cash"] = int(market.get("cash", 0)) + (qty - can) * each
+            can = qty
         if can <= 0:
             continue
         if carry:
             market.setdefault("surcharge", {})[item] = carry
         market["stock"][item] = int(market["stock"].get(item, 0)) + can
         market["cash"] = int(market.get("cash", 0)) - can * each
-        caravan["goods"][item] = int(qty) - can
+        caravan["goods"][item] = int(caravan["goods"][item]) - can
         sold[item] = {"qty": can, "each": each, "why": why}
         earned += can * each
     caravan["budget"] = int(caravan.get("budget", 0)) + earned
     bought = {}
-    for item, qty in sorted((caravan.get("wants") or {}).items()):
+    for item, qty in sorted(buy.items()):
         each, why = price(market, item)
         have = int(market["stock"].get(item, 0))
         can = min(int(qty), have, caravan["budget"] // each) if each else 0
@@ -195,9 +198,30 @@ def _arrive(world, cid: str, caravan: dict) -> list:
             caravan["budget"] -= can * each
             caravan.setdefault("goods", {})[item] = int(caravan["goods"].get(item, 0)) + can
             bought[item] = {"qty": can, "each": each, "why": why}
+    world.put("market", key, market)
+    return sold, bought
+
+
+def _stop(world, cid: str, caravan: dict, key: str) -> list:
+    """A market on the way where the caravan was told to trade: it sells and buys what its plan for that stop says."""
+    plan = next((s for s in caravan.get("stops") or [] if s.get("at") == key and not s.get("done")), None)
+    if not plan or not world.get("market", key):
+        return []
+    sold, bought = _trade(world, caravan, key, plan.get("sell") or {}, plan.get("buy") or {})
+    plan["done"] = True
+    caravan.setdefault("log", []).append({"stopped": key, "sold": sold, "bought": bought})
+    world.put("caravan", cid, caravan)
+    what = ", ".join(f"{v['qty']} {k}" for k, v in sold.items()) or "nothing"
+    got = ", ".join(f"{v['qty']} {k}" for k, v in bought.items())
+    return [{"type": "caravan_stopped", "recipient": _sees(world, key), "place": key, "sold": sold, "bought": bought,
+             "text": f"The {cid} caravan stops at {_name(world, key)}, sells {what}" + (f" and buys {got}" if got else "") + "."}]
+
+
+def _arrive(world, cid: str, caravan: dict) -> list:
+    key = caravan["to"]
+    sold, bought = _trade(world, caravan, key, dict(caravan.get("goods") or {}), dict(caravan.get("wants") or {}))
     caravan["status"] = "arrived"
     caravan.setdefault("log", []).append({"arrived": key, "sold": sold, "bought": bought})
-    world.put("market", key, market)
     world.put("caravan", cid, caravan)
     what = ", ".join(f"{v['qty']} {k}" for k, v in sold.items()) or "nothing the market could pay for"
     return [{"type": "caravan_arrived", "recipient": _sees(world, key), "place": key, "sold": sold, "bought": bought,
@@ -211,10 +235,13 @@ def _caravan_move(world, row, eff):
     caravan = world.get("caravan", cid)
     if not caravan or caravan.get("status") == "arrived":
         return None
+    out = []
     if eff.get("reach"):
         caravan["at"] = eff["reach"]
         caravan.pop("heading", None)
-    return _step(world, cid, caravan, row["due_minute"], int(eff.get("seq", 0)) + 1)
+        if eff["reach"] != caravan["to"]:
+            out = _stop(world, cid, caravan, eff["reach"])
+    return out + _step(world, cid, caravan, row["due_minute"], int(eff.get("seq", 0)) + 1)
 
 
 # ── a faction's goal that changes the map ─────────────────────────────────────
@@ -326,7 +353,9 @@ def _caravan(ctx, intent: dict) -> dict:
      "budget": 200, "wants": {"salt": 5}, "departs_in_minutes": 600, "owner": "Millers' Guild", "mode": "wagon"}
     It leaves when its time comes and travels the map's roads. A closed stretch is found by reaching it: the
     caravan takes another road if there is one, or waits and looks again every six hours. Arriving, it sells into
-    the market's stock while the market has coin, then buys what it `wants`."""
+    the market's stock while the market has coin, then buys what it `wants`. `stops`: markets on its road where it
+    trades on the way, e.g. [{"at": "The Ford", "sell": {"flour": 5}, "buy": {"salt": 2}}] (a stop off its road is
+    not visited)."""
     world = scheduler.World(ctx.campaign, ctx.db)
     cid = str(intent.get("id") or f"caravan-{ctx.action_id}")
     try:
@@ -338,6 +367,7 @@ def _caravan(ctx, intent: dict) -> dict:
                "wants": dict(intent.get("wants") or {}), "from": src, "to": dst, "at": src,
                "owner": intent.get("owner", ""), "mode": intent.get("mode", "wagon"), "status": "waiting",
                "transport": int(intent.get("transport", 0)),
+               "stops": [{**s, "at": _keys(world, [s["at"]])[0]} for s in intent.get("stops") or []],
                "departs": departs, "knows_closed": [list(sorted(_keys(world, pair))) for pair in intent.get("knows_closed", [])],
                "log": []}
     world.put("caravan", cid, caravan)

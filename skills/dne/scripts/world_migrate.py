@@ -5,6 +5,7 @@ world_migrate.py — bring an existing campaign onto the world engine, safely, a
     world_migrate.py -c <campaign> inspect            # dry run: what would be matched, what is unclear, what would change
     world_migrate.py -c <campaign> enable [--shadow]  # back the whole campaign up, then turn the engine on (or shadow it)
     world_migrate.py -c <campaign> shadow --intents '<JSON list>'   # run actions on a throwaway copy and show the result
+    world_migrate.py -c <campaign> compare           # after the GM's own turn: where the GM and the engine differ
     world_migrate.py -c <campaign> disable            # park the open turn, write what the engine knows, turn it off
     world_migrate.py -c <campaign> backups            # list the backups
     world_migrate.py -c <campaign> restore [--backup <stamp>] [--yes]   # go back; says first what would be lost
@@ -158,6 +159,7 @@ def shadow_run(campaign: str, intents: list, text: str = "shadow run") -> dict:
     The real campaign is not touched, so the GM can resolve the same thing by hand and compare."""
     camp = paths.find_campaign(campaign)
     before = wdb.state_hash(campaign)
+    base = _file_hashes(camp)
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         copy = root / "campaigns" / campaign
@@ -175,11 +177,71 @@ def shadow_run(campaign: str, intents: list, text: str = "shadow run") -> dict:
                              if p.is_file() and p.name not in (wdb.DB_NAME,) and ".snapshots" not in p.parts
                              and (not (camp / p.relative_to(copy)).exists()
                                   or (camp / p.relative_to(copy)).read_bytes() != p.read_bytes()))
+            changed = [c for c in changed if c != "state.md"]      # the copy's own flags, not a change of the engine's
+            engine = {c: _text(copy / c) for c in changed}
         finally:
             for k, v in saved.items():
                 os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
-    return {"would_have": out, "files_it_would_change": [c for c in changed if c != "state.md"],
-            "real_campaign_untouched": wdb.state_hash(campaign) == before}
+    record = {"text": text, "intents": intents, "base": base, "engine": engine,
+              "before": {c: _text(camp / c) for c in changed if (camp / c).exists()}}
+    _shadow_record(campaign).write_text(json.dumps(record, ensure_ascii=False), encoding="utf-8")
+    return {"would_have": out, "files_it_would_change": changed,
+            "real_campaign_untouched": wdb.state_hash(campaign) == before,
+            "next": f"resolve it by hand as usual, then run `world_migrate.py -c {campaign} compare` to see where you and "
+                    "the engine differ"}
+
+
+def _shadow_record(campaign: str) -> Path:
+    return paths.runtime_dir() / f"shadow-{re.sub(r'[^A-Za-z0-9_.-]', '_', campaign)}.json"
+
+
+def _file_hashes(camp: Path) -> dict:
+    import hashlib
+    return {p.relative_to(camp).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(camp.rglob("*"))
+            if p.is_file() and not (set(p.relative_to(camp).parts) & SKIP) and p.name not in (wdb.DB_NAME, ".world-shadow.jsonl")
+            and not p.name.startswith(wdb.DB_NAME)}
+
+
+def _text(path: Path) -> "str | None":
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
+def compare(campaign: str, max_lines: int = 30) -> dict:
+    """After a shadow run and the GM's own turn: where the GM's result and the engine's differ, file by file.
+
+    agree: both changed the file the same way · differ: both changed it, differently (with the lines) ·
+    engine_only: the engine would have changed it and the GM did not · gm_only: the GM changed it, the engine would not."""
+    import difflib
+    import hashlib
+    try:
+        record = json.loads(_shadow_record(campaign).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"error": "no shadow run to compare with: run `shadow --intents '[…]'` before the GM's turn"}
+    camp = paths.find_campaign(campaign)
+    now = _file_hashes(camp)
+    base, engine = record["base"], record["engine"]
+
+    def lines(a, b, x, y):
+        diff = list(difflib.unified_diff((a or "").splitlines(), (b or "").splitlines(), x, y, lineterm="", n=1))
+        return diff[:max_lines] + (["…"] if len(diff) > max_lines else [])
+
+    out = {"for": record["text"], "intents": record["intents"], "agree": [], "differ": {}, "engine_only": {}, "gm_only": []}
+    for rel, want in sorted(engine.items()):
+        gm_changed = now.get(rel) != base.get(rel)
+        mine = _text(camp / rel) if (camp / rel).exists() else None
+        if gm_changed and mine == want:
+            out["agree"].append(rel)
+        elif gm_changed:
+            out["differ"][rel] = lines(want, mine, "engine", "GM")
+        else:
+            out["engine_only"][rel] = lines(record["before"].get(rel), want, "before", "engine")
+    out["gm_only"] = sorted(rel for rel in set(now) | set(base)
+                            if now.get(rel) != base.get(rel) and rel not in engine and rel != "state.md")
+    out["same"] = not (out["differ"] or out["engine_only"])
+    return out
 
 
 def export(campaign: str) -> str:
@@ -274,6 +336,7 @@ def main() -> int:
     e.add_argument("--shadow", action="store_true")
     s = sub.add_parser("shadow")
     s.add_argument("--intents", required=True)
+    sub.add_parser("compare")
     sub.add_parser("disable")
     sub.add_parser("backups")
     r = sub.add_parser("restore")
@@ -286,6 +349,8 @@ def main() -> int:
         out = enable(args.campaign, args.shadow)
     elif args.cmd == "shadow":
         out = shadow_run(args.campaign, json.loads(args.intents))
+    elif args.cmd == "compare":
+        out = compare(args.campaign)
     elif args.cmd == "disable":
         out = disable(args.campaign)
     elif args.cmd == "backups":

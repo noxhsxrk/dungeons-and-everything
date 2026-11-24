@@ -207,3 +207,27 @@ class TradeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+sys.path.insert(0, str(HERE))
+from _engine_case import EngineCase  # noqa: E402
+
+
+class CaravanStopTests(EngineCase):
+    def test_a_caravan_trades_at_a_market_on_its_way(self):
+        self.do("two markets and a caravan",
+                {"action": "market", "at": "The Ford", "stock": {"flour": 0, "salt": 10}, "base": {"flour": 5, "salt": 4},
+                 "target": {"flour": 10, "salt": 10}, "cash": 100},
+                {"action": "market", "at": "Market", "stock": {"flour": 2}, "base": {"flour": 5}, "target": {"flour": 20},
+                 "cash": 500},
+                {"action": "caravan", "id": "flour", "from": "Millbridge", "to": "Market", "goods": {"flour": 20},
+                 "budget": 50, "stops": [{"at": "The Ford", "sell": {"flour": 5}, "buy": {"salt": 2}}]})
+        out = self.do("two days", {"action": "wait", "days": 2})
+        types = [v["type"] for v in out["visible_events"]]
+        self.assertLess(types.index("caravan_stopped"), types.index("caravan_arrived"))
+        ford = self.thing("market", "ford")
+        self.assertEqual((ford["stock"]["flour"], ford["stock"]["salt"]), (5, 8))
+        self.assertLess(ford["cash"], 100 + 2 * 4)                      # it paid for the flour, took coin for the salt
+        caravan = self.thing("caravan", "flour")
+        self.assertEqual(caravan["goods"]["salt"], 2)
+        self.assertEqual(self.thing("market", "market")["stock"]["flour"], 2 + 15)
