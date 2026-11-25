@@ -1,0 +1,47 @@
+{
+ "id": "war",
+ "name": "War",
+ "kind": "plot",
+ "system": "core",
+ "early": false,
+ "story_axes": "war",
+ "modules": [
+  "war_layer",
+  "position_effect",
+  "usage_die"
+ ],
+ "optional": [
+  "engagement",
+  "mooks",
+  "roles",
+  "gm_budget"
+ ],
+ "dials": {
+  "storyteller": "none",
+  "pacing": "adventure",
+  "difficulty": "deadly",
+  "claims": "grounded",
+  "when_down": "saves"
+ },
+ "suggest": {
+  "content": "18"
+ },
+ "gm_moves": [
+  "orders change, and the new ones are worse",
+  "the enemy presses: pressure rises, time runs out",
+  "supplies do not arrive, morale frays",
+  "a comrade is lost, or makes a choice they cannot undo",
+  "a moral line: win this way, or lose with clean hands"
+ ],
+ "tags": [
+  "war",
+  "military",
+  "battlefields",
+  "comrades",
+  "orders"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

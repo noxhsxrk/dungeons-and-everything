@@ -1,0 +1,46 @@
+{
+ "id": "comedy",
+ "name": "Comedy / gonzo",
+ "kind": "mood",
+ "system": "core",
+ "early": false,
+ "story_axes": "comedy",
+ "modules": [
+  "mooks"
+ ],
+ "optional": [
+  "contest",
+  "make_the_case",
+  "emotions",
+  "labels",
+  "status_window"
+ ],
+ "dials": {
+  "storyteller": "banter",
+  "pacing": "adventure",
+  "difficulty": "easy",
+  "claims": "open",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "it escalates: whatever they did, it gets bigger",
+  "the straight one takes it seriously, and it gets worse",
+  "a running gag comes back at the worst moment",
+  "the plan works, too well",
+  "something absurd and harmless becomes the most important thing in the room"
+ ],
+ "tags": [
+  "comedy",
+  "absurd",
+  "chaos",
+  "parody",
+  "mishaps"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

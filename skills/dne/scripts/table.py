@@ -174,7 +174,8 @@ def _case(ctx, intent: dict) -> dict:
         import story_gen
         probe = copy.deepcopy(record)                               # the validator fills defaults in: never the stored one
         probe["clues"] = [{"proves": "", "where": "", "obvious": True, **c} for c in probe["clues"]]   # as `search` reads them
-        report = story_gen.check_case(probe, cid)
+        probe["id"] = cid                                           # the record keeps no id; the trials are seeded by it
+        report = story_gen.check_case(probe, intent.get("check_seed", cid))   # a skeleton's own seed: the trials `check` passed
         skip = () if record.get("suspects") else ("unique", "uncleared")
         found = [p[2] for p in report["problems"] if p[0] not in skip]
         if found and not intent.get("force"):
@@ -202,7 +203,8 @@ def _skeleton_case(campaign: str, which) -> "dict | str":
     case = next((t["case"] for t in skel.get("threads") or [] if t.get("case")), None)
     if not case:
         return f"skeleton {name} has no mystery (story_gen.py skeleton --genre mystery,…)"
-    return {k: case[k] for k in ("id", "truth", "clues", "places", "suspects", "culprit") if k in case}
+    return {**{k: case[k] for k in ("id", "truth", "clues", "places", "suspects", "culprit") if k in case},
+            "check_seed": skel.get("seed")}
 
 
 @turn.handler("search")

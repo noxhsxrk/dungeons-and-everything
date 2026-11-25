@@ -60,7 +60,7 @@ FACTION_STATS = ("force", "wealth", "influence")
 KNOWN_FLAGS = {"display", "roll_mode", "autorun", "autorun_interval", "autosave", "tutor_mode", "tts_voice", "sfx_languages",
                "difficulty", "survival", "beat_policy", "cover_rule", "ooc_minutes", "spotlight", "content", "romance",
                "pacing", "companions", "rolls", "show_dc", "turn_end", "engine", "npc_growth", "world_engine", "sparks",
-               "style_guard", "storyteller", "lines", "veils", "success_at_cost", "degrees", "hero_points", "when_down", "modules"}
+               "style_guard", "storyteller", "lines", "veils", "success_at_cost", "degrees", "hero_points", "when_down", "modules", "claims"}
 
 
 def _err(out: list, path: str, msg: str) -> None:

@@ -1,0 +1,44 @@
+{
+ "id": "sci-fi",
+ "name": "Hard science fiction",
+ "kind": "setting",
+ "system": "core",
+ "early": false,
+ "story_axes": "sci-fi",
+ "modules": [
+  "usage_die",
+  "vows"
+ ],
+ "optional": [
+  "panic",
+  "status_window",
+  "position_effect"
+ ],
+ "dials": {
+  "storyteller": "none",
+  "pacing": "mixed",
+  "difficulty": "hard",
+  "claims": "grounded",
+  "when_down": "saves"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "a system fails, and fixing it costs air, fuel or time",
+  "the distance is the danger: help is weeks away",
+  "a faction's orders arrive and contradict what is right",
+  "the readings were wrong, and the real ones are worse",
+  "a crewmate's need clashes with the mission"
+ ],
+ "tags": [
+  "sci-fi",
+  "space",
+  "technology",
+  "frontier",
+  "scarcity"
+ ],
+ "checks": [
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

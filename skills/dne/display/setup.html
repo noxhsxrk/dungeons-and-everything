@@ -173,8 +173,33 @@ const DIALS = [
    "Your character fails a third death save in a lost fight.", [
     ["saves", "Saves", "Plain 5e death saves", "Your character dies."],
     ["choices", "Choices", "The player picks how they fall", "You choose: hold on with a lasting scar, get dragged clear while the enemy wins, wake up captured, or die."]]],
+  ["claims", "Player claims", "When a player says \"actually, there's…\", how much of it becomes true", "grounded",
+   "A player says: \"Actually, I know the bartender. We served together.\"", [
+    ["grounded", "Grounded", "It needs a reason in the world, or a roll", "The GM asks how; something already established, or a roll, decides whether you know him."],
+    ["declare", "Declare", "Small details just become true; big ones cost a token", "You know him. Had you claimed he owes you his life, that would cost a token."],
+    ["open", "Open", "The players help write the world", "You know him, and the GM asks you what he owes you."]]],
 ];
 const LISTS = [["lines", "Lines: never in the story"], ["veils", "Veils: may happen, off screen"]];
+// Braid genre presets (data/genres/*.json; a test keeps this in step): id, name, early, modules
+const GENRES = [
+  ["analog-horror", "Analog horror (found footage, broadcasts)", true, ["composure", "doom"]],
+  ["comedy", "Comedy / gonzo", false, ["mooks"]],
+  ["competition", "Competition / courtroom", true, ["contest"]],
+  ["cozy", "Cozy / slice of life", false, ["seasons", "strings"]],
+  ["fantasy", "Fantasy adventure", false, ["vows", "usage_die"]],
+  ["heist", "Heist", false, ["position_effect", "engagement", "heat"]],
+  ["historical", "Historical / docudrama", false, ["usage_die"]],
+  ["horror", "Cosmic horror", false, ["composure", "clues"]],
+  ["litrpg", "LitRPG / another world", true, ["status_window", "mooks"]],
+  ["mystery", "Mystery", false, ["clues", "gm_budget"]],
+  ["romance", "Romance / drama", false, ["strings", "emotions"]],
+  ["sci-fi", "Hard science fiction", false, ["usage_die", "vows"]],
+  ["slasher", "Survival horror (slasher)", false, ["panic", "doom", "usage_die"]],
+  ["space-opera", "Space opera / cyberpunk", false, ["position_effect", "heat", "mooks"]],
+  ["timeloop", "Time loop", false, ["loop"]],
+  ["traitor", "Traitor among us", false, ["roles"]],
+  ["war", "War", false, ["war_layer", "position_effect", "usage_die"]],
+  ["wuxia", "Wuxia / cultivation", true, ["realm", "mooks", "vows"]]];
 
 const q = new URLSearchParams(location.search);   // prefill: setup.html?pacing=slow&content=18
 const f = document.getElementById("f");
@@ -191,6 +216,15 @@ for (const [key, title, hint, def, scene, opts] of DIALS) {
 f.insertAdjacentHTML("beforeend", `<section><h2>Lines &amp; Veils</h2><p class="hint">Separate with commas, e.g. spiders, animal cruelty</p><div class="two">` +
   LISTS.map(([k, l]) => `<div><label for="${k}">${l}</label><textarea id="${k}" name="${k}">${esc(q.get(k) || "")}</textarea></div>`).join("") +
   `</div></section>`);
+f.insertAdjacentHTML("beforeend", `<section><h2>Genres &amp; modules<code>modules</code></h2><p class="hint">Braid only (not 5e). Tick 1–5 genres to fill in their modules; the GM shows the rest of the preset. “Early” genres run on rules of our own design.</p><div class="opts">` +
+  GENRES.map(([id, name, early]) => `<label class="opt"><input type="checkbox" name="genre" value="${id}"><b>${esc(name)}</b>${early ? "<span>early</span>" : ""}</label>`).join("") +
+  `</div><p class="warn" id="genre-note" hidden>Five genres at most</p><div class="two"><div><label for="modules">Modules (comma-separated; none = all off; empty = leave as is)</label><textarea id="modules" name="modules">${esc(q.get("modules") || "")}</textarea></div></div></section>`);
+f.addEventListener("change", e => {
+  if (e.target.name !== "genre") return;
+  const ticked = [...f.querySelectorAll("input[name=genre]:checked")].map(i => i.value);
+  document.getElementById("genre-note").hidden = ticked.length <= 5;
+  f.elements.modules.value = [...new Set(GENRES.filter(g => ticked.includes(g[0])).flatMap(g => g[3]))].join(", ");
+});
 
 function text() {
   const d = new FormData(f), lines = ["[DnE table settings]",
@@ -200,6 +234,8 @@ function text() {
     const v = String(d.get(k) || "").split(/[,\n]/).map(s => s.trim()).filter(Boolean).join("; ");
     lines.push(`- ${k}: ${v || "(none)"}`);
   }
+  const mods = String(d.get("modules") || "").split(/[,\n]/).map(s => s.trim()).filter(Boolean).join(", ");
+  if (mods) lines.push(`- modules: ${/^\(?none\)?$/i.test(mods) ? "(none)" : mods}`);   // empty: the campaign keeps its list
   return lines.join("\n");
 }
 function sync() {

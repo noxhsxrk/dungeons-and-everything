@@ -1,0 +1,45 @@
+{
+ "id": "horror",
+ "name": "Cosmic horror",
+ "kind": "mood",
+ "system": "core",
+ "early": false,
+ "story_axes": "horror",
+ "modules": [
+  "composure",
+  "clues"
+ ],
+ "optional": [
+  "doom",
+  "loop",
+  "memories"
+ ],
+ "dials": {
+  "storyteller": "dread",
+  "pacing": "slow",
+  "difficulty": "hard",
+  "claims": "grounded",
+  "when_down": "saves"
+ },
+ "suggest": {
+  "content": "18"
+ },
+ "gm_moves": [
+  "show a small wrong detail and do not explain it",
+  "a refuge stops being safe",
+  "knowledge costs composure: let them learn more than they wanted",
+  "someone they trust has already been changed",
+  "the thing notices them back"
+ ],
+ "tags": [
+  "horror",
+  "occult",
+  "isolation",
+  "forbidden knowledge",
+  "the unknown"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

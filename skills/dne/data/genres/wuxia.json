@@ -1,0 +1,44 @@
+{
+ "id": "wuxia",
+ "name": "Wuxia / cultivation",
+ "kind": "setting",
+ "system": "core",
+ "early": true,
+ "story_axes": "wuxia",
+ "modules": [
+  "realm",
+  "mooks",
+  "vows"
+ ],
+ "optional": [
+  "memories",
+  "contest"
+ ],
+ "dials": {
+  "storyteller": "pulp",
+  "pacing": "adventure",
+  "difficulty": "standard",
+  "claims": "declare",
+  "when_down": "saves"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "an elder of a rival sect takes an interest",
+  "an old grudge of the martial world comes to collect",
+  "a treasure or technique appears, and many want it",
+  "a breakthrough beckons, and the risk is real",
+  "honour demands a duel at the worst moment"
+ ],
+ "tags": [
+  "martial arts",
+  "sects",
+  "cultivation",
+  "honour",
+  "mountains"
+ ],
+ "checks": [
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

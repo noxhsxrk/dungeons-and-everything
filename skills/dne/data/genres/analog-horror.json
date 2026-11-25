@@ -1,0 +1,44 @@
+{
+ "id": "analog-horror",
+ "name": "Analog horror (found footage, broadcasts)",
+ "kind": "mood",
+ "system": "core",
+ "early": true,
+ "story_axes": "analog-horror",
+ "modules": [
+  "composure",
+  "doom"
+ ],
+ "optional": [
+  "clues",
+  "panic"
+ ],
+ "dials": {
+  "storyteller": "dread",
+  "pacing": "slow",
+  "difficulty": "hard",
+  "claims": "grounded",
+  "when_down": "saves"
+ },
+ "suggest": {
+  "content": "18"
+ },
+ "gm_moves": [
+  "the recording shows something that was not there in the room",
+  "an instruction arrives that should not be followed",
+  "the evidence they gathered changes when looked at again",
+  "a signal reaches someone else they care about",
+  "what they learned stays with them: a mark that does not fade"
+ ],
+ "tags": [
+  "horror",
+  "recordings",
+  "broadcasts",
+  "suburbs",
+  "the uncanny"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

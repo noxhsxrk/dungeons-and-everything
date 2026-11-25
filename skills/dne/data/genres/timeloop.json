@@ -1,0 +1,42 @@
+{
+ "id": "timeloop",
+ "name": "Time loop",
+ "kind": "frame",
+ "system": "core",
+ "early": false,
+ "story_axes": "timeloop",
+ "modules": [
+  "loop"
+ ],
+ "optional": [
+  "memories",
+  "clues"
+ ],
+ "dials": {
+  "storyteller": "none",
+  "pacing": "mixed",
+  "difficulty": "standard",
+  "claims": "grounded",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "the day repeats, but one thing is different this time",
+  "someone else seems to remember",
+  "what they learned last loop is now dangerous to know",
+  "the loop pulls harder: fatigue, lost memories",
+  "a way out shows itself, at a cost"
+ ],
+ "tags": [
+  "time",
+  "repetition",
+  "small town",
+  "fate",
+  "secrets"
+ ],
+ "checks": [
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

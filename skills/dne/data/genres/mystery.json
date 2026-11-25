@@ -1,0 +1,45 @@
+{
+ "id": "mystery",
+ "name": "Mystery",
+ "kind": "plot",
+ "system": "core",
+ "early": false,
+ "story_axes": "mystery",
+ "modules": [
+  "clues",
+  "gm_budget"
+ ],
+ "optional": [
+  "make_the_case",
+  "composure",
+  "roles"
+ ],
+ "dials": {
+  "storyteller": "noir",
+  "pacing": "mixed",
+  "difficulty": "standard",
+  "claims": "grounded",
+  "when_down": "saves"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "a witness changes their story, or stops talking",
+  "the culprit acts: a clue is destroyed, a door is locked, someone is warned",
+  "a clue points somewhere new and unwelcome",
+  "the clock runs: the next victim, the ship that leaves, the evidence that rots",
+  "someone powerful asks them to stop looking"
+ ],
+ "tags": [
+  "investigation",
+  "crime",
+  "city",
+  "secrets",
+  "witnesses"
+ ],
+ "checks": [
+  "a solvable case: who, how and why each have 3+ clues in 2+ places, every place reachable, solved 95% of the time with a third of the clues missed",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

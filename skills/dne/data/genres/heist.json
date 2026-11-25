@@ -1,0 +1,46 @@
+{
+ "id": "heist",
+ "name": "Heist",
+ "kind": "plot",
+ "system": "core",
+ "early": false,
+ "story_axes": "heist",
+ "modules": [
+  "position_effect",
+  "engagement",
+  "heat"
+ ],
+ "optional": [
+  "gm_budget",
+  "roles",
+  "contest"
+ ],
+ "dials": {
+  "storyteller": "pulp",
+  "pacing": "adventure",
+  "difficulty": "standard",
+  "claims": "declare",
+  "when_down": "saves"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "a defence they did not plan for shows itself",
+  "the insider wavers, or wants more",
+  "the plan's weak point gives way: what goes wrong, goes wrong",
+  "the job gets loud: heat for later",
+  "offer a flashback to a preparation, at a price"
+ ],
+ "tags": [
+  "crime",
+  "city",
+  "crews",
+  "vaults",
+  "double-cross"
+ ],
+ "checks": [
+  "a plan: the target, 2+ defences, an insider and the thing that goes wrong",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

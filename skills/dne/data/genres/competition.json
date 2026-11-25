@@ -1,0 +1,44 @@
+{
+ "id": "competition",
+ "name": "Competition / courtroom",
+ "kind": "plot",
+ "system": "core",
+ "early": true,
+ "story_axes": "competition",
+ "modules": [
+  "contest"
+ ],
+ "optional": [
+  "clues",
+  "strings",
+  "gm_budget"
+ ],
+ "dials": {
+  "storyteller": "pulp",
+  "pacing": "mixed",
+  "difficulty": "standard",
+  "claims": "grounded",
+  "when_down": "saves"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "the rival shows a hidden card",
+  "a rule nobody read becomes the point",
+  "the crowd, the judge or the jury turns",
+  "a testimony contradicts the evidence",
+  "the stakes go up mid-round"
+ ],
+ "tags": [
+  "competition",
+  "tournaments",
+  "courts",
+  "rivals",
+  "crowds"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

@@ -19,6 +19,7 @@ has the fields in §8.
 | `degrees` | on \| off | on | Beating a DC by 10 or more is a critical success; missing by 10 or more is a critical failure (§2). |
 | `hero_points` | on \| off | off | Hero Points replace Inspiration (§6). |
 | `when_down` | saves \| choices | saves | `choices`: a character who would die picks how they fall instead (§12). |
+| `claims` | grounded \| declare \| open | grounded | How much of a player's "actually, …" becomes true (SKILL.md → Table Dials). |
 
 Offer them at `/dne new` with the other Table Dials. Reaction rolls, Victory Points, Treat Wounds,
 the treasure curve and the monster table are GM tools with no flag; use them when they help.

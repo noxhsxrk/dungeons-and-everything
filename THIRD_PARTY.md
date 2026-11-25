@@ -86,6 +86,30 @@ wording our own. The event-focus labels and their descriptions were rewritten in
 2026-11-26 (they had been credited to a CC BY-NC source, which cannot ship in AGPL code). Nothing
 here needs a credit line in NOTICE.
 
+## Braid modules and genre presets (no third-party text)
+
+The modules in `skills/dne/data/modules/` (with their `scripts/mod_<id>.py`) and the presets in
+`skills/dne/data/genres/` use mechanics learned from the games below. Only the mechanics are used: every rule,
+table entry, name and number is our own wording or our own default, and no feature carries a game's name.
+Nothing here needs a credit line in NOTICE.
+
+- `position_effect`, `engagement`, `heat` (position and effect, the engagement roll, heat, wanted levels and
+  the entanglement dice): a heist game's SRD (CC BY 3.0).
+- `strings` (strings and temptations): a teen-monster game in the Apocalypse-engine family.
+- `emotions` and `labels` (lasting emotions, identity labels that shift in pairs): a teen-hero game in the same
+  family.
+- `war_layer` (time, pressure, morale and supply, and the pressure roll): a military game's campaign sheets in the
+  heist game's family.
+- `contest` (a race to three): a CC BY universal system; the countdown and the concession: conflict games that
+  bid a disposition.
+- `seasons` (seasons and tokens): a diceless pastoral game.
+- `vows`: the progress-track game credited above (CC BY 4.0), mechanics only.
+- `mooks` (nameless foes that drop in one hit): action-film games.
+- `usage_die`: a die that steps down from the old-school revival scene.
+- `composure`, `panic`, `doom`, `clues`, `make_the_case`: investigative-horror, survival-horror, tension-tower and
+  clue-based mystery games.
+- `loop`, `roles`, `realm`, `status_window`, `memories`: our own design; no published system to credit.
+
 ## Reference only (no content shipped)
 
 These were read for research only. None of their text, tables or names ship here, and none may be

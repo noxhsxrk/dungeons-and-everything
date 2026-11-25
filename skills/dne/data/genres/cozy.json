@@ -1,0 +1,44 @@
+{
+ "id": "cozy",
+ "name": "Cozy / slice of life",
+ "kind": "mood",
+ "system": "core",
+ "early": false,
+ "story_axes": "cozy",
+ "modules": [
+  "seasons",
+  "strings"
+ ],
+ "optional": [
+  "make_the_case",
+  "contest",
+  "emotions"
+ ],
+ "dials": {
+  "storyteller": "banter",
+  "pacing": "slow",
+  "difficulty": "easy",
+  "claims": "open",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "the season turns and brings a small need with it",
+  "a neighbour asks for help with something that matters to them",
+  "a newcomer arrives and does not know the customs",
+  "a tradition is at risk of being forgotten",
+  "offer a quiet moment to share, and let it matter"
+ ],
+ "tags": [
+  "everyday life",
+  "village",
+  "community",
+  "seasons",
+  "food"
+ ],
+ "checks": [
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

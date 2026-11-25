@@ -154,6 +154,21 @@ when a roll against it misses. Named enemies also get a motive and a weakness.
 5. Give every enemy its moves and use them; let enemies run, surrender or change their minds.
 6. Keep the numbers in the engine: harm, stress, tokens, bonds, clocks. Narrate what they mean.
 
+## Claims (the `claims` dial)
+
+When a player says *"actually, there's a back door"* or *"I know her from the war"*, Session Flags' `claims` says
+how much of it becomes true:
+- `grounded` (default): true only if the world already supports it (state.md, the kit, the story skeleton) or a
+  roll lets it be, usually Wits or Heart with a fitting label: 7–9 makes it true with a catch, a miss makes it
+  false or makes it trouble.
+- `declare`: a small detail that spoils nobody's plans (a tool in the pack, a cousin in this town) just becomes
+  true. A big one (a way into the vault, an old debt the villain owes) costs 1 token (`pool` spend) where the
+  table has tokens, otherwise 1 stress, or it is rolled as under `grounded`.
+- `open`: the players co-write the world. Say yes, build on it and ask them questions back (it suits
+  `make_the_case`, cozy and comedy).
+At every setting a claim never changes what the story skeleton fixed (a culprit, where the clues are, what each
+proves) or another player's character.
+
 ## Story mode (`**System:** story`)
 
 Braid without dice, for tables that want only the story. Same sheet, same tracks, same ladder; checks ask the
@@ -172,3 +187,10 @@ module and when to use it; `modules.py -c <campaign> rules` prints the rules of 
 lists it), and `modules.py check` catches a missing requirement, a conflict or too many (more than 8). Once the sheets
 exist, send `{"action": "modules", "apply": true}` in a turn: every PC gets the tracks the modules declare (send it
 again when a module is switched on or off or a PC joins; it never resets a track).
+Genre presets (`genres.py`, SKILL-commands.md → `/dne new` step 1b) pick the modules for a new world. The modules'
+own engine actions (each one's manual: `turn.py help <action>`): `fright` (composure), `doom`, `make_the_case`,
+`position` (position_effect), `engagement`, `crew_heat` (heat), `string` (strings), `emotion` (emotions),
+`identity` (labels), `vow` (vows), `foe` (mooks), `complicate` (gm_budget), `season` (seasons), `war` (war_layer),
+`loop`, `roles`, `realm`, `status` (status_window), `memories`. `clues` works through `case`/`search`/`tell`/
+`accuse`, `usage_die` through `upkeep`/`use`, `contest` through `subsystem.py start --race|--countdown`; `panic`
+has no action of its own (thresholds on `stress`).

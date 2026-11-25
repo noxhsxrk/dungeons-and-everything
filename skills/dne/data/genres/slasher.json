@@ -1,0 +1,45 @@
+{
+ "id": "slasher",
+ "name": "Survival horror (slasher)",
+ "kind": "mood",
+ "system": "core",
+ "early": false,
+ "story_axes": "slasher",
+ "modules": [
+  "panic",
+  "doom",
+  "usage_die"
+ ],
+ "optional": [
+  "gm_budget",
+  "mooks"
+ ],
+ "dials": {
+  "storyteller": "dread",
+  "pacing": "adventure",
+  "difficulty": "deadly",
+  "claims": "grounded",
+  "when_down": "saves"
+ },
+ "suggest": {
+  "content": "18"
+ },
+ "gm_moves": [
+  "split them up: a door, a scream, a dropped torch",
+  "the hunter is already where they are going",
+  "a way out turns out to be a dead end",
+  "use up what keeps them alive: batteries, fuel, the last shell",
+  "fear makes someone do the worst possible thing"
+ ],
+ "tags": [
+  "horror",
+  "survival",
+  "isolation",
+  "a hunter",
+  "night"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

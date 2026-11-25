@@ -1,0 +1,44 @@
+{
+ "id": "litrpg",
+ "name": "LitRPG / another world",
+ "kind": "setting",
+ "system": "core",
+ "early": true,
+ "story_axes": "litrpg",
+ "modules": [
+  "status_window",
+  "mooks"
+ ],
+ "optional": [
+  "vows",
+  "usage_die",
+  "realm"
+ ],
+ "dials": {
+  "storyteller": "pulp",
+  "pacing": "adventure",
+  "difficulty": "standard",
+  "claims": "grounded",
+  "when_down": "saves"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "the system announces something no one expected",
+  "a rival player reaches the goal first, or cheats",
+  "the rules of the world have a quirk, and it bites",
+  "loot with a catch",
+  "a dungeon changes its layout"
+ ],
+ "tags": [
+  "game world",
+  "dungeons",
+  "levels",
+  "loot",
+  "players"
+ ],
+ "checks": [
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

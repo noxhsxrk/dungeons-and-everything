@@ -1,0 +1,46 @@
+{
+ "id": "romance",
+ "name": "Romance / drama",
+ "kind": "mood",
+ "system": "core",
+ "early": false,
+ "story_axes": "romance",
+ "modules": [
+  "strings",
+  "emotions"
+ ],
+ "optional": [
+  "labels",
+  "memories",
+  "vows"
+ ],
+ "dials": {
+  "storyteller": "banter",
+  "pacing": "slow",
+  "difficulty": "easy",
+  "claims": "declare",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard",
+  "romance": "fade"
+ },
+ "gm_moves": [
+  "someone says the thing that cannot be taken back",
+  "a rival makes a move, in public",
+  "a secret comes out in front of the wrong person",
+  "duty and desire pull opposite ways",
+  "an old wound is touched, and a feeling sticks (an emotion)"
+ ],
+ "tags": [
+  "romance",
+  "drama",
+  "relationships",
+  "society",
+  "secrets"
+ ],
+ "checks": [
+  "an obstacle that comes from a character, not only from luck",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

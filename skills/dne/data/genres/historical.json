@@ -1,0 +1,44 @@
+{
+ "id": "historical",
+ "name": "Historical / docudrama",
+ "kind": "setting",
+ "system": "core",
+ "early": false,
+ "story_axes": "historical",
+ "modules": [
+  "usage_die"
+ ],
+ "optional": [
+  "seasons",
+  "war_layer",
+  "vows",
+  "composure"
+ ],
+ "dials": {
+  "storyteller": "none",
+  "pacing": "slow",
+  "difficulty": "hard",
+  "claims": "grounded",
+  "when_down": "saves"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "the institution acts: a decree, a raid, a tax",
+  "the event of the age reaches their street",
+  "an injury lingers: wounds are conditions, not numbers",
+  "everyday scarcity: bread, coin, permission",
+  "the record of the time disagrees with what they saw"
+ ],
+ "tags": [
+  "history",
+  "real places",
+  "institutions",
+  "everyday life",
+  "politics"
+ ],
+ "checks": [
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

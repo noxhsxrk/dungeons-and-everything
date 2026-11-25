@@ -461,12 +461,15 @@ def format_cr(cr):
     return str(Fraction(str(cr)))
 
 
-def show(kit):
+def show(kit, system='d20'):
     meta = kit.get('_meta', {})
     print(meta.get('name', 'World Kit'))
     genre = meta.get('genre', '')
     print('Genre:', ', '.join(genre) if isinstance(genre, list) else genre)
     print('Premise:', meta.get('premise', ''))
+    if system != 'd20':
+        show_braid(kit)
+        return
     currency = kit.get('currency', {})
     print('Currency:', ', '.join(f'{k}: {v}' for k, v in currency.items()) if isinstance(currency, dict) else currency)
     print('Origins (ability bonuses apply under 2014 rules; 2024 origins grant traits only):')
@@ -504,6 +507,25 @@ def show(kit):
     print('Lexicon:')
     for key, value in kit.get('lexicon', {}).items():
         print(f'  {key} → {value}')
+
+
+def show_braid(kit):
+    """A Braid kit's parts: labels, gear, threats (validate_braid's shape), place tags, lexicon."""
+    print('Labels:')
+    for r in kit.get('labels', []):
+        print(f"  {r['name']}: {r.get('description', '')}")
+    print('Gear:')
+    for r in kit.get('equipment', []):
+        print(f"  {r['name']}" + (f": {r['description']}" if r.get('description') else ''))
+    print('Threats:')
+    for r in sorted(kit.get('threats', []), key=lambda r: r['threat']):
+        print(f"  {r['name']}: threat {r['threat']}; moves: {'; '.join(r['moves'])}")
+    if kit.get('place_tags'):
+        print('Place tags:', ', '.join(r['name'] for r in kit['place_tags']))
+    if kit.get('lexicon'):
+        print('Lexicon:')
+        for key, value in kit['lexicon'].items():
+            print(f'  {key} → {value}')
 
 
 def monster_stats(cr, role=None):
@@ -565,7 +587,7 @@ def main():
         for warning in warnings(kit, kit_system(kit, campaign)):
             print(f'warning: {warning}')
     else:
-        show(kit)
+        show(kit, kit_system(kit, campaign))
     return 0
 
 

@@ -1,0 +1,46 @@
+{
+ "id": "fantasy",
+ "name": "Fantasy adventure",
+ "kind": "setting",
+ "system": "core",
+ "early": false,
+ "story_axes": "fantasy",
+ "modules": [
+  "vows",
+  "usage_die"
+ ],
+ "optional": [
+  "mooks",
+  "seasons",
+  "memories",
+  "realm"
+ ],
+ "dials": {
+  "storyteller": "pulp",
+  "pacing": "adventure",
+  "difficulty": "standard",
+  "claims": "grounded",
+  "when_down": "saves"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "show the wild getting closer: tracks, smoke, a road gone quiet",
+  "spend their light, food or rope (a usage die steps down)",
+  "an old oath or debt comes due at the worst moment",
+  "the ruin wakes: a door seals, a ward flares, something stirs below",
+  "offer power with strings attached"
+ ],
+ "tags": [
+  "fantasy",
+  "magic",
+  "wilderness",
+  "ruins",
+  "monsters",
+  "kingdoms"
+ ],
+ "checks": [
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

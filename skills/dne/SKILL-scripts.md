@@ -752,6 +752,24 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/modules.py -c <campaign> rules        # the 
 ```
 The campaign's list is the Session Flag `- modules: a, b`. A module is `data/modules/<id>.json` (tracks, pools, thresholds, tables, numbers, requires/conflicts) + `<id>.md` (its rules, ≤40 lines) + optionally `scripts/mod_<id>.py` (its own engine action, e.g. `fright`, `doom`, `make_the_case`). Engine: `{"action": "modules", "apply": true}` gives every PC the declared tracks (repeatable; never resets a track). `case` takes `"skeleton": true` (the mystery in `story-skeleton.json`) and refuses a case that carries places but cannot be solved.
 
+### Genre presets — `scripts/genres.py`
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/genres.py list                                  # every preset (kind, modules, "early")
+python3 ${CLAUDE_SKILL_DIR}/scripts/genres.py combine mystery,horror [--drives <plot id>] [--set key=value …]   # the mix + every conflict; exit 1 = cannot be played as is
+python3 ${CLAUDE_SKILL_DIR}/scripts/genres.py apply mystery,horror [--drives …] [--set …] --seed seed.json   # write modules, claims and dials into a new world's seed
+python3 ${CLAUDE_SKILL_DIR}/scripts/genres.py apply mystery,horror -c <campaign>     # print the Session Flags lines for an existing world
+```
+A preset is `data/genres/<id>.json` (id = its `data/story_axes` id): kind (plot, mood, setting, frame), modules, optional modules, dials, suggestions (content, romance: asked, never written), GM moves, content tags, checks. First genre primary; lists are joined, single values come from the first, conflicts are listed; two plot genres need `--drives`.
+
+### Story generator — `scripts/story_gen.py`
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/story_gen.py -c <campaign> seed "<fact>" "genre.axis=value"
+python3 ${CLAUDE_SKILL_DIR}/scripts/story_gen.py -c <campaign> skeleton --genre <ids, driving plot first> [--seed N]
+python3 ${CLAUDE_SKILL_DIR}/scripts/story_gen.py -c <campaign> flesh --slot premise|clue:<id> [--candidates '<5 JSON>']
+python3 ${CLAUDE_SKILL_DIR}/scripts/story_gen.py -c <campaign> check      # exit 0 = ready to play
+```
+Procedure: `SKILL-storygen.md`. The skeleton is `<campaign>/story-skeleton.json`; the history every campaign shares is `<campaign root>/story-history.jsonl`. A mystery thread goes to the engine as `{"action": "case", "skeleton": true}`.
+
 ### Braid character sheets — `scripts/sheet.py`
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/sheet.py -c <campaign> new --name "<Name>" --concept "…" --drive "…" --flaw "…" --approaches "wits=2,finesse=1,heart=1,force=0,grit=-1" --labels "<label>,<label>" [--gear "a,b"] [--bonds "Name: why"]

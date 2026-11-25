@@ -1,0 +1,45 @@
+{
+ "id": "space-opera",
+ "name": "Space opera / cyberpunk",
+ "kind": "setting",
+ "system": "core",
+ "early": false,
+ "story_axes": "space-opera",
+ "modules": [
+  "position_effect",
+  "heat",
+  "mooks"
+ ],
+ "optional": [
+  "engagement",
+  "labels",
+  "vows"
+ ],
+ "dials": {
+  "storyteller": "pulp",
+  "pacing": "adventure",
+  "difficulty": "standard",
+  "claims": "grounded",
+  "when_down": "saves"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "the law, a corp or a rival crew closes in (heat rises)",
+  "a contact sells them out for a better offer",
+  "the tech fails at the worst moment, or works too well",
+  "make the position worse: more guards, less cover, no exit",
+  "a big set piece erupts: a chase, a crash, a station going dark"
+ ],
+ "tags": [
+  "sci-fi",
+  "space",
+  "corporations",
+  "crime",
+  "chrome"
+ ],
+ "checks": [
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

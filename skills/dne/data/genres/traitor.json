@@ -1,0 +1,42 @@
+{
+ "id": "traitor",
+ "name": "Traitor among us",
+ "kind": "frame",
+ "system": "core",
+ "early": false,
+ "story_axes": "traitor",
+ "modules": [
+  "roles"
+ ],
+ "optional": [
+  "clues",
+  "gm_budget"
+ ],
+ "dials": {
+  "storyteller": "noir",
+  "pacing": "mixed",
+  "difficulty": "standard",
+  "claims": "grounded",
+  "when_down": "saves"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "something goes missing, and only a few had the chance",
+  "a message reaches the enemy that only an insider could send",
+  "an alibi falls apart",
+  "suspicion falls on the wrong person, loudly",
+  "the traitor's goal comes one step closer"
+ ],
+ "tags": [
+  "betrayal",
+  "secrets",
+  "crews",
+  "trust",
+  "suspicion"
+ ],
+ "checks": [
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}
