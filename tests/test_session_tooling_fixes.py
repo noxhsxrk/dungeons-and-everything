@@ -95,6 +95,8 @@ class SessionToolingTests(unittest.TestCase):
         self.assertEqual(self.run_py("calendar.py", "-c", "eden", "set", "18 May 2026", "--hour", "8:99",
                                      ok=False).returncode, 2)   # calendar.py: bad input exits 2
 
+    # On Windows, subprocess finds System32\\bash.exe (the WSL stub) before Git Bash, so the script never runs.
+    @unittest.skipIf(os.name == "nt", "bash from subprocess is the WSL stub on Windows runners")
     def test_verify_tail_calls_last_sessions_tail_stale(self):
         tail = self.camp / "session_tail.json"
         tail.write_text(json.dumps([{"text": "last session's beat, long enough to pass the size check"}]), encoding="utf-8")
