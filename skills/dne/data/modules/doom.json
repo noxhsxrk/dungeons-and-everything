@@ -1,0 +1,25 @@
+{
+ "id": "doom",
+ "name": "Doom",
+ "use_when": "Use when every risk should bring the end closer and the table should feel it coming (slasher, a dying ship, a last night).",
+ "genres": ["slasher", "horror", "analog-horror", "war"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_doom",
+ "actions": ["doom"],
+ "tracks": [
+  {"id": "doom", "owner": "party", "min": 0, "max": 20, "start": 0, "thresholds": []}
+ ],
+ "pools": [],
+ "tables": {
+  "disasters": [
+   "someone is taken: the danger reaches the most exposed character now",
+   "the way out is gone: a door seals, a bridge falls, the boat drifts off",
+   "the light fails: every lamp, torch and screen goes dark at once",
+   "a trusted thing turns: a friend, a tool, a safe room is not what it was",
+   "it finds the hiding place: everyone must move, now",
+   "the cost comes due: the worst wound or fear on the table gets worse"
+  ]
+ },
+ "numbers": {"die": 20, "per_check": 1, "floor_step": 1, "floor_max": 6}
+}

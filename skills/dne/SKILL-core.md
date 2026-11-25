@@ -162,3 +162,13 @@ the approach: a +2 approach where it fits makes it likely). yes-and = critical s
 success at a cost, no and no-but = failure, no-and = critical failure. There is no push or help: a token spent after
 the answer moves it one step up, and helping is narrated and earns the helper's bond a mark. Harm, stress, XP and
 advances work as above (an advance's `--raise` makes that approach count as one step more likely).
+
+## Modules
+
+Optional rules a campaign switches on, one line in Session Flags: `- modules: composure, clues`. Change it between
+sessions if the table wants (note the change in the session log). A module adds tracks, tables or one engine action
+over the same roll; never a second way to roll, and players never open a table. `modules.py list` shows every
+module and when to use it; `modules.py -c <campaign> rules` prints the rules of the ones switched on (session start
+lists it), and `modules.py check` catches a missing requirement, a conflict or too many (more than 8). Once the sheets
+exist, send `{"action": "modules", "apply": true}` in a turn: every PC gets the tracks the modules declare (send it
+again when a module is switched on or a PC joins; it never resets a track).

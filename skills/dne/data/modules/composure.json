@@ -1,0 +1,86 @@
+{
+ "id": "composure",
+ "name": "Composure",
+ "use_when": "Use when the horror should wear the characters' minds down, not only their bodies.",
+ "genres": [
+  "horror",
+  "analog-horror",
+  "historical",
+  "mystery"
+ ],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_composure",
+ "actions": [
+  "fright"
+ ],
+ "tracks": [
+  {
+   "id": "composure",
+   "owner": "pc",
+   "min": 0,
+   "max": 10,
+   "start": 10,
+   "thresholds": [
+    {
+     "at": 6,
+     "dir": "down",
+     "note": "Rattled: a reaction takes hold for the rest of the scene",
+     "table": "reactions"
+    },
+    {
+     "at": 3,
+     "dir": "down",
+     "note": "Haunted: a fear that stays, and -1 on Wits and Heart while composure is 3 or less",
+     "table": "fears",
+     "condition": {
+      "name": "Haunted",
+      "mod": -1,
+      "approaches": [
+       "wits",
+       "heart"
+      ]
+     }
+    },
+    {
+     "at": 0,
+     "dir": "down",
+     "note": "Broken: out of the player's hands for this scene. Next scene the player picks: the character leaves the story, or comes back at composure 1 with a fear from the table for good"
+    }
+   ]
+  }
+ ],
+ "pools": [],
+ "tables": {
+  "reactions": [
+   "freezes: cannot act this moment unless someone they trust says their name",
+   "bolts for the nearest way out, dropping whatever is in hand",
+   "laughs and cannot stop, loud enough to be heard",
+   "lashes out at whatever is closest, friend or not",
+   "goes very calm and starts counting things out loud",
+   "talks to someone who is not there, and waits for an answer"
+  ],
+  "fears": [
+   "the dark: will not go where there is no light",
+   "being alone: will not leave the others' sight",
+   "a sound from that night (a drip, a hum, a knock) stops them cold whenever it comes back",
+   "their own reflection: covers mirrors and avoids glass",
+   "sleep: wakes screaming, and the others lose rest with them",
+   "the thing's mark: sees its sign everywhere, true or not"
+  ]
+ },
+ "numbers": {
+  "approach": "heart",
+  "ratings": {
+   "minor": 1,
+   "serious": 2,
+   "overwhelming": 3
+  },
+  "critical_failure_extra": 1,
+  "story_odds": {
+   "minor": "likely",
+   "serious": "50/50",
+   "overwhelming": "unlikely"
+  }
+ }
+}

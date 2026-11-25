@@ -133,18 +133,74 @@ def _case(ctx, intent: dict) -> dict:
                 "detail": "A corner of ledger paper survives."},
                {"id": "key", "text": "The strongbox key is worn on one side.", "where": "counting room", "obvious": false}]}
     The truth does not change with what the party comes to believe. An `obvious` clue is found by anyone who looks
-    in that place; the rest need a roll. `detail` is the extra a good roll adds."""
+    in that place; the rest need a roll. `detail` is the extra a good roll adds.
+    {"action": "case", "skeleton": true}   the mystery in the campaign's story-skeleton.json (story_gen.py): truth,
+        places, clues (with `proves` and `leads`), and the culprit and suspects, which stay with the GM.
+    A case that carries `places` is checked by the story generator's validator (every place reachable, 3 clues per
+    conclusion, a core clue in every place, 95% solvable with a third of the clues missed) and refused if it fails;
+    `"force": true` stores it with the warnings. Module make_the_case: {"action": "case", "id": "…", "open": true,
+    "complexity": 6, "clues": [...]} has no hidden answer, for good, and refuses a truth (see `make_the_case`)."""
     world = _world(ctx)
+    if intent.get("skeleton"):
+        got = _skeleton_case(ctx.campaign, intent["skeleton"])
+        if isinstance(got, str):
+            return {"status": "done", "elapsed_minutes": 0, "data": {"error": got}}
+        intent = {**got, **{k: v for k, v in intent.items() if k != "skeleton"}}
     cid = str(intent.get("id") or f"case-{ctx.action_id}")
-    record = world.get("case", cid) or {"truth": "", "clues": [], "hypotheses": [], "accusations": []}
+    old = world.get("case", cid)
+    record = old or {"truth": "", "clues": [], "hypotheses": [], "accusations": []}
+    events = []
+    if "open" in intent and old is not None and bool(intent["open"]) != bool(record.get("open")):
+        return {"status": "done", "elapsed_minutes": 0, "data": {"error": f"case {cid}: open or not is set when it is made"}}
+    if intent.get("open") and old is None:
+        record["open"] = True
+        events.append({"type": "case", "recipient": "party", "text": "This case has no hidden answer: if your theory "
+                       "fits the clues and holds up, it is what happened."})
+    if record.get("open") and str(intent.get("truth") or "").strip():
+        return {"status": "done", "elapsed_minutes": 0,
+                "data": {"error": f"case {cid} has no hidden answer: only a theory that holds (`make_the_case`) sets its truth"}}
     if "truth" in intent:
         record["truth"] = str(intent["truth"])
+    for key in ("places", "suspects", "culprit", "complexity"):
+        if key in intent:
+            record[key] = intent[key]
     have = {c["id"]: c for c in record["clues"]}
     for clue in intent.get("clues") or []:
         have[str(clue.get("id"))] = {**have.get(str(clue.get("id")), {"found_by": []}), **clue}
     record["clues"] = list(have.values())
+    data = {"case": cid, "clues": len(record["clues"])}
+    if record.get("places") and not record.get("open"):
+        import copy
+        import story_gen
+        report = story_gen.check_case(copy.deepcopy(record), cid)      # it fills defaults in: never on the stored one
+        skip = () if record.get("suspects") else ("unique", "uncleared")
+        found = [p[2] for p in report["problems"] if p[0] not in skip]
+        if found and not intent.get("force"):
+            return {"status": "done", "elapsed_minutes": 0,
+                    "data": {"error": f"case {cid} cannot be solved as it stands: " + "; ".join(found)
+                             + " (fix it with story_gen.py check, or send \"force\": true)", "solve_rate": report["solve_rate"]}}
+        data.update(places=len(record["places"]), solve_rate=report["solve_rate"],
+                    unwritten=[c["id"] for c in record["clues"] if str(c.get("text", "")).startswith("[clue ")])
+        if found:
+            data["warnings"] = found
     world.put("case", cid, record)
-    return {"status": "done", "elapsed_minutes": 0, "data": {"case": cid, "clues": len(record["clues"])}}
+    return {"status": "done", "elapsed_minutes": 0, "data": data, **({"visible_events": events} if events else {})}
+
+
+def _skeleton_case(campaign: str, which) -> "dict | str":
+    """The mystery case from a story_gen skeleton file in the campaign folder (true = story-skeleton.json)."""
+    import json
+    name = "story-skeleton.json" if which is True else str(which)
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+\.json", name):
+        return f"skeleton: a .json file name in the campaign folder, not {name!r}"
+    try:
+        skel = json.loads((paths.find_campaign(campaign) / name).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return f"skeleton {name}: {exc}"
+    case = next((t["case"] for t in skel.get("threads") or [] if t.get("case")), None)
+    if not case:
+        return f"skeleton {name} has no mystery (story_gen.py skeleton --genre mystery,…)"
+    return {k: case[k] for k in ("id", "truth", "clues", "places", "suspects", "culprit") if k in case}
 
 
 @turn.handler("search")
@@ -196,6 +252,8 @@ def _search(ctx, intent: dict) -> dict:
             continue
         if clue.get("obvious", True) or good:
             text = clue["text"] + (f" {clue['detail']}" if good and clue.get("detail") else "")
+            if clue.get("leads") and str(clue["leads"]).casefold() != where:     # the clue graph: where it points
+                text += f" (This points to {clue['leads']}.)"
             found.append({"id": clue["id"], "text": text})
             if actor not in clue.setdefault("found_by", []):
                 clue["found_by"].append(actor)
@@ -240,8 +298,15 @@ def _accuse(ctx, intent: dict) -> dict:
     entry = {"by": str(intent.get("actor", "Party")), "claim": str(intent.get("claim", "")), "minute": world.minute}
     case["accusations" if intent.get("public", True) else "hypotheses"].append(entry)
     world.put("case", str(intent["case"]), case)
+    if case.get("open"):
+        return {"status": "done", "elapsed_minutes": 0,
+                "data": {"recorded": entry, "truth_for_the_gm": case["truth"],
+                         "note": "This case has no hidden answer: test the theory with `make_the_case`." if not case["truth"]
+                         else "The case is settled: play the consequences of what they claimed."}}
     return {"status": "done", "elapsed_minutes": 0,
             "data": {"recorded": entry, "truth_for_the_gm": case["truth"],
+                     **({"culprit_for_the_gm": next((s for s in case.get("suspects") or [] if s.get("id") == case["culprit"]),
+                                                     case["culprit"])} if case.get("culprit") else {}),
                      "note": "The truth stands. Play the consequences of what they claimed, from who heard it."}}
 
 

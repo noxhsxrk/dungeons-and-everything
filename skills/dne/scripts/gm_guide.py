@@ -95,6 +95,11 @@ def session_start(campaign: str) -> list[str]:
                             f"{SKILL / 'SKILL-core.md'} to its last line now, and use only its rules and "
                             "scripts this session.")
             steps.append(f"{_py('sheet.py')} -c {campaign} check   (every character sheet against the Braid rules)")
+            import modules                        # lazily: table imports gm_guide, the engine imports modules
+            on = modules.enabled(campaign)
+            if on:
+                steps.append(f"{_py('modules.py')} -c {campaign} rules   (this campaign's modules: {', '.join(on)}; read "
+                             "their rules now, and play by them)")
             steps[steps.index(f"{_py('migrate_system.py')} {campaign} --check   (exit 1: an old 5e save; run it with "
                               "--system d20 --yes)")] = f"{_py('migrate_system.py')} {campaign} --check"
     except ValueError as exc:

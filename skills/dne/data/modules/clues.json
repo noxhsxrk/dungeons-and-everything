@@ -1,0 +1,26 @@
+{
+ "id": "clues",
+ "name": "Clues",
+ "use_when": "Use when the story has a fixed answer the players must find (a murder, a disappearance, a traitor in the unit).",
+ "genres": [
+  "mystery",
+  "horror",
+  "historical",
+  "traitor",
+  "war"
+ ],
+ "requires": [],
+ "conflicts": [
+  "make_the_case"
+ ],
+ "actions": [
+  "case",
+  "search",
+  "tell",
+  "accuse"
+ ],
+ "tracks": [],
+ "pools": [],
+ "tables": {},
+ "numbers": {}
+}

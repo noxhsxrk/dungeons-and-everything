@@ -1,0 +1,54 @@
+{
+ "id": "panic",
+ "name": "Panic",
+ "use_when": "Use when fear should make people do stupid, desperate things under pressure (slasher, survival, a ship with something aboard).",
+ "genres": [
+  "slasher",
+  "horror",
+  "sci-fi",
+  "analog-horror",
+  "war"
+ ],
+ "requires": [],
+ "conflicts": [],
+ "tracks": [
+  {
+   "id": "stress",
+   "owner": "pc",
+   "thresholds": [
+    {
+     "at": 3,
+     "dir": "up",
+     "note": "Jitters: a small panic, played now",
+     "table": "jitters"
+    },
+    {
+     "at": 5,
+     "dir": "up",
+     "note": "Panic: the character loses control for a moment, played now",
+     "table": "panic"
+    }
+   ]
+  }
+ ],
+ "pools": [],
+ "tables": {
+  "jitters": [
+   "drops something that matters: a light, a key, the only map",
+   "a gasp or a shout gives away where they are",
+   "shakes so hard the next fine task is -1",
+   "snaps at a friend: the bond is strained until they make it right",
+   "fixes on one exit and will not hear any other plan",
+   "freezes for a heartbeat: the danger gets one step closer"
+  ],
+  "panic": [
+   "runs, alone, in a direction of the GM's choosing",
+   "fires, swings or throws at the first thing that moves",
+   "hides and will not come out until someone talks them out",
+   "grabs whatever might save them and will not share it",
+   "screams until something answers",
+   "shuts down: sits where they are, eyes open, gone for the scene unless carried"
+  ]
+ },
+ "numbers": {}
+}

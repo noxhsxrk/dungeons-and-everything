@@ -1,0 +1,14 @@
+{
+ "id": "make_the_case",
+ "name": "Make the Case",
+ "use_when": "Use when the players should decide what happened: there is no hidden answer, and a well-argued theory becomes the truth (cozy mysteries, comedy, weird small towns).",
+ "genres": ["mystery", "cozy", "comedy", "romance"],
+ "requires": [],
+ "conflicts": ["clues"],
+ "script": "mod_make_the_case",
+ "actions": ["case", "search", "make_the_case"],
+ "tracks": [],
+ "pools": [],
+ "tables": {},
+ "numbers": {"complexity": 6, "approach": "wits", "min_explained": 1}
+}

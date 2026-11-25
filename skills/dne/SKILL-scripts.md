@@ -743,6 +743,15 @@ Runs for every campaign; its lines reach the GM through the `[[GM note]]`. Displ
 ### Mechanics (Braid building blocks) — `scripts/mechanics.py`
 Engine actions, any system, meant for `core`/`story`: `track` (numbered track per owner, e.g. stress, harm, composure; thresholds fire on crossing and can roll a table), `pool` (points refilled by `{"action": "pool", "refill": "scene|session|rest|day"}`, which also clears conditions with that `clears`; usage dice d12→d4→gone on a 1–2; `step_up: true` spends a token to move the actor's last check one step up), `condition` (−N to listed approaches until it clears), `bond` (shared value 0–5, points per side), `progress` (10 boxes by rank; `roll: true` is a normal check with the boxes as modifier), `table_roll`. On a Braid `roll`, `judge`, `flashback`, `bargain` or `search`: `"approach"` (conditions apply; with no spec, 2d6 + that approach from the sheet), `"push": true` (+1, marks 1 stress), `"help": "<name>"` (+1 with a bond). Under Braid, `harm` (0–4) and `stress` (0–6) start with the rules' thresholds, and a threshold's `condition` (Wounded, Badly hurt) comes and goes with the track. Full manual: `turn.py -c <campaign> help <action>`. Tracks, pools and progress show in the display's clock panel and in state.md's engine block.
 
+### Modules (Braid optional rules) — `scripts/modules.py`
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/modules.py list                       # every module: id, name, when to use it
+python3 ${CLAUDE_SKILL_DIR}/scripts/modules.py show <id>                  # its data and rules text
+python3 ${CLAUDE_SKILL_DIR}/scripts/modules.py check [<id> …] [-c <campaign>]   # requires, conflicts, unknown ids, >8 on
+python3 ${CLAUDE_SKILL_DIR}/scripts/modules.py -c <campaign> rules        # the rules of the campaign's modules only
+```
+The campaign's list is the Session Flag `- modules: a, b`. A module is `data/modules/<id>.json` (tracks, pools, thresholds, tables, numbers, requires/conflicts) + `<id>.md` (its rules, ≤40 lines) + optionally `scripts/mod_<id>.py` (its own engine action, e.g. `fright`, `doom`, `make_the_case`). Engine: `{"action": "modules", "apply": true}` gives every PC the declared tracks (repeatable; never resets a track). `case` takes `"skeleton": true` (the mystery in `story-skeleton.json`) and refuses a case that carries places but cannot be solved.
+
 ### Braid character sheets — `scripts/sheet.py`
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/sheet.py -c <campaign> new --name "<Name>" --concept "…" --drive "…" --flaw "…" --approaches "wits=2,finesse=1,heart=1,force=0,grit=-1" --labels "<label>,<label>" [--gear "a,b"] [--bonds "Name: why"]
