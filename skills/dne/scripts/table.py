@@ -156,7 +156,8 @@ def _search(ctx, intent: dict) -> dict:
     What is plainly there is found without a roll. The roll, if you ask for one, decides how long it takes (a failure
     takes twice as long) and whether the finer `detail` and the hidden clues turn up. Everything found is sent to that
     player alone and recorded as known to that character: sharing it is their decision (`tell`).
-    Braid (System: core): "roll": {"spec": "2d6+1"}, no DC; 7 or more helps. Story mode: the oracle answers."""
+    Braid (System: core): "roll": {"spec": "2d6+1"} (or {"approach": "wits"}), no DC; 7 or more helps; push and help
+    as on `roll`. Story mode: the oracle answers."""
     import resolve as checks
     world = _world(ctx)
     actor, where = str(intent.get("actor") or "Party"), str(intent.get("where", "")).casefold()
@@ -170,14 +171,23 @@ def _search(ctx, intent: dict) -> dict:
         if err:
             return {"status": "done", "elapsed_minutes": 0, "data": {"error": err}}
         num, sides, mod = checks.dice_for(system, roll.get("spec"))
+        spec, edge = roll.get("spec"), {"notes": [], "push": False}
+        if system != "d20":                               # sheet approach, conditions, push, help: as `roll`
+            import mechanics
+            edge = mechanics.edged(ctx, intent, system, actor, spec)
+            if edge.get("error"):
+                return {"status": "done", "elapsed_minutes": 0, "data": {"error": edge["error"]}}
+            spec = edge["spec"]
         if system != "story" and ctx.flag("roll_mode", "players") == "players" and "roll" not in ctx.answers:
-            asked = roll.get("spec", "1d20") if system == "d20" else checks.shown(system, roll.get("spec"))
+            asked = roll.get("spec", "1d20") if system == "d20" else checks.shown(system, spec)
             return {"status": "waiting_for_player",
                     "requests": [{"key": "roll", "kind": "roll", "expected": actor,
                                   "text": f"{actor}: roll {roll.get('label') or 'to search'} — {asked}"}]}
         got = [int(ctx.answers["roll"]["value"])] if "roll" in ctx.answers else ctx.roll("roll", sides, num)
-        good = checks.resolve(system, roll.get("spec"), int(roll.get("dc", 10)), got[:1] if system == "d20" else got,
+        good = checks.resolve(system, spec, int(roll.get("dc", 10)), got[:1] if system == "d20" else got,
                               likelihood=str(roll.get("likelihood") or "50/50"), chaos=checks.chaos(ctx.campaign, system))["passed"]
+        if edge["push"]:
+            mechanics.push(ctx, actor)
     minutes = int(intent.get("minutes", 10)) * (2 if good is False else 1)
     passed = scheduler.advance(world, (world.minute or 0) + minutes) if world.minute is not None else {"elapsed_minutes": 0, "visible_events": []}
     found = []

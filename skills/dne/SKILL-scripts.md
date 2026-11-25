@@ -741,7 +741,17 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/story.py -c <campaign> tone <tone> # note a 
 Runs for every campaign; its lines reach the GM through the `[[GM note]]`. Display additions: `send.py --handout <kind> [--title T]`, `send.py --npc N [--voice V]`, `send.py --tone T`, `push_stats.py --clock NAME FILLED SIZE | --clock-remove NAME | --clocks-json '[…]'`. Engine actions: `flashback`, `bargain`, `place_rule`, `clock`. `turn.py -c <campaign> metrics` prints playtest numbers; `turn.py … log` / `replay` record and replay a session's engine turns.
 
 ### Mechanics (Braid building blocks) — `scripts/mechanics.py`
-Engine actions, any system, meant for `core`/`story`: `track` (numbered track per owner, e.g. stress, harm, composure; thresholds fire on crossing and can roll a table), `pool` (points refilled by `{"action": "pool", "refill": "scene|session|rest|day"}`, which also clears conditions with that `clears`; usage dice d12→d4→gone on a 1–2; `step_up: true` spends a token to move the actor's last check one step up), `condition` (−N to listed approaches until it clears), `bond` (shared value 0–5, points per side), `progress` (10 boxes by rank; `roll: true` is a normal check with the boxes as modifier), `table_roll`. On a Braid `roll`: `"approach"` (conditions apply), `"push": true` (+1, marks 1 stress), `"help": "<name>"` (+1 with a bond). Full manual: `turn.py -c <campaign> help <action>`. Tracks, pools and progress show in the display's clock panel and in state.md's engine block.
+Engine actions, any system, meant for `core`/`story`: `track` (numbered track per owner, e.g. stress, harm, composure; thresholds fire on crossing and can roll a table), `pool` (points refilled by `{"action": "pool", "refill": "scene|session|rest|day"}`, which also clears conditions with that `clears`; usage dice d12→d4→gone on a 1–2; `step_up: true` spends a token to move the actor's last check one step up), `condition` (−N to listed approaches until it clears), `bond` (shared value 0–5, points per side), `progress` (10 boxes by rank; `roll: true` is a normal check with the boxes as modifier), `table_roll`. On a Braid `roll`, `judge`, `flashback`, `bargain` or `search`: `"approach"` (conditions apply; with no spec, 2d6 + that approach from the sheet), `"push": true` (+1, marks 1 stress), `"help": "<name>"` (+1 with a bond). Under Braid, `harm` (0–4) and `stress` (0–6) start with the rules' thresholds, and a threshold's `condition` (Wounded, Badly hurt) comes and goes with the track. Full manual: `turn.py -c <campaign> help <action>`. Tracks, pools and progress show in the display's clock panel and in state.md's engine block.
+
+### Braid character sheets — `scripts/sheet.py`
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/sheet.py -c <campaign> new --name "<Name>" --concept "…" --drive "…" --flaw "…" --approaches "wits=2,finesse=1,heart=1,force=0,grit=-1" --labels "<label>,<label>" [--gear "a,b"] [--bonds "Name: why"]
+python3 ${CLAUDE_SKILL_DIR}/scripts/sheet.py -c <campaign> check [<name>]      # every sheet against templates/sheets/core.md and the rules
+python3 ${CLAUDE_SKILL_DIR}/scripts/sheet.py -c <campaign> show <name>         # with harm, stress, conditions from the engine
+python3 ${CLAUDE_SKILL_DIR}/scripts/sheet.py -c <campaign> xp <name> --why "…" --event <id> [--mark N]   # one id is paid once
+python3 ${CLAUDE_SKILL_DIR}/scripts/sheet.py -c <campaign> advance <name> --raise <approach> | --label "…" | --move "…"   # 5 XP
+```
+Braid campaigns only (`**System:** core|story`); rules in `SKILL-core.md`, numbers in `data/braid.json`. The sheet holds XP and advances; harm and stress are engine tracks only. `npc.py add --threat 1-5` writes a Braid NPC's line.
 
 ### World Engine Migration — `scripts/world_migrate.py`
 ```bash

@@ -9,6 +9,7 @@ frozen while the party is elsewhere: after enough in-world time an NPC is due to
     npc.py -c <campaign> add --name "<Name>" --role "<role>" --cr <CR> --aliases "<names used in play>"
                              [--faction F] [--location L] [--attitude neutral] [--notes "<one line>"]
         Writes the npcs.md row and the npcs-full.md entry with fair stats for that CR.
+        Braid (System: core / story): --threat 1-5 instead of --cr; the entry gets harm boxes and the harm they deal.
         The prose is left as `<fill: …>` marks for the GM to write.
     npc.py -c <campaign> check
         Lists records that are unfinished, missing parts, or due to grow. Exit 1 if any.
@@ -153,7 +154,7 @@ def backlog(camp: Path) -> dict:
             out.setdefault(name, []).append("no entry in npcs-full.md")
             continue
         missing = []
-        if not re.search(r"\*\*HP:\*\*\s*\d", entry):
+        if not re.search(r"\*\*(?:HP|Threat):\*\*\s*\d", entry):
             missing.append("stats")
         if not re.search(r"^### History\s*\n\s*-\s*\S", entry, re.M):
             missing.append("history")
@@ -212,6 +213,16 @@ def _step(key: str, steps: int) -> str:
     return ladder[min(len(ladder) - 1, ladder.index(key) + steps)]
 
 
+def _threat(value) -> "int | None":
+    return int(value) if str(value or "") in ("1", "2", "3", "4", "5") else None
+
+
+def threat_stats(threat: int) -> dict:
+    """Harm boxes and harm dealt for a Braid threat rating (data/braid.json)."""
+    rules = json.loads((Path(__file__).resolve().parent.parent / "data" / "braid.json").read_text(encoding="utf-8"))
+    return rules["threats"][str(threat)]
+
+
 # ── commands ──────────────────────────────────────────────────────────────────
 
 def cmd_add(campaign: str, args) -> int:
@@ -225,12 +236,19 @@ def cmd_add(campaign: str, args) -> int:
         return 1
     listed = next((n for n in index_names(camp) if n.casefold() == name.casefold()), None)
     name = listed or name          # a row with no full entry yet: keep the row, write the entry
-    try:
-        key = worldkit._cr_key(args.cr)
-        stats = _typical(key)
-    except (ValueError, ZeroDivisionError, KeyError):
-        print(f"npc.py: bad --cr {args.cr!r} (use 0, 1/8, 1/4, 1/2 or 1-30)", file=sys.stderr)
-        return 1
+    braid = paths.campaign_system(campaign) != "d20"
+    if braid:
+        threat = _threat(args.threat)
+        if threat is None:
+            print(f"npc.py: Braid NPCs take --threat 1-5 (got {args.threat!r})", file=sys.stderr)
+            return 1
+    else:
+        try:
+            key = worldkit._cr_key(args.cr)
+            stats = _typical(key)
+        except (ValueError, ZeroDivisionError, KeyError):
+            print(f"npc.py: bad --cr {args.cr!r} (use 0, 1/8, 1/4, 1/2 or 1-30)", file=sys.stderr)
+            return 1
     now = today(camp)
     when = now[1] if now else "session start"
     voice = args.voice or VOICES[int(hashlib.sha256(name.encode("utf-8")).hexdigest(), 16) % len(VOICES)]
@@ -250,14 +268,19 @@ def cmd_add(campaign: str, args) -> int:
         lines += ["\n", INDEX_HEAD, row]
     index.write_text("".join(lines), encoding="utf-8")
 
+    stat_lines = (
+        f"- **Role:** {cell(args.role)} | **Threat:** {threat} | **Location:** {cell(args.location)}\n"
+        f"- **Harm:** {threat_stats(threat)['harm']} boxes | **Deals:** {threat_stats(threat)['deals']} harm | "
+        "**Moves:** <fill: two things they do when a roll against them misses>\n") if braid else (
+        f"- **Role:** {cell(args.role)} | **CR/Level:** CR {worldkit.format_cr(key)} | **Location:** {cell(args.location)}\n"
+        f"- **HP:** {stats['hp']} | **AC:** {stats['ac']} | **Attack:** <fill: name of their main attack> "
+        f"+{stats['attack']} ({stats['damage']} damage) | **Save DC:** {stats['dc']} | "
+        "**Notable abilities:** <fill: one or two abilities>\n")
     entry = (
         f"## {name}\n"
         f"- **Aliases:** {cell(args.aliases) or name}\n"
         f"- **Voice:** {voice} | <fill: how they talk: what they call themselves and others, pace, a pet phrase>\n"
-        f"- **Role:** {cell(args.role)} | **CR/Level:** CR {worldkit.format_cr(key)} | **Location:** {cell(args.location)}\n"
-        f"- **HP:** {stats['hp']} | **AC:** {stats['ac']} | **Attack:** <fill: name of their main attack> "
-        f"+{stats['attack']} ({stats['damage']} damage) | **Save DC:** {stats['dc']} | "
-        "**Notable abilities:** <fill: one or two abilities>\n"
+        + stat_lines +
         "- **Demeanor:** <fill: demeanor> | **Motivation:** <fill: motivation> | **Secret:** <fill: secret>\n"
         "- **Speech quirk:** <fill: speech quirk>\n"
         f"- **Attitude toward party:** {cell(args.attitude)}\n"
@@ -285,8 +308,12 @@ def cmd_add(campaign: str, args) -> int:
         if not campaign_graph._node_by_id(data, node_id):
             data["nodes"].append({"id": node_id, "type": "npc", "name": name})
             campaign_graph._save(campaign, data)
-    print(f"Created {name}: CR {worldkit.format_cr(key)}, HP {stats['hp']}, AC {stats['ac']}, attack +{stats['attack']} "
-          f"({stats['damage']} damage), save DC {stats['dc']}.")
+    if braid:
+        print(f"Created {name}: threat {threat}, {threat_stats(threat)['harm']} harm boxes, deals "
+              f"{threat_stats(threat)['deals']} harm.")
+    else:
+        print(f"Created {name}: CR {worldkit.format_cr(key)}, HP {stats['hp']}, AC {stats['ac']}, attack +{stats['attack']} "
+              f"({stats['damage']} damage), save DC {stats['dc']}.")
     print(f"Now write every `<fill: …>` part of `## {name}` in {full}: "
           + ", ".join(dict.fromkeys(m.split(",")[0] for m in FILL.findall(entry))) + ".")
     return 0
@@ -308,7 +335,8 @@ def cmd_check(campaign: str) -> int:
         return 0
     if old:
         print(f"\nIncomplete records: add what is missing in {camp / 'npcs-full.md'} "
-              "(`### History` with a **Background:** line, `- **Aliases:**` with the names used in play, an HP/AC line). "
+              "(`### History` with a **Background:** line, `- **Aliases:**` with the names used in play, "
+              f"{'a Threat line' if paths.campaign_system(campaign) != 'd20' else 'an HP/AC line'}). "
               f"Not in graph.json: `campaign_graph.py add-node --campaign {campaign} --type npc --name \"<Name>\"`.")
     if grow:
         print(f'\nGrow one: python3 "{Path(__file__).resolve()}" -c {campaign} advance "<Name>" --what "<what they did meanwhile>"'
@@ -331,6 +359,14 @@ def cmd_advance(campaign: str, args) -> int:
     steps = args.levels if args.levels is not None else (days // period if period else 0)
     entry = found[name]
     changes = []
+    t = re.search(r"(\*\*Threat:\*\*\s*)(\d)", entry)
+    if steps > 0 and t:                              # Braid: the threat rating climbs, harm boxes and harm dealt follow
+        new = min(5, int(t.group(2)) + steps)
+        if new > int(t.group(2)):
+            entry = entry[:t.start(2)] + str(new) + entry[t.end(2):]
+            entry = re.sub(r"(\*\*Harm:\*\*\s*)\d+", rf"\g<1>{threat_stats(new)['harm']}", entry, count=1)
+            entry = re.sub(r"(\*\*Deals:\*\*\s*)\d+", rf"\g<1>{threat_stats(new)['deals']}", entry, count=1)
+            changes.append(f"threat {t.group(2)} to {new}")
     m = re.search(r"(\*\*CR/Level:\*\*\s*)([^|\n]*)", entry)
     num = m and re.search(r"\d+/\d+|\d+(?:\.\d+)?", m.group(2))
     if steps > 0 and num:
@@ -392,7 +428,8 @@ def main() -> int:
     a = sub.add_parser("add")
     a.add_argument("--name", required=True)
     a.add_argument("--role", required=True)
-    a.add_argument("--cr", required=True, help="challenge rating for their stats: 0, 1/8, 1/4, 1/2, 1-30")
+    a.add_argument("--cr", help="challenge rating for their stats: 0, 1/8, 1/4, 1/2, 1-30 (5e)")
+    a.add_argument("--threat", help="Braid threat rating 1-5 (System: core / story), instead of --cr")
     a.add_argument("--aliases", default="", help="every name the story uses for them, comma-separated")
     a.add_argument("--faction", default="independent")
     a.add_argument("--location", default="")
@@ -406,6 +443,8 @@ def main() -> int:
     g.add_argument("--what", required=True, help="what they did while the party was away")
     g.add_argument("--levels", type=int, help="steps to raise (default: by in-world time away; 0 = story only)")
     args = p.parse_args()
+    if args.cmd == "add" and args.cr is None and paths.campaign_system(args.campaign) == "d20":
+        p.error("the following arguments are required: --cr")
     if args.cmd == "add":
         return cmd_add(args.campaign, args)
     if args.cmd == "check":

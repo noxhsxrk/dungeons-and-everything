@@ -427,6 +427,11 @@ def _damage(ctx, intent: dict) -> dict:
     for a creature, the sheet for a player character), and the result says what follows: a concentration save (DC 10
     or half the damage, whichever is higher) if it is concentrating, a morale check when an enemy drops to half HP
     or below, and whether that ended the fight."""
+    why = paths.not_d20(ctx.campaign, "damage (5e hit points)", "Braid harm is a track: "
+                        "{\"action\": \"track\", \"owner\": \"<who>\", \"id\": \"harm\", \"mark\": <harm dealt>} "
+                        "(SKILL-core.md, Conflict and harm).")
+    if why:
+        return {"status": "done", "elapsed_minutes": 0, "data": {"error": why}}
     world = _world(ctx)
     name = str(intent.get("target", ""))
     rec, t = world.get("combatant", name) or {}, token(world, name)

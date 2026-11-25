@@ -20,6 +20,7 @@ system is on):
    "worldkit": {...} (omit for classic SRD fantasy),
    "map": {"party_location": "ford", "places": {"ford": {"name": "The Ford"}, ...}, "edges": [{"a": "ford", "b": "market", "miles": 12}]},
    "npcs": [{"name": "Jonas", "role": "mechanic", "cr": "1/2", "aliases": ["Jo"], "faction": "Hollow-9", "location": "The Ford"}],
+            (Braid: "threat": 1-5 instead of "cr")
    "factions": [{"name": "Tollmen", "force": 3, "wealth": 4, "influence": 2, "goal": "Tax the bridge", "clock": 6,
                  "goal_stat": "wealth", "rivals": ["Millers' Guild"]}],
    "setup": [ engine intents, run once as the world's first turn:
@@ -144,7 +145,7 @@ def check(seed) -> list:
     if kit is not None:
         try:
             import worldkit
-            for e in worldkit.validate(kit):
+            for e in worldkit.validate(kit, system=system):
                 _err(errors, "worldkit", e)
         except Exception as exc:                  # a kit the validator cannot even read
             _err(errors, "worldkit", f"could not be checked: {exc}")
@@ -189,6 +190,10 @@ def check(seed) -> list:
         npc_names.update(str(a).strip().casefold() for a in n.get("aliases") or [])
         if not str(n.get("role", "")).strip():
             _err(errors, f"npcs[{i}].role", "what they do, in a few words")
+        if system != "d20":                       # Braid: a threat rating 1-5, no challenge rating
+            if str(n.get("threat", "")) not in ("1", "2", "3", "4", "5"):
+                _err(errors, f"npcs[{i}].threat", "a Braid threat rating 1-5 (SKILL-core.md, Enemies)")
+            continue
         try:
             import worldkit
             worldkit._cr_key(str(n.get("cr", "")))
@@ -272,6 +277,13 @@ def build(seed: dict) -> dict:
                 text = text.replace("**Starting level:** <N>", f"**Starting level:** {seed.get('starting_level', '<N>')}")
                 if seed.get("worldkit") is not None:
                     text = text.replace("<worldkit.json | none — classic SRD fantasy>", "worldkit.json")
+                if seed.get("system", "d20") != "d20":    # Braid has no levels, HP or AC
+                    text = text.replace("<worldkit.json | none — classic SRD fantasy>", "none")
+                    text = text.replace(f"  **Starting level:** {seed.get('starting_level', '<N>')}", "")
+                    text = re.sub(r"<Origin/Race> <Class> <Level> \| HP X/X \| AC X", "<concept> | harm X/4 | stress X/6", text)
+            if t == "npcs-full.md" and seed.get("system", "d20") != "d20":   # the entry pattern, in Braid's stat line
+                text = text.replace("**CR/Level:**", "**Threat:**").replace(
+                    "- **HP:** | **AC:** | **Attack:** | **Notable abilities:**", "- **Harm:** | **Deals:** | **Moves:**")
             (camp / t).write_text(text, encoding="utf-8")
         steps.append("templates")
         import world_migrate
@@ -331,7 +343,8 @@ def build(seed: dict) -> dict:
         for i, n in enumerate(seed.get("npcs") or []):
             if fail:
                 break
-            args = ["-c", name, "add", "--name", n["name"], "--role", n["role"], "--cr", str(n["cr"])]
+            args = ["-c", name, "add", "--name", n["name"], "--role", n["role"],
+                    *(["--threat", str(n["threat"])] if seed.get("system", "d20") != "d20" else ["--cr", str(n["cr"])])]
             for k in ("faction", "location", "attitude", "notes", "voice"):
                 if n.get(k):
                     args += [f"--{k}", str(n[k])]

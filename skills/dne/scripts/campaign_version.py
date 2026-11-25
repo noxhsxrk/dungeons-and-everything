@@ -25,7 +25,7 @@ from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from paths import find_campaign, skill_root  # noqa: E402
+from paths import campaign_system, find_campaign, skill_root  # noqa: E402
 
 FILE = "dne-version.json"
 
@@ -174,12 +174,18 @@ def audit(campaign: str) -> list[str]:
         if not re.search(rf"^\s*-\s*{flag}\s*:", flags, re.M):
             ask = " (ask the table)" if flag in ("content", "romance", "pacing", "lines", "veils", "hero_points", "when_down") else ""
             todo.append(f"state.md Session Flags: add `- {flag}: {default}`{ask}")
-    sheet_tpl = tpl / "character-sheet.md"
+    try:
+        system = campaign_system(campaign)
+    except ValueError:
+        system = "d20"
+    braid = system != "d20"
+    sheet_tpl = tpl / ("sheets/core.md" if braid else "character-sheet.md")
     for sheet in sorted((camp / "characters").glob("*.md")) if (camp / "characters").is_dir() else []:
         gaps = [k for k in _missing(sheet_tpl, sheet) if k not in OPTIONAL_SHEET]
         if gaps:
             todo.append(f"characters/{sheet.name}: add " + ", ".join(f"`## {k}`" for k in gaps)
-                        + " (Moves from the class, Bonds by asking the players, Flaws & Quirks optional)")
+                        + (" (see templates/sheets/core.md; `sheet.py check` lists the rest)" if braid else
+                           " (Moves from the class, Bonds by asking the players, Flaws & Quirks optional)"))
     kit_path = camp / "worldkit.json"
     if kit_path.exists():
         import worldkit
@@ -190,13 +196,13 @@ def audit(campaign: str) -> list[str]:
             todo.append(f"worldkit.json: invalid JSON ({exc}); fix first")
         if kit is not None:
             todo += [f"worldkit.json: fix: {e}" for e in worldkit.validate(kit, campaign)]
-            todo += [f"worldkit.json: review warning: {w}" for w in worldkit.warnings(kit)]
+            todo += [f"worldkit.json: review warning: {w}" for w in worldkit.warnings(kit, system)]
             meta = kit.get("_meta", {})
             for field, what in (("tech_level", "0–12, what the world can build"),
                                 ("status_levels", "social ranks, lowest first")):
                 if field not in meta:
                     todo.append(f"worldkit.json: add `_meta.{field}` ({what})")
-            for cls in kit.get("classes", []):
+            for cls in kit.get("classes", []) if not braid else []:
                 for field, what in (("moves", "1–3 playbook moves"), ("template", "a quick build")):
                     if field not in cls:
                         todo.append(f"worldkit.json: class {cls.get('name')}: add `{field}` ({what})")
@@ -204,11 +210,13 @@ def audit(campaign: str) -> list[str]:
                                 ("place_tags", "3–6 place tags in this world's voice")):
                 if not kit.get(field):
                     todo.append(f"worldkit.json: add `{field}` ({what})")
-            bare = [m.get("name") for m in kit.get("monsters", []) if "morale" not in m]
+            bare = [m.get("name") for m in kit.get("monsters", []) if "morale" not in m] if not braid else []
             if bare:
                 todo.append("worldkit.json: add `morale`, `instinct` and `instincts` to monsters: " + ", ".join(bare))
-            if not any("rarity" in r for cat in ("equipment", "spells") for r in kit.get(cat, [])):
+            if not braid and not any("rarity" in r for cat in ("equipment", "spells") for r in kit.get(cat, [])):
                 todo.append("worldkit.json: mark special gear with `rarity`/`traits` (and `tl` where tech matters)")
+    elif braid:
+        todo.append("worldkit.json: none; optional for Braid (labels, gear, threats: SKILL-core.md)")
     else:
         todo.append("worldkit.json: none (classic SRD fantasy); nothing to add unless the table wants a World Kit")
     world = (camp / "world.md").read_text(encoding="utf-8") if (camp / "world.md").exists() else ""

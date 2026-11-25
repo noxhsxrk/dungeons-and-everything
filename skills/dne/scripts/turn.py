@@ -109,8 +109,9 @@ def _roll(ctx: Ctx, intent: dict) -> dict:
     again, or resuming after a crash, returns the same result.
     Braid (System: core): a check is {"spec": "2d6+1"} with no DC, graded on the five-step ladder; any other spec is
     a plain roll (damage, a table). Story mode: {"likelihood": "likely"} (or a dc) asks the oracle instead of dice.
-    Braid core also reads "approach" (conditions on the actor apply), "push": true (+1, marks 1 stress) and
-    "help": "<name>" (+1 if that character has a bond with the actor). Afterwards a token steps the result up:
+    Braid core also reads "approach" (conditions on the actor apply; with no spec the check is 2d6 + that approach
+    from the actor's sheet), "push": true (+1, marks 1 stress) and "help": "<name>" (+1 if that character has a
+    bond with the actor). judge, flashback, bargain and search read the same three, in the intent or its `roll`. Afterwards a token steps the result up:
     {"action": "pool", "owner": "Mira", "id": "tokens", "step_up": true} (see mechanics.py)."""
     import dice
     import resolve as checks
@@ -151,15 +152,15 @@ def _roll(ctx: Ctx, intent: dict) -> dict:
 def _check(ctx: Ctx, intent: dict, system: str) -> dict:
     """A Braid check through `roll`: 2d6 + modifier (core) or the oracle (story), graded by resolve.py."""
     import resolve as checks
-    spec, actor = intent.get("spec") or checks.CORE_DICE, str(intent.get("actor") or "Party")
-    edge = {"mod": 0, "notes": []}
-    if intent.get("action") == "roll":            # conditions, a push, help (mechanics.py); a progress roll has none
+    spec, actor = intent.get("spec"), str(intent.get("actor") or "Party")
+    edge = {"mod": 0, "notes": [], "push": False}
+    if intent.get("action") == "roll":            # sheet approach, conditions, a push, help (mechanics.edged); a progress roll has none
         import mechanics
-        edge = mechanics.edges(ctx, intent, system, actor)
+        edge = mechanics.edged(ctx, intent, system, actor, spec)
         if edge.get("error"):
             return {"status": "done", "elapsed_minutes": 0, "data": {"error": edge["error"]}}
-        if edge["mod"]:
-            spec = f"{checks.CORE_DICE}{checks.dice_for(system, spec)[2] + edge['mod']:+d}"
+        spec = edge["spec"]
+    spec = spec or checks.CORE_DICE
     label = intent.get("label") or "a roll"
     if system == "core" and ctx.flag("roll_mode", "players") == "players" and "roll" not in ctx.answers:
         return {"status": "waiting_for_player",
@@ -175,7 +176,7 @@ def _check(ctx: Ctx, intent: dict, system: str) -> dict:
         data.update(likelihood=likelihood, chaos=chaos)
     if edge["notes"]:
         data["edges"] = edge["notes"]
-    if intent.get("action") == "roll" and intent.get("push"):
+    if edge["push"]:
         data["stress_crossed"] = mechanics.push(ctx, actor)
     said = f"{graded['total']}, {graded['degree']}" if system == "core" else f"the oracle says {graded['degree']}"
     return {"status": "done", "elapsed_minutes": 0, "data": data,

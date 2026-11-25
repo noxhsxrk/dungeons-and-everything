@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from paths import campaign_ruleset, find_campaign, norm_key, srd_path
+from paths import campaign_ruleset, campaign_system, find_campaign, norm_key, srd_path
 
 CATEGORIES = ('races', 'classes', 'backgrounds', 'monsters', 'spells',
               'equipment', 'features', 'conditions', 'class_options')
@@ -84,7 +84,66 @@ def class_chassis(name, campaign=None):
     return _race_key(record['chassis'] if record else name)
 
 
-def validate(kit, campaign=None):
+#: What a Braid (System: core / story) kit holds: no 5e chassis, CR or ability scores.
+BRAID_PARTS = ('labels', 'equipment', 'threats', 'place_tags', 'disadvantages', 'lexicon', 'currency', 'narrative_dna')
+SKIP_5E = ('races', 'classes', 'backgrounds', 'monsters', 'spells', 'features', 'class_options')
+
+
+def kit_system(kit, campaign=None, system=None):
+    """d20, core or story: the given system, else the campaign's, else the kit's `_meta.system`, else d20."""
+    if system:
+        return system
+    if campaign is not None:
+        try:
+            return campaign_system(campaign)
+        except Exception:                        # a kit file outside a campaign, an unreadable header: 5e as before
+            return 'd20'
+    meta = kit.get('_meta') if isinstance(kit, dict) else None
+    return str(meta.get('system') or 'd20') if isinstance(meta, dict) else 'd20'
+
+
+def validate_braid(kit):
+    """A Braid kit: labels {name, description}, gear (equipment) {name}, threats {name, threat 1-5, moves}; the
+    generic parts (place_tags, disadvantages, _meta) as for any kit. 5e categories are reported, not checked."""
+    if not isinstance(kit, dict):
+        return ['worldkit: top-level must be a dict']
+    errors = []
+    meta = kit.get('_meta', {})
+    if isinstance(meta, dict) and 'tech_level' in meta and not _int_in(meta['tech_level'], 0, 12):
+        errors.append('_meta.tech_level must be an integer 0–12')
+    for cat in SKIP_5E:
+        if kit.get(cat):
+            errors.append(f'{cat}: a 5e part; a Braid kit uses labels, equipment (gear) and threats instead')
+    for cat in ('labels', 'equipment', 'threats', 'place_tags', 'disadvantages'):
+        records = kit.get(cat, [])
+        if not isinstance(records, list):
+            errors.append(f'{cat}: must be a list of dicts')
+            continue
+        seen = set()
+        for i, r in enumerate(records):
+            label = f'{cat}[{i}] {r.get("name", "<unnamed>") if isinstance(r, dict) else ""}'.rstrip()
+            if not isinstance(r, dict) or not isinstance(r.get('name'), str) or not r['name'].strip():
+                errors.append(f'{label}: needs a name')
+                continue
+            if norm_key(r['name']) in seen:
+                errors.append(f'{label}: duplicate name')
+            seen.add(norm_key(r['name']))
+            if cat in ('labels', 'place_tags', 'disadvantages') and not str(r.get('description', '')).strip():
+                errors.append(f'{label}: description is required')
+            if cat == 'threats':
+                if not _int_in(r.get('threat'), 1, 5):
+                    errors.append(f'{label}: threat must be an integer 1–5')
+                moves = r.get('moves')
+                if not isinstance(moves, list) or not moves or not all(isinstance(m, str) and m.strip() for m in moves):
+                    errors.append(f'{label}: moves must list what it does when a roll against it misses')
+            if cat == 'place_tags' and not any(r.get(part) for part in PLACE_TAG_PARTS):
+                errors.append(f'{label}: needs at least one of {", ".join(PLACE_TAG_PARTS)}')
+    return errors
+
+
+def validate(kit, campaign=None, system=None):
+    if kit_system(kit, campaign, system) != 'd20':
+        return validate_braid(kit)
     from character import HIT_DICE, STATS, SKILLS, _AC_PAT, _race_key
     from combat import parse_damage
     if not isinstance(kit, dict):
@@ -330,7 +389,11 @@ def validate(kit, campaign=None):
     return errors
 
 
-def warnings(kit):
+def warnings(kit, system='d20'):
+    if system != 'd20':                          # Braid kits: counts only (our defaults)
+        out = [f'{field}: expected {low}–{high}, got {len(kit.get(field, []))}'
+               for field, low, high in (('labels', 6, 15), ('threats', 4, 12)) if not low <= len(kit.get(field, [])) <= high]
+        return out + [f'missing _meta.{f}' for f in ('name', 'genre', 'premise') if not kit.get('_meta', {}).get(f)]
     out = []
     for field, low, high in (('lexicon', 5, 15), ('races', 3, 6), ('classes', 5, 8),
                              ('backgrounds', 4, 6), ('monsters', 8, 15)):
@@ -499,7 +562,7 @@ def main():
     counts = ', '.join(f'{k}: {len(v)}' for k, v in kit.items() if isinstance(v, list))
     if args.command == 'validate':
         print(f'OK: {counts}')
-        for warning in warnings(kit):
+        for warning in warnings(kit, kit_system(kit, campaign)):
             print(f'warning: {warning}')
     else:
         show(kit)

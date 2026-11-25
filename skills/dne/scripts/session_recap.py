@@ -15,6 +15,8 @@ Why this exists (zero LLM):
 What it snapshots, per character:
   HP (current/max/temp), level, hit dice remaining, death saves,
   conditions, concentration, exhaustion, inspiration, spell slots expended.
+  A Braid sheet (System: core / story, `## Approaches`) instead: XP, advances, approaches, labels, and harm,
+  stress and conditions read from the world engine's tracks.
 
 Sources:
   - character sheet markdown at `<campaign>/characters/<name>.md` (canonical
@@ -229,6 +231,20 @@ def _merge_tracker(snap: dict, tracker: dict) -> None:
         }
 
 
+# ── Braid sheets (System: core / story) ──────────────────────────────────────
+
+
+def _braid_snapshot(campaign_dir: pathlib.Path, path: pathlib.Path, text: str) -> dict:
+    """A Braid sheet: XP, advances, approaches and labels from the sheet; harm, stress and conditions from the
+    world engine's tracks (their one source of truth, see sheet.py)."""
+    import sheet as braid
+    s = braid.parse(text)
+    st = braid.engine_state(campaign_dir.name, braid.names_of(path, s))
+    return {"name": s["name"], "system": "braid", "xp": s["xp"], "advances": s["advances"],
+            "approaches": s["approaches"], "labels": s["labels"], "harm": st["harm"]["value"],
+            "stress": st["stress"]["value"], "conditions": sorted(c.rsplit(" ", 1)[0].lower() for c in st["conditions"])}
+
+
 # ── party snapshot ───────────────────────────────────────────────────────────
 
 
@@ -240,7 +256,8 @@ def snapshot_party(campaign_dir: pathlib.Path) -> dict:
     char_dir = campaign_dir / "characters"
     if char_dir.is_dir():
         for sheet in sorted(char_dir.glob("*.md")):
-            snap = parse_character_sheet(sheet.read_text(encoding="utf-8"))
+            text = sheet.read_text(encoding="utf-8")
+            snap = _braid_snapshot(campaign_dir, sheet, text) if "\n## Approaches" in text else parse_character_sheet(text)
             if not snap.get("name"):
                 snap["name"] = sheet.stem
             chars[snap["name"]] = snap
@@ -326,6 +343,16 @@ def diff_character(before: dict, after: dict) -> list:
         if b != a:
             add("hit_die", b, a, detail=die)
 
+    for track in ("harm", "stress", "xp", "advances"):          # Braid sheets (absent on 5e snapshots)
+        if before.get(track) != after.get(track) and None not in (before.get(track), after.get(track)):
+            add(track, before.get(track), after.get(track))
+    for name, value in sorted((after.get("approaches") or {}).items()):
+        if (before.get("approaches") or {}).get(name, value) != value:
+            add("approach", before["approaches"][name], value, detail=name.capitalize())
+    for label in after.get("labels") or []:
+        if before.get("labels") is not None and label not in before["labels"]:
+            add("label_added", None, label)
+
     bds = before.get("death_saves") or {}
     ads = after.get("death_saves") or {}
     if bds.get("successes", 0) != ads.get("successes", 0):
@@ -397,6 +424,17 @@ def _phrase(c: dict) -> str:
         if delta < 0:
             return f"spent {abs(delta)} {detail} hit die"
         return f"recovered {delta} {detail} hit die"
+    if kind in ("harm", "stress"):
+        delta = int(a) - int(b)
+        return f"took {delta} {kind} ({b}→{a})" if delta > 0 else f"recovered {-delta} {kind} ({b}→{a})"
+    if kind == "xp":
+        return f"XP {b}→{a}"
+    if kind == "advances":
+        return f"took an advance ({a} in all)"
+    if kind == "approach":
+        return f"{detail} {int(b):+d}→{int(a):+d}"
+    if kind == "label_added":
+        return f"new label: {a}"
     if kind == "death_save_success":
         return f"death-save successes {b}→{a}"
     if kind == "death_save_failure":

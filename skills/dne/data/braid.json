@@ -1,0 +1,113 @@
+{
+  "_about": "Braid (System: core / story) numbers, read by sheet.py, mechanics.py and npc.py. Rules text: SKILL-core.md. Our defaults, adjustable; sources noted where a number follows a published game's mechanic (no text taken).",
+  "approaches": [
+    "force",
+    "finesse",
+    "wits",
+    "heart",
+    "grit"
+  ],
+  "start_array": [
+    2,
+    1,
+    1,
+    0,
+    -1
+  ],
+  "approach_min": -1,
+  "approach_max": 3,
+  "labels_at_start": [
+    2,
+    3
+  ],
+  "tracks": {
+    "harm": {
+      "min": 0,
+      "max": 4,
+      "thresholds": [
+        {
+          "at": 2,
+          "dir": "up",
+          "note": "Wounded: -1 on Force and Finesse until harm drops below 2",
+          "condition": {
+            "name": "Wounded",
+            "mod": -1,
+            "approaches": [
+              "force",
+              "finesse"
+            ]
+          }
+        },
+        {
+          "at": 3,
+          "dir": "up",
+          "note": "Badly hurt: -1 on every roll until harm drops below 3",
+          "condition": {
+            "name": "Badly hurt",
+            "mod": -1,
+            "approaches": []
+          }
+        },
+        {
+          "at": 4,
+          "dir": "up",
+          "note": "Taken out: out of this scene. The player picks one: knocked cold, captured, lost, or (deadly danger only) dying unless someone helps before the scene ends"
+        }
+      ]
+    },
+    "stress": {
+      "min": 0,
+      "max": 6,
+      "thresholds": [
+        {
+          "at": 6,
+          "dir": "up",
+          "note": "Breaking point: no more pushes. Take a lasting scar (a condition, -1 on one approach, cleared at a milestone), then set stress to 0"
+        }
+      ]
+    }
+  },
+  "xp_per_advance": 5,
+  "xp_marks": {
+    "drive": "acted on your drive and it cost you something (once per session)",
+    "flaw": "your flaw made real trouble (once per session)",
+    "miss": "a miss taught you something (1 per session, our default)",
+    "milestone": "the party finished something that mattered (2 XP, the GM names it)"
+  },
+  "advances": {
+    "raise": "+1 to one approach (never above +3)",
+    "label": "a new label",
+    "move": "a new move: one narrow thing you do better than anyone, in one line"
+  },
+  "threats": {
+    "1": {
+      "harm": 1,
+      "deals": 1,
+      "what": "a nuisance: a thug, a guard dog, a pickpocket"
+    },
+    "2": {
+      "harm": 2,
+      "deals": 1,
+      "what": "trained: a soldier, a cultist, a wolf"
+    },
+    "3": {
+      "harm": 3,
+      "deals": 2,
+      "what": "dangerous: a veteran, a beast, a gunman behind cover"
+    },
+    "4": {
+      "harm": 4,
+      "deals": 2,
+      "what": "formidable: a champion, a monster, a war machine"
+    },
+    "5": {
+      "harm": 6,
+      "deals": 3,
+      "what": "overwhelming: a dragon, a tank, a god's hand"
+    }
+  },
+  "pack": {
+    "3-5": 1,
+    "6-10": 2
+  }
+}

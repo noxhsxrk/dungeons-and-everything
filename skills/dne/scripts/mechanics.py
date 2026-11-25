@@ -25,10 +25,13 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import paths  # noqa: E402
 import turn  # noqa: E402
 import world_db as wdb  # noqa: E402
 
 TABLES = HERE.parent / "data" / "tables"
+#: Braid's numbers (SKILL-core.md): harm and stress tracks, approaches, threats, XP.
+BRAID = json.loads((HERE.parent / "data" / "braid.json").read_text(encoding="utf-8"))
 DIE_STEPS = ("d12", "d10", "d8", "d6", "d4")      # a usage die rolls 1-2: one step down; on a d4 it is gone
 CADENCES = ("scene", "session", "rest", "day")
 #: Progress ranks: quarter-boxes marked per `mark` (a box is 4, the track 10 boxes = 40).
@@ -93,8 +96,32 @@ def _table_roll(ctx, intent: dict) -> dict:
 
 # ── tracks ────────────────────────────────────────────────────────────────────
 
-def _new_track(owner: str, tid: str) -> dict:
-    return {"owner": owner, "id": tid, "min": 0, "max": 6, "value": 0, "thresholds": [], "log": []}
+def _new_track(owner: str, tid: str, braid: bool = False) -> dict:
+    """A fresh track at its minimum. Under Braid, `harm` and `stress` start with the rules' size and thresholds."""
+    rule = BRAID["tracks"].get(tid.casefold(), {}) if braid else {}
+    return {"owner": owner, "id": tid, "min": rule.get("min", 0), "max": rule.get("max", 6), "value": rule.get("min", 0),
+            "thresholds": json.loads(json.dumps(rule.get("thresholds", []))), "log": []}
+
+
+def _braid(ctx) -> bool:
+    return paths.campaign_system(ctx.campaign) != "d20"
+
+
+def _sync_conditions(ctx, rec: dict) -> None:
+    """A threshold with a `condition` holds it while the track is at or past `at` (dir up) and drops it below."""
+    for t in rec.get("thresholds") or []:
+        cond = t.get("condition")
+        if not cond:
+            continue
+        key = _key(rec["owner"], cond["name"])
+        down = t.get("dir") == "down"
+        on = rec["value"] <= int(t["at"]) if down else rec["value"] >= int(t["at"])
+        if on and wdb.get(ctx.db, "condition", key) is None:
+            wdb.put(ctx.db, "condition", key, {"owner": rec["owner"], "name": cond["name"], "mod": int(cond.get("mod", 0)),
+                                                "approaches": list(cond.get("approaches") or []), "clears": "",
+                                                "note": f"{rec['id']} {'≤' if down else '≥'} {t['at']}"})
+        elif not on and wdb.get(ctx.db, "condition", key) is not None:
+            wdb.delete(ctx.db, "condition", key)
 
 
 def _crossed(ctx, rec: dict, before: int) -> list:
@@ -119,19 +146,24 @@ def change_track(ctx, owner: str, tid: str, *, mark: int = 0, set_to=None, why: 
     key = _key(owner, tid)
     rec = wdb.get(ctx.db, "track", key)
     new = rec is None
-    rec = rec or _new_track(owner, tid)
+    shaped = any(k in (define or {}) for k in ("min", "max", "thresholds"))
+    rec = rec or _new_track(owner, tid, _braid(ctx) and not shaped)   # an enemy's `max` is its own track, no PC thresholds
     for field in ("min", "max"):
         if field in (define or {}):
             rec[field] = int(define[field])
     if "thresholds" in (define or {}):
         rec["thresholds"] = [{"at": int(t["at"]), "dir": "down" if t.get("dir") == "down" else "up",
                               **({"note": str(t["note"])} if t.get("note") else {}),
-                              **({"table": t["table"]} if t.get("table") else {})} for t in define["thresholds"]]
+                              **({"table": t["table"]} if t.get("table") else {}),
+                              **({"condition": dict(t["condition"])} if isinstance(t.get("condition"), dict) else {})}
+                             for t in define["thresholds"]]
     before = rec["value"]
     if set_to is not None:
         rec["value"] = int(set_to)
     rec["value"] = max(rec["min"], min(rec["max"], rec["value"] + int(mark)))
-    crossed = [] if new else _crossed(ctx, rec, before)   # a new track's starting value crosses nothing
+    # a track's starting value (set or defined when it is created) crosses nothing; a first mark from the minimum does
+    crossed = [] if new and (shaped or set_to is not None) else _crossed(ctx, rec, before)
+    _sync_conditions(ctx, rec)
     if rec["value"] != before or crossed:
         _log(rec, {"from": before, "to": rec["value"], "why": why, "turn": ctx.turn_id,
                    **({"crossed": [c["at"] for c in crossed]} if crossed else {})})
@@ -443,6 +475,31 @@ def _progress(ctx, intent: dict) -> dict:
 
 # ── what a `roll` check reads ─────────────────────────────────────────────────
 
+def edged(ctx, intent: dict, system: str, actor: str, spec) -> dict:
+    """The one step every Braid check (roll, judge, flashback, bargain, search) takes before its dice: the actor's
+    conditions, a push and help, read from the intent or its `roll` dict ({"approach", "push", "help"}). With no
+    spec, a core check takes 2d6 + the approach on the actor's sheet. Returns {"spec", "mod", "notes", "push"} or
+    {"error"}. A d20 check is returned untouched."""
+    if system == "d20":
+        return {"spec": spec, "mod": 0, "notes": [], "push": False}
+    roll = intent.get("roll") if isinstance(intent.get("roll"), dict) else {}
+    asked = {k: roll.get(k, intent.get(k)) for k in ("approach", "push", "help")}
+    import resolve as checks
+    if system == "core" and not spec and asked["approach"]:
+        import sheet
+        base = sheet.approach(ctx.campaign, actor, asked["approach"])
+        if base is None:
+            return {"error": f"no approach {asked['approach']!r} on {actor}'s sheet: send a spec (\"2d6+1\") or "
+                             f"one of {', '.join(BRAID['approaches'])}"}
+        spec = f"{checks.CORE_DICE}{base:+d}"
+    edge = edges(ctx, asked, system, actor)
+    if edge.get("error"):
+        return edge
+    if edge["mod"] and system == "core":
+        spec = f"{checks.CORE_DICE}{checks.dice_for(system, spec)[2] + edge['mod']:+d}"
+    return {**edge, "spec": spec, "push": bool(asked["push"])}
+
+
 def edges(ctx, intent: dict, system: str, actor: str) -> dict:
     """The modifier conditions, a push and help add to `actor`'s check ({"mod", "notes"} or {"error"}). Reads only:
     the push's stress is marked by `push()` once the roll is done (the handler runs again when a player's dice come)."""
@@ -456,7 +513,7 @@ def edges(ctx, intent: dict, system: str, actor: str) -> dict:
         mod += int(c["mod"])
         notes.append(f"{c['name']} {int(c['mod']):+d}")
     if intent.get("push"):
-        st = wdb.get(ctx.db, "track", _key(actor, "stress")) or _new_track(actor, "stress")
+        st = wdb.get(ctx.db, "track", _key(actor, "stress")) or _new_track(actor, "stress", True)
         if st["value"] >= st["max"]:
             return {"error": f"{actor}'s stress is full ({st['value']}/{st['max']}): no push left"}
         mod += 1

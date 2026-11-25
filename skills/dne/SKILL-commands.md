@@ -29,7 +29,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
    **Q4 *"Should the world live on its own?"*** (only offer it; default `No` if dismissed)
    - `No (Recommended for now)` → the classic path below, step by step.
    - `Yes: the world engine` → follow **World engine path** after step 16: the same questions, but what you decide is collected into one seed file that `campaign_init.py` checks and builds, so the world can run its own days from the first turn.
-2. **Ruleset selection.** Ask: *"D&D 5e ruleset for this campaign? **2014** (SRD 5.1, default — full mechanics, classic Player's Handbook structure) or **2024** (SRD 5.2, weapon mastery + origin feats + background ASIs + revised exhaustion)?"* Default to `2014` if no answer or ambiguous. Write the chosen value to `state.md` header line as `**Ruleset:** 2014` or `**Ruleset:** 2024`.
+2. **System, then ruleset.** First the rules: *"Which rules? **Braid** (our own 2d6 rules, built for any genre — the default) or **d20** (D&D 5e)?"* Braid is the default for a world that is not classic D&D; choose d20 when the players ask for 5e or D&D. Braid → write `**System:** core` (or `story` for no dice at all) in place of the `**Ruleset:** 2014  **System:** d20` header field, read `SKILL-core.md` to its last line, and skip every 5e step below: no ruleset, no races/classes/spells/monsters in the kit (it holds `labels`, `equipment` and `threats`), characters by `sheet.py new` (SKILL-core.md → Characters); a Braid world always runs on the world engine (Q4 = Yes, seed `"system": "core"`). d20 → ask: *"D&D 5e ruleset for this campaign? **2014** (SRD 5.1, default — full mechanics, classic Player's Handbook structure) or **2024** (SRD 5.2, weapon mastery + origin feats + background ASIs + revised exhaustion)?"* Default to `2014` if no answer or ambiguous. Write the chosen value to `state.md` header line as `**Ruleset:** 2014` or `**Ruleset:** 2024`.
 
    If 2024 was chosen: verify the dataset exists with `ls ${CLAUDE_SKILL_DIR}/data/dnd5e_srd_2024.json`. If missing, offer to run `python3 ${CLAUDE_SKILL_DIR}/scripts/build_srd.py --ruleset 2024` (one-time, ~3 min, needs network). Until it exists, `lookup.py` uses the 2014 SRD automatically (it prints a one-line notice) — World Kit content is unaffected.
 3. `mkdir -p "${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/<name>/characters"`
@@ -105,7 +105,7 @@ Ask everything above in the same order, but do not create files by hand in steps
 - `campaign`, `ruleset`, `party_size`, `starting_level` (step 5), `flags` (Q1–Q3 and the step-6 dials, plus `world_engine: on`, and `survival: on` if the table wants supplies tracked),
 - `worldkit` (step 7, omit for classic fantasy), `calendar` (step 7b's date, months and day names),
 - `map`: the places the story starts among and the roads between them (step 8's settlement among them),
-- `npcs` (step 11: name, role, CR, aliases), `factions` (step 10: stats, goal, rivals),
+- `npcs` (step 11: name, role, CR, aliases; Braid: `threat` 1–5 instead of CR, and `"system": "core"` with no `ruleset`), `factions` (step 10: stats, goal, rivals),
 - `setup`: the world's starting state as engine actions: who holds which road (`route`), what each market has (`market`), a settlement that keeps itself alive (`settlement`), where NPCs are due (`appointment`, `npc_schedule`), what is already in motion (`schedule`). `turn.py -c <any engine campaign> help <action>` gives each action's fields.
 
 Then `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_init.py --seed - --check` with the seed on stdin. Every problem comes back with its place in the seed (`setup[2].at`, `npcs[1].cr`): fix them all and check again until it says `"ok": true`, then run it without `--check`. `warnings` are not blocking: a flag the engine does not read, an NPC name another campaign uses (rename it if it is a clash). The build also records the NPCs in the name registry. It builds the campaign in a staging folder and moves it into place only when everything worked; a failure leaves nothing behind, and an existing campaign of that name is never touched. Afterwards write the prose that has no seed field into the files it made — World Foundations (7b), Three Truths (8), the threat arc (9), quest seeds (12), the campaign arc (13) — and go on from step 14.
@@ -182,7 +182,7 @@ Then `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_init.py --seed - --check` wit
 
    Future migrations (e.g. when 2026 ruleset arrives) follow the same pattern: a small migrator script under `scripts/migrate_<topic>.py` invoked here as a `--check` then `--yes` pair.
 
-3. **Read campaign ruleset** for this session: `python3 ${CLAUDE_SKILL_DIR}/scripts/paths.py campaign-ruleset <name>` (or import `campaign_ruleset` directly). Stash the result; pass `--ruleset <value>` to `lookup.py`, `build_supplemental.py`, and `combat.py` mastery calls so they route to the correct dataset. The display companion picks up the same value automatically via `push_stats.py --set-campaign`.
+3. **Read campaign ruleset** for this session: `python3 ${CLAUDE_SKILL_DIR}/scripts/paths.py campaign-ruleset <name>` (or import `campaign_ruleset` directly). Stash the result; pass `--ruleset <value>` to `lookup.py`, `build_supplemental.py`, and `combat.py` mastery calls so they route to the correct dataset. The display companion picks up the same value automatically via `push_stats.py --set-campaign`. Braid campaign (`paths.py campaign-system <name>` prints `core` or `story`): there is no ruleset; read `SKILL-core.md` instead, check the sheets with `sheet.py -c <name> check`, and skip the 5e-only steps of this section.
 
 4. Read SKILL-scripts.md (for script syntax this session)
 5. **Mark this campaign active.** `push_stats.py --set-campaign <campaign-name>` (step 1) already did it and printed a `SESSION START` checklist: do every line of it. With `display: none`, run `python3 ${CLAUDE_SKILL_DIR}/scripts/gm_guide.py -c <campaign-name> start` instead. The marker (`active-campaign.json` in the runtime dir) names the campaign for the autosave hook and the autorun watchdog, dates the session for `save_check.py`, and records each sheet's XP as the session opens. Then read state.md, world.md, npcs.md (index only), and all characters/*.md
@@ -619,7 +619,7 @@ Read `${DNE_CAMPAIGN_ROOT:-$HOME/.dne}/campaigns/*/state.md`, print summary tabl
 
 ## `/dne character new [campaign-name]`
 
-**Read the campaign's ruleset first** — `python3 ${CLAUDE_SKILL_DIR}/scripts/paths.py campaign-ruleset <campaign>`, or inline:
+**Braid campaign (`**System:** core` or `story`):** skip this whole section; make the character as SKILL-core.md → "Characters" says, with `sheet.py new`. **Read the campaign's ruleset first** — `python3 ${CLAUDE_SKILL_DIR}/scripts/paths.py campaign-ruleset <campaign>`, or inline:
 
 ```bash
 python3 -c "import sys; sys.path.insert(0,'${CLAUDE_SKILL_DIR}/scripts'); from paths import campaign_ruleset; print(campaign_ruleset('<campaign>'))"
@@ -698,7 +698,7 @@ Read `characters/<name>.md`, display cleanly. If name omitted and one character 
 ---
 
 ## `/dne level up [name]`
-1. **XP gate — check first:**
+1. **XP gate — check first:** (Braid campaign: no levels; spend 5 XP on an advance with `sheet.py advance`, SKILL-core.md → Advancement, and skip this section.)
 
    | Level | XP required | Level | XP required |
    |-------|-------------|-------|-------------|

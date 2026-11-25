@@ -109,7 +109,8 @@ def _rest(ctx, intent: dict) -> dict:
       stop     — get up. 2014: no benefit. 2024: a long rest of an hour or more still counts as a short one.
     The benefit (HP, Hit Dice, slots, exhaustion) is applied only when the rest is complete."""
     why = paths.not_d20(ctx.campaign, "rest (5e short and long rests)",
-                        "To let time pass, use the `wait` action; Braid recovery arrives with the Braid rules.")
+                        "A Braid rest is the `wait` action, then recovery as SKILL-core.md says (Conflict and harm → "
+                        "Recovery): `track` marks harm and stress down.")
     if why:
         return {"status": "done", "elapsed_minutes": 0, "data": {"error": why}}
     world = scheduler.World(ctx.campaign, ctx.db)

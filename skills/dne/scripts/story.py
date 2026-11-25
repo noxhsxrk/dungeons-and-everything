@@ -398,7 +398,8 @@ def _register() -> None:
     def _rolled(ctx, intent: dict, key: str, text: str, advantage: bool = False):
         """Shared roll step: a request to the player, or the engine's dice. Returns (waiting-result, None) or (None, data).
 
-        Braid (core): 2d6 + modifier, no DC; Braid has no advantage, so a bargain's edge is +1 instead.
+        Braid (core): 2d6 + modifier, no DC; Braid has no advantage, so a bargain's edge is +1 instead. The roll (or
+        the intent) may carry "approach", "push" and "help" exactly as on `roll` (mechanics.edged).
         Story: the oracle answers, nobody rolls; a bargain's edge moves the answer one step up."""
         import resolve as checks
         roll = intent.get("roll") or {}
@@ -407,8 +408,16 @@ def _register() -> None:
         if err:
             return {"status": "done", "elapsed_minutes": 0, "data": {"error": err}}, None
         num, sides, mod = checks.dice_for(system, roll.get("spec"))
-        spec = f"{checks.CORE_DICE}{mod + 1:+d}" if advantage and system == "core" else roll.get("spec")
         actor = str(intent.get("actor") or "Party")
+        spec, edge = roll.get("spec"), {"notes": [], "push": False}
+        if system != "d20":                                 # sheet approach, conditions, push, help: as `roll`
+            import mechanics
+            edge = mechanics.edged(ctx, intent, system, actor, spec)
+            if edge.get("error"):
+                return {"status": "done", "elapsed_minutes": 0, "data": {"error": edge["error"]}}, None
+            spec = edge["spec"]
+        if advantage and system == "core":
+            spec = f"{checks.CORE_DICE}{checks.dice_for(system, spec)[2] + 1:+d}"
         if system != "story" and ctx.flag("roll_mode", "players") == "players" and key not in ctx.answers:
             twice = " Roll twice and send the higher." if advantage and system == "d20" else ""
             asked = roll.get("spec", "1d20") if system == "d20" else checks.shown(system, spec)
@@ -427,8 +436,10 @@ def _register() -> None:
         if system == "d20":
             return None, {"dice": graded["raw"], "total": graded["total"], "dc": dc, "passed": graded["passed"],
                           "advantage": advantage}
+        if edge["push"]:
+            edge["notes"] = edge["notes"] + [f"stress crossed {c['at']}: {c['note']}" for c in mechanics.push(ctx, actor)]
         return None, {"dice": graded["raw"], "total": graded["total"], "degree": graded["degree"],
-                      "passed": graded["passed"], "advantage": advantage}
+                      "passed": graded["passed"], "advantage": advantage, **({"edges": edge["notes"]} if edge["notes"] else {})}
 
     @turn.handler("flashback")
     def _flashback(ctx, intent: dict) -> dict:

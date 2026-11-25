@@ -52,14 +52,24 @@ def section_lines(doc: str, heading: str) -> str:
     return f"{path} lines {start + 1}-{end}"
 
 
+def _system(campaign: str) -> str:
+    """d20, core or story; d20 when state.md cannot say (the error is reported at session start)."""
+    try:
+        return paths.campaign_system(campaign)
+    except ValueError:
+        return "d20"
+
+
 def session_start(campaign: str) -> list[str]:
     """Mark the campaign active and list what a session start still needs."""
     camp = paths.find_campaign(campaign)
+    braid = _system(campaign) != "d20"
     xp0 = {}
     try:
-        import xp
-        for sheet in sorted((camp / "characters").glob("*.md")):
-            xp0[sheet.stem] = xp._read_char_state(sheet)[0]
+        if not braid:                          # Braid XP lives on the sheet, marked by sheet.py
+            import xp
+            for sheet in sorted((camp / "characters").glob("*.md")):
+                xp0[sheet.stem] = xp._read_char_state(sheet)[0]
     except Exception:
         pass
     marker = {"name": campaign, "since": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
@@ -81,6 +91,10 @@ def session_start(campaign: str) -> list[str]:
     try:
         if paths.campaign_system(campaign) != "d20":
             steps.remove(f"{_py('migrate_ruleset.py')} {campaign} --check")   # a 5e choice: Braid has no ruleset
+            steps.insert(1, f"This campaign plays by Braid (**System:** {paths.campaign_system(campaign)}), not 5e: read "
+                            f"{SKILL / 'SKILL-core.md'} to its last line now, and use only its rules and "
+                            "scripts this session.")
+            steps.append(f"{_py('sheet.py')} -c {campaign} check   (every character sheet against the Braid rules)")
     except ValueError as exc:
         steps.insert(0, f"FIX state.md before play: {exc}")
     try:
@@ -183,8 +197,9 @@ def _npc_notes(campaign: str, text: str) -> list[str]:
     except Exception:
         return []
     camp = paths.find_campaign(campaign)
+    rank = "--threat <1-5>" if _system(campaign) != "d20" else "--cr <CR>"
     notes = [f"A named character who enters the story gets a record the same turn: `{_py('npc.py')} -c {campaign} add "
-             "--name \"<Name>\" --role \"<role>\" --cr <CR> --aliases \"<names used in play>\"` (fair stats, npcs.md row, "
+             f"--name \"<Name>\" --role \"<role>\" {rank} --aliases \"<names used in play>\"` (fair stats, npcs.md row, "
              "npcs-full.md entry), then write its `<fill: ...>` parts: background, personality, goal, relationships."]
     todo = npc.unfinished(camp)
     if todo:
@@ -266,6 +281,27 @@ def _engine_parts(campaign: str, view: "dict | None") -> list:
     return parts
 
 
+def _braid_rules(campaign: str, full: bool) -> list:
+    """The standing turn rules for a Braid campaign (System: core / story), in place of the 5e fight and rest rules."""
+    story = _system(campaign) == "story"
+    check = ("the oracle answers (`roll` with \"likelihood\"; a token spent afterwards steps it up)" if story else
+             "2d6 + approach on the five-step ladder (`roll` with \"approach\" reads the sheet; push, help and the cost "
+             "named before the roll as SKILL-core.md says)")
+    parts = [(RULE, f"Braid: every check is {check}. Roll only when the outcome is uncertain and both ways are "
+                    "interesting; a miss always changes the situation, never \"nothing happens\". Rules: "
+                    f"{SKILL / 'SKILL-core.md'}.")]
+    if full:
+        parts.append((RULE, "A fight in Braid is a scene of rolls, not rounds: enemies never roll. A PC's hit marks the "
+                            "enemy's `harm` track (`track`, owner = the enemy, max = its harm boxes from its threat); a miss "
+                            "or a cost marks the PC's `harm` or `stress` by what the enemy deals. `fight` can hold the "
+                            f"objective and the zones ({section_lines('SKILL-core.md', 'Conflict')}). Harm, stress and conditions live in the engine; XP and advances "
+                            f"in `{_py('sheet.py')} -c {campaign} xp|advance`."))
+    parts.append((RULE, "Time passes only through the world engine: rest and downtime are `wait`, then recovery as "
+                        "SKILL-core.md says (`track` marks down, `pool` refill); a journey is `travel`. An interrupted rest "
+                        "or journey waits for the players' choice; do not finish it for them."))
+    return parts
+
+
 def _clock_moved_by_hand(campaign: str) -> "str | None":
     """The calendar is not where the engine last left it: time was moved around the engine (a hand edit, or a
     turn answered without the scripts), so whatever was due in between has not happened."""
@@ -328,8 +364,11 @@ def turn_parts(campaign: str, count: bool = True, text: str = "", turn: "dict | 
         return []
     cmds = SKILL / "SKILL-commands.md"
     full = paths.session_flag(campaign, "engine", "full") != "light"
+    braid = _system(campaign) != "d20"
     parts = _engine_parts(campaign, turn)
-    if paths.session_flag(campaign, "world_engine", "off") == "on":
+    if braid:
+        parts += _braid_rules(campaign, full)
+    elif paths.session_flag(campaign, "world_engine", "off") == "on":
         if full:
             parts.append((RULE, "A fight on the world engine: `fight` (what it is for, what ends it), `combatant`, then `advise` "
                                 "before an enemy acts, `move`, `spend`, `damage`, `round` (`turn.py help fight`). It ends when "
@@ -338,7 +377,7 @@ def turn_parts(campaign: str, count: bool = True, text: str = "", turn: "dict | 
                             "`travel`, waiting is `wait` (never calendar.py rest, economy.py rest or world_map.py travel: "
                             "they would move time or the party a second time). An interrupted rest or journey waits "
                             "for the players' choice; do not finish it for them."))
-    if full:
+    if full and not braid:
         parts.append((RULE,
         "Fights and rests run on the engine, never on narration alone. Before the first blow run "
         f"`{_py('combat.py')} init '<JSON>'` so every enemy has HP and AC (`{_py('worldkit.py')} monster-stats "
@@ -358,7 +397,7 @@ def turn_parts(campaign: str, count: bool = True, text: str = "", turn: "dict | 
             "every rest, journey or time skip; `set \"<D Month YYYY>\"` only corrects a wrong date. If the "
             f"calendar is right, show its date: `python3 \"{SKILL / 'display' / 'push_stats.py'}\" --world-time "
             f"'{{\"date\": \"{clock[1]}\", \"time\": \"<time of day>\"}}'`."))
-    gaps = _xp_gaps(campaign) if full else []
+    gaps = _xp_gaps(campaign) if full and not braid else []
     if gaps:
         parts.append((DUE,
             "XP NOT AWARDED BY THE ENGINE (" + "; ".join(gaps) + "). XP counts only when xp.py award gave it; never "
@@ -377,8 +416,9 @@ def turn_parts(campaign: str, count: bool = True, text: str = "", turn: "dict | 
         camp = paths.find_campaign(campaign)
         parts.append((DUE,
             f"SAVE DUE: {turns} player turns since state.md was last written; all of it is lost if this chat ends. "
-            f"Before you narrate, write to {camp}: state.md (Current Situation: place, time, HP and resources; Recent "
-            "Events; Live State Flags) and characters/<pc>.md (HP, slots, inventory, allies and gear gained). "
+            f"Before you narrate, write to {camp}: state.md (Current Situation: place, time, "
+            f"{'harm, stress' if braid else 'HP'} and resources; Recent Events; Live State Flags) and characters/<pc>.md "
+            f"({'XP, labels, bonds' if braid else 'HP, slots'}, inventory, allies and gear gained). "
             "Quietly, no word to the players; this is not a full /dne save."))
     if paths.session_flag(campaign, "world_engine", "off") == "on":
         try:
