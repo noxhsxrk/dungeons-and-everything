@@ -145,7 +145,7 @@ class Doom(Module):
 
     def test_a_judge_counts_too(self):
         r = self.turn_with("judge", {"action": "judge", "actor": "Mira", "plan": "p", "risk": "r", "if_fails": "f",
-                                     "roll": {"spec": "2d6+5"}})
+                                     "roll": {"spec": "2d6+10"}})   # always 12+: no price to wait on
         self.assertIn("doom", self.data(r))
 
     def test_never_at_zero_always_at_the_top_and_the_floor_rises(self):
