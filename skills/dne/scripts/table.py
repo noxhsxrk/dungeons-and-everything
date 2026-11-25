@@ -172,7 +172,9 @@ def _case(ctx, intent: dict) -> dict:
     if record.get("places") and not record.get("open"):
         import copy
         import story_gen
-        report = story_gen.check_case(copy.deepcopy(record), cid)      # it fills defaults in: never on the stored one
+        probe = copy.deepcopy(record)                               # the validator fills defaults in: never the stored one
+        probe["clues"] = [{"proves": "", "where": "", "obvious": True, **c} for c in probe["clues"]]   # as `search` reads them
+        report = story_gen.check_case(probe, cid)
         skip = () if record.get("suspects") else ("unique", "uncleared")
         found = [p[2] for p in report["problems"] if p[0] not in skip]
         if found and not intent.get("force"):

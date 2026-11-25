@@ -143,6 +143,11 @@ class Doom(Module):
         r = self.turn_with("damage", {"action": "roll", "actor": "Mira", "spec": "1d6"})       # not a check: no doom
         self.assertNotIn("doom", self.data(r))
 
+    def test_a_judge_counts_too(self):
+        r = self.turn_with("judge", {"action": "judge", "actor": "Mira", "plan": "p", "risk": "r", "if_fails": "f",
+                                     "roll": {"spec": "2d6+5"}})
+        self.assertIn("doom", self.data(r))
+
     def test_never_at_zero_always_at_the_top_and_the_floor_rises(self):
         for n in range(30):
             d = self.data(self.turn_with("nothing", {"action": "doom", "add": 0, "why": f"calm {n}"}))
@@ -200,6 +205,21 @@ class Clues(Module):
         d = self.data(self.turn_with("case", {"action": "case", **broken, "force": True}))
         self.assertTrue(d["warnings"])
         self.assertIsNotNone(self.thing("case", "broken"))
+
+    def test_clues_and_places_added_in_play(self):
+        case = self.skeleton()
+        self.turn_with("case", {"action": "case", "skeleton": True})
+        d = self.data(self.turn_with("herring", {"action": "case", "id": case["id"],
+                                                 "clues": [{"id": "fog", "text": "Fog on the glass.", "where": case["places"][0]}]}))
+        self.assertNotIn("error", d)                                   # a plain clue proves nothing and breaks nothing
+        new = {"action": "case", "id": case["id"], "places": case["places"] + ["the old mill"],
+               "clues": [{"id": "flour", "text": "Flour on the floor.", "where": "the old mill"}]}
+        d = self.data(self.turn_with("mill", new))
+        self.assertIn("the old mill cannot be reached", d["error"])
+        self.assertNotIn("the old mill", self.thing("case", case["id"])["places"])
+        new["clues"].append({"id": "sack", "text": "A mill sack.", "where": case["places"][0], "leads": "the old mill"})
+        d = self.data(self.turn_with("mill again", new))
+        self.assertEqual(d["places"], len(case["places"]) + 1)
 
     def test_a_case_without_places_is_as_before(self):
         d = self.data(self.turn_with("case", {"action": "case", "id": "ledger", "truth": "t",

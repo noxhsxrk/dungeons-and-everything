@@ -3,7 +3,7 @@ The mind is a track: **composure** 0–10 *(default)*, every character starts fu
 - **A frightening sight.** When a character meets something that should not be (a body that moves, a voice from
   the wall, the thing itself), rate it and send one action; the script rolls the usual check with Heart:
   `{"action": "fright", "actor": "Mira", "rating": "serious", "what": "the drowned man stands up"}`.
-  - **minor** (blood, a corpse, a trick of the dark): lose 1 on a miss.
+  - **minor** (blood, a corpse, a trick of the dark): lose 1 on a miss *(default, as all numbers here)*.
   - **serious** (a monster at a distance, a friend's death): lose 2.
   - **overwhelming** (the thing up close, a truth too large): lose 3.
   - A critical failure loses one more. On 7–9 the character holds, and you name a small cost as usual.

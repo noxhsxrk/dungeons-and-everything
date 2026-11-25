@@ -4,9 +4,10 @@ track and no new roll: it gives stress two more thresholds, and the script rolls
 - **Mark stress** when fear bites, as a move after a miss or as a cost on 7–9:
   `{"action": "track", "owner": "Mira", "id": "stress", "mark": 1, "why": "the lights went out"}`.
   - A sudden shock, a friend hurt in front of them, being alone with the danger: 1 each.
-  - The danger in the same room: 2.
+  - The danger in the same room: 2 *(default)*.
   - A push still marks 1, as always. It is the same track.
-- **Thresholds** (rolled by the script when stress climbs past them; the reply's `crossed` has the entry):
+- **Thresholds** *(default)*, rolled by the script when stress climbs past them; the reply's `crossed` (after a
+  push, `stress_crossed`) has the entry:
   - **3 — Jitters:** a small slip from the table, played at once.
   - **5 — Panic:** the character loses control for a moment, played at once. The player plays it out; it lasts
     one beat, then they act again.

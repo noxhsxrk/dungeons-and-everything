@@ -174,6 +174,21 @@ def ensure(ctx, mid: str, owners: list) -> list:
     return made
 
 
+def prune(ctx, off: list) -> list:
+    """Take the thresholds of switched-off modules back off the tracks (panic's off: stress keeps only its own).
+    The tracks themselves and their values stay: a number in play is never thrown away."""
+    gone = []
+    for key, rec in wdb.all_of(ctx.db, "track").items():
+        drop = [th for mid in off for decl in load(mid)["tracks"] if decl["id"].casefold() == rec["id"].casefold()
+                for th in decl.get("thresholds") or []]
+        kept = [t for t in rec["thresholds"] if not any(_same(t, d) for d in drop)]
+        if len(kept) != len(rec["thresholds"]):
+            mechanics.change_track(ctx, rec["owner"], rec["id"], why="module off",
+                                   define={"min": rec["min"], "max": rec["max"], "thresholds": kept})
+            gone.append(f"{rec['owner']} {rec['id']}")
+    return gone
+
+
 @turn.handler("modules")
 def _modules(ctx, intent: dict) -> dict:
     """modules — the campaign's switched-on modules (`- modules: a, b` in Session Flags).
@@ -181,8 +196,8 @@ def _modules(ctx, intent: dict) -> dict:
     {"action": "modules"}                 which are on, and any problem with the set
     {"action": "modules", "apply": true}  give every player character (characters/*.md) the tracks and pools
         those modules declare: composure for each PC, doom for the party, panic's thresholds on each stress.
-    Send `apply` once the sheets exist, and again when a module is switched on or a PC joins: a track that exists
-    keeps its value and only gains the new thresholds. Rules: `modules.py -c <campaign> rules`."""
+    Send `apply` once the sheets exist, and again when a module is switched on or off or a PC joins: a track that
+    exists keeps its value and only gains the new thresholds; a switched-off module's thresholds come off again. Rules: `modules.py -c <campaign> rules`."""
     on = enabled(ctx.campaign)
     errors, warnings = problems(on)
     if errors:
@@ -193,8 +208,10 @@ def _modules(ctx, intent: dict) -> dict:
         return mechanics._err("modules are Braid rules (System: core or story)")
     import table
     pcs = list(table.pcs(ctx.campaign))
+    dropped = prune(ctx, [m for m in catalog() if m not in on])
     made = {mid: ensure(ctx, mid, pcs) for mid in on}
-    return mechanics._done({"modules": on, "pcs": pcs, "made": made, "warnings": warnings}, refresh="clocks")
+    return mechanics._done({"modules": on, "pcs": pcs, "made": made, "dropped": dropped, "warnings": warnings},
+                           refresh="clocks")
 
 
 _import_scripts()

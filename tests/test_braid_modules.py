@@ -176,10 +176,23 @@ class Campaign(EngineCase):
         for mid, mod in modules.catalog().items():
             with self.subTest(mid):
                 self.flags(f"- display: none\n- roll_mode: auto\n- world_engine: on\n- modules: {', '.join([mid] + mod['requires'])}\n")
-                self.apply(f"{mid} 1")
+                d = self.apply(f"{mid} 1")
+                self.assertNotIn("error", d)
+                for kind, decls in (("track", mod["tracks"]), ("pool", mod["pools"])):
+                    for decl in decls:
+                        owner = "party" if decl["owner"] == "party" else "mira"
+                        self.assertIsNotNone(self.thing(kind, f"{owner}/{decl['id']}".casefold()), (mid, decl["id"]))
                 once = self.state()
                 self.apply(f"{mid} 2")
                 self.assertEqual(self.state(), once)
+
+    def test_switching_a_module_off_takes_its_thresholds_back(self):
+        self.apply()
+        self.flags("- display: none\n- roll_mode: auto\n- world_engine: on\n- modules: composure\n")
+        d = self.apply("panic off")
+        self.assertEqual(d["dropped"], ["Mira stress"])
+        self.assertEqual([t["at"] for t in self.thing("track", "mira/stress")["thresholds"]], [6])
+        self.assertEqual(len(self.thing("track", "mira/composure")["thresholds"]), 3)
 
     def test_pools_are_made_once(self):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(modules, "DIR", pathlib.Path(tmp)):

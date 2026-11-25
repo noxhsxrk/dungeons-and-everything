@@ -171,4 +171,4 @@ over the same roll; never a second way to roll, and players never open a table. 
 module and when to use it; `modules.py -c <campaign> rules` prints the rules of the ones switched on (session start
 lists it), and `modules.py check` catches a missing requirement, a conflict or too many (more than 8). Once the sheets
 exist, send `{"action": "modules", "apply": true}` in a turn: every PC gets the tracks the modules declare (send it
-again when a module is switched on or a PC joins; it never resets a track).
+again when a module is switched on or off or a PC joins; it never resets a track).
