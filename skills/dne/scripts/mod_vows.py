@@ -37,7 +37,7 @@ def _vow(ctx, intent: dict) -> dict:
     key = mechanics._key(owner, name)
     rec = wdb.get(ctx.db, "progress", key)
     base = {"action": "progress", "owner": owner, "name": name}
-    if not rec and "rank" not in intent:
+    if not rec and ("rank" not in intent or intent.get("forsake") or intent.get("fulfil")):
         return mechanics._err(f"no vow {name!r} for {owner}: swear it with a rank first")
     if intent.get("forsake"):
         wdb.delete(ctx.db, "progress", key)

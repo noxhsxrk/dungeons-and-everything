@@ -10,5 +10,5 @@
  "tracks": [],
  "pools": [],
  "tables": {},
- "numbers": {"named_min_boxes": 2, "critical_extra_down": 1, "pack": [[3, 5, 1], [6, 10, 2]]}
+ "numbers": {"named_min_boxes": 2, "pack": [[3, 5, 1], [6, 10, 2]]}
 }

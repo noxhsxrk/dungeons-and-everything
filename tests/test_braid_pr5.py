@@ -191,19 +191,22 @@ class Strings(Module):
         d = self.one({"action": "string", "by": "Mira", "on": "Theo", "gain": 2, "why": "she saw him cry"})
         self.assertEqual(d["strings"], {"mira": 2})
         self.one({"action": "string", "by": "Mira", "on": "Theo", "spend": "plus"})
-        self.assertEqual(self.thing("condition", "mira/hold on theo")["mod"], 1)
+        self.assertEqual(self.thing("condition", "mira/mira's hold on theo")["mod"], 1)
+        self.turn_with("goal", {"action": "progress", "owner": "Mira", "name": "Win him back", "rank": "easy"})
+        self.one({"action": "progress", "owner": "Mira", "name": "Win him back", "roll": True}, answers=["7"])
+        self.assertIsNotNone(self.thing("condition", "mira/mira's hold on theo"))             # not counted there
         r = self.do("roll", {"action": "roll", "actor": "Mira", "spec": "2d6+0", "label": "talk to him"})
         self.assertIn("2d6+1", r["next_input"]["question"])
         d = self.data(self.turn.answer("oldworld", r["next_input"]["request_id"], "8"))
         self.turn.finish("oldworld", "ok")
-        self.assertEqual(d["used"], ["Hold on Theo"])
-        self.assertIsNone(self.thing("condition", "mira/hold on theo"))                       # one roll only
+        self.assertEqual(d["used"], ["Mira's hold on Theo"])
+        self.assertIsNone(self.thing("condition", "mira/mira's hold on theo"))                # one roll only
         self.one({"action": "string", "by": "Mira", "on": "Theo", "spend": "minus"})
         r = self.do("roll", {"action": "roll", "actor": "Theo", "spec": "2d6+1"})
         self.assertIn("— 2d6 (", r["next_input"]["question"])
         self.turn.answer("oldworld", r["next_input"]["request_id"], "8")
         self.turn.finish("oldworld", "ok")
-        self.assertIsNone(self.thing("condition", "theo/mira's hold"))
+        self.assertIsNone(self.thing("condition", "theo/mira's hold on theo"))
         self.assertEqual(self.thing("bond", "mira|theo")["points"], {"mira": 0})
 
     def test_tempt_pays_xp_only_if_they_go_along_and_emotion_spend(self):
@@ -219,6 +222,19 @@ class Strings(Module):
         d = self.one({"action": "string", "by": "Mira", "on": "Theo", "spend": "emotion", "emotion": "insecure"})
         self.assertEqual(d["condition"]["approaches"], ["finesse"])
         self.assertEqual(self.thing("bond", "mira|theo")["points"], {"mira": 0})
+
+    def test_only_the_check_that_counted_it_uses_it_up(self):
+        import mod_strings
+        self.assertEqual(mod_strings._edges({"rolled": {"edges": ["A +1"]}, "x": [{"edges": ["B -1"]}]}), ["A +1", "B -1"])
+        self.one({"action": "string", "by": "Mira", "on": "Theo", "gain": 2})
+        self.one({"action": "string", "by": "Mira", "on": "Theo", "spend": "plus"})
+        self.one({"action": "roll", "actor": "Theo", "spec": "2d6+0"}, answers=["8"])          # someone else's roll
+        self.assertIsNotNone(self.thing("condition", "mira/mira's hold on theo"))
+
+    def test_story_mode_has_no_plus_or_minus(self):
+        self.system("story")
+        self.one({"action": "string", "by": "Mira", "on": "Theo", "gain": 1})
+        self.assertIn("token", self.one({"action": "string", "by": "Mira", "on": "Theo", "spend": "plus"})["error"])
 
     def test_emotion_spend_needs_the_emotions_module(self):
         self.flags(FLAGS.format("players", "strings"))
@@ -269,6 +285,10 @@ class Labels(Module):
         d = self.one({"action": "identity", "owner": "Mira", "up": "uncanny", "down": "proud", "why": "again"})
         self.assertEqual((d["labels"]["uncanny"], d["labels"]["proud"], d["edge"]), (3, -1, ["uncanny"]))
         self.assertEqual(self.thing("condition", "mira/insecure")["approaches"], ["finesse"])
+        r = self.do("roll", {"action": "identity", "owner": "Mira", "roll": "uncanny"})
+        self.assertIn("2d6+2", r["next_input"]["question"])                                    # 3, insecure -1
+        self.turn.answer("oldworld", r["next_input"]["request_id"], "7")
+        self.turn.finish("oldworld", "ok")
         self.assertIn("send both", self.one({"action": "identity", "owner": "Mira", "up": "proud"})["error"])
         self.assertIn("labels:", self.one({"action": "identity", "owner": "Mira", "roll": "danger"})["error"])
 
@@ -288,6 +308,7 @@ class Vows(Module):
 
     def test_swear_mark_and_keep_it_for_xp(self):
         self.assertIn("swear it", self.vow(mark=1)["error"])
+        self.assertIn("swear it", self.vow(rank="easy", forsake=True)["error"])
         self.vow(rank="hard", why="at the gate")
         for n in range(6):
             d = self.vow(mark=1, why=f"step {n}")
@@ -323,10 +344,12 @@ class Mooks(Module):
         d = self.one({"action": "foe", "name": "Dock thugs", "threat": 1, "count": 6})
         self.assertEqual((d["kind"], d["boxes"], d["deals"]), ("mooks", 6, 2))               # threat 1 + 2: deals 2
         d = self.one({"action": "foe", "name": "Dock thugs", "hit": 3, "why": "a big swing"})
-        self.assertEqual((d["left"], d["deals"]), (5, 1))                                       # one hit, one down
-        d = self.one({"action": "foe", "name": "Dock thugs", "hit": 1, "critical": True})
-        self.assertEqual(d["left"], 3)
-        for n in range(3):
+        self.assertEqual((d["left"], d["deals"]), (3, 1))                                       # 3 harm, 3 down
+        d = self.one({"action": "foe", "name": "Dock thugs", "hit": 2})
+        self.assertEqual((d["left"], d["deals"]), (1, 1))
+        d = self.one({"action": "foe", "name": "Lone sentry", "threat": 4, "count": 1, "mook": True})
+        self.assertEqual((d["kind"], d["boxes"]), ("mooks", 1))                                 # nameless: one hit
+        for n in range(1):
             d = self.one({"action": "foe", "name": "Dock thugs", "hit": 1, "why": f"{n}"})
         self.assertEqual((d["down"], d["deals"]), (True, 0))
 
@@ -378,6 +401,7 @@ class UsageDie(Module):
         self.assertTrue(seen[-1]["gone"])
         self.assertIn("no usage die left", d["error"])
         self.assertIn("sizes", self.one({"action": "upkeep", "dice": {"fuel": "d7"}})["error"])
+        self.assertIn("of their own", self.one({"action": "upkeep", "dice": {"fuel": "d6"}, "stores": {"food": 3}})["error"])
 
     def test_off_and_5e_keep_the_old_supplies(self):
         self.flags(FLAGS.format("auto", "heat"))
@@ -414,6 +438,13 @@ class Contest(Module):
         self.assertIn("WON BY Theo · concession owed: small", out)
         self.sub("start", "Chase", "--goal", "2")
         self.assertIn("not a contest", self.sub("check", "Chase", "--side", "Theo", "--total", "8").stderr)
+
+    def test_a_cost_that_wins_costs_nothing(self):
+        self.sub("start", "Duel", "--countdown", "2", "--sides", "Mira,Ash")
+        self.sub("check", "Duel", "--side", "Mira", "--total", "7")                            # 1 / 1
+        out = self.sub("check", "Duel", "--side", "Ash", "--total", "8").stdout                  # Ash wins at a cost
+        self.assertIn("Mira 0/2 · Ash 1/2", out)
+        self.assertIn("WON BY Ash · concession owed: a real one", out)
 
     def test_gated_and_old_challenges_unchanged(self):
         self.assertIn("two different sides", self.sub("start", "X", "--race", "3", "--sides", "Mira").stderr)
@@ -490,6 +521,33 @@ class WarLayer(Module):
         self.assertIn("quality: one of", self.one({"action": "war", "unit": "X", "quality": "elite"})["error"])
 
 
+class StoryMode(Module):
+    """Every module action that rolls asks the oracle in story mode, with odds from what the dice would have added."""
+    MODULES = "position_effect, engagement, labels, vows, war_layer"
+
+    def setUp(self):
+        super().setUp()
+        self.system("story")
+
+    def test_each_rolling_action_asks_the_oracle(self):
+        d = self.one({"action": "position", "actor": "Mira", "position": "desperate", "label": "leap"})
+        self.assertEqual((d["likelihood"], d["reading"]["position"]), ("unlikely", "desperate"))
+        d = self.one({"action": "engagement", "actor": "Mira", "plan": "social", "detail": "a cousin", "bold": True})
+        self.assertEqual(d["likelihood"], "likely")
+        self.assertIn(d["position"], ("controlled", "risky", "desperate"))
+        self.turn_with("apply", {"action": "modules", "apply": True})
+        self.one({"action": "identity", "owner": "Mira", "set": {"guardian": 3, "proud": -2}})
+        self.assertEqual(self.one({"action": "identity", "owner": "Mira", "roll": "guardian"})["likelihood"], "sure-thing")
+        self.assertEqual(self.one({"action": "identity", "owner": "Mira", "roll": "proud"})["likelihood"], "no-way")
+        self.one({"action": "vow", "owner": "Mira", "name": "Home", "rank": "easy"})
+        self.one({"action": "vow", "owner": "Mira", "name": "Home", "mark": 2})                 # 6 boxes
+        d = self.one({"action": "vow", "owner": "Mira", "name": "Home", "fulfil": True})
+        self.assertEqual(d["likelihood"], "likely")
+        self.assertIn("kept", d)
+        self.one({"action": "war", "unit": "Third Lantern", "quality": "veteran"})
+        self.assertEqual(self.one({"action": "war", "unit": "Third Lantern", "roll": "hold"})["likelihood"], "sure-thing")
+
+
 # ── the acceptance games ──────────────────────────────────────────────────────
 
 class HeistJob(BraidCampaign):
@@ -508,33 +566,40 @@ class HeistJob(BraidCampaign):
             obstacles = plan["defences"] + [f"the getaway with {plan['target']}"]
 
             r = self.turn_with("the crew is in", {"action": "modules", "apply": True},
-                               *[{"action": "clock", "name": o, "size": 4} for o in obstacles],
+                               *[{"action": "clock", "name": o, "size": 4} for o in obstacles + ["The watch"]],
                                {"action": "position", "set": "risky", "why": "they are inside, unseen"})
             self.assertEqual(self.thing("track", "party/crew_heat")["value"], 0)
 
             # Each obstacle is worked by position rolls until its clock fills. The players' dice come in turn: a miss,
-            # a cost, a clean hit. A miss or a cost that the GM makes harm marks exactly what the reading says.
-            dice, n, harm = ["3", "6", "9", "11"], 0, {"Mira Vale": 0, "Theo": 0}
+            # a cost, a clean hit. The GM makes a miss or a cost harm (exactly what the reading says) unless that would
+            # take the character out; then it is a complication instead: the watch's clock ticks.
+            dice, n, harm, trouble = ["3", "6", "9", "11"], 0, {"Mira Vale": 0, "Theo": 0}, 0
             for i, obstacle in enumerate(obstacles):
                 if i == 1:                                                    # the thing that goes wrong
                     self.turn_with(f"[GM]: {plan['goes_wrong']}",
                                    {"action": "position", "set": "desperate", "why": plan["goes_wrong"]})
                 while not (self.thing("clock", obstacle) or {}).get("filled", 0) >= 4:
                     actor = ["Mira Vale", "Theo"][n % 2]
+                    self.assertLess(harm[actor], 4)                               # nobody taken out acts
                     r = self.turn_with(f"[{actor}]: I work on {obstacle}",
                                        {"action": "position", "actor": actor, "approach": "wits", "effect": "standard",
                                         "label": obstacle, "clock": obstacle}, answers=[dice[n % len(dice)]])
-                    d = self.data(r)
+                    hurt = self.data(r)["reading"]["harm_if_hurt"]
                     n += 1
-                    if d["reading"]["harm_if_hurt"]:
-                        harm[actor] += d["reading"]["harm_if_hurt"]
-                        self.turn_with(f"[GM]: it hurts", {"action": "track", "owner": actor, "id": "harm",
-                                                           "mark": d["reading"]["harm_if_hurt"], "why": obstacle})
+                    if hurt and harm[actor] + hurt < 4:
+                        harm[actor] += hurt
+                        self.turn_with("[GM]: it hurts", {"action": "track", "owner": actor, "id": "harm",
+                                                          "mark": hurt, "why": obstacle})
+                    elif hurt:
+                        trouble += 1
+                        self.turn_with("[GM]: the watch hears something", {"action": "clock", "name": "The watch",
+                                                                           "tick": 1, "why": obstacle})
                     self.assertLess(n, 20)
-                self.assertTrue(self.thing("clock", obstacle)["filled"] >= 4)
             self.assertEqual(self.thing("position", "party")["position"], "desperate")
+            self.assertGreater(sum(harm.values()), 0)
+            self.assertGreater(trouble, 0)
             for actor, marked in harm.items():
-                self.assertEqual((self.thing("track", f"{actor.casefold()}/harm") or {"value": 0})["value"], min(4, marked))
+                self.assertEqual((self.thing("track", f"{actor.casefold()}/harm") or {"value": 0})["value"], marked)
 
             r = self.turn_with("[GM]: the job is done; how loud was it?",
                                {"action": "crew_heat", "job": "loud", "high_profile": True})
@@ -579,8 +644,8 @@ class RomanceArc(BraidCampaign):
                            {"action": "string", "by": rival, "on": "Theo", "spend": "minus"})
             d = self.roll("[Theo]: I stand up to them", {"action": "roll", "actor": "Theo", "approach": "heart",
                                                          "label": "stand up to the rival"}, "6")
-            self.assertEqual((d["total"], d["used"]), (7, [f"{rival}'s hold"]))         # 6 + Heart 2 - 1
-            self.assertIsNone(self.thing("condition", f"theo/{rival.casefold()}'s hold"))
+            self.assertEqual((d["total"], d["used"]), (7, [f"{rival}'s hold on Theo"]))  # 6 + Heart 2 - 1
+            self.assertIsNone(self.thing("condition", f"theo/{rival.casefold()}'s hold on theo"))
 
             # Scene 3: Mira tempts Theo to leave with her before the trouble (the circumstance obstacle); he goes.
             r = self.turn_with(f"[Mira Vale]: {obstacles[1]['text']} - come away with me tonight",

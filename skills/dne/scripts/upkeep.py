@@ -189,6 +189,9 @@ def _upkeep(ctx, intent: dict) -> dict:
     Braid with the usage_die module: {"action": "upkeep", "dice": {"torches": "d8", "fuel": "d10"}} stocks usage
     dice (party pools), with or without `survival`; `use` on one of them rolls it (1-2: a size down, then gone)."""
     if "dice" in intent and paths.campaign_system(ctx.campaign) != "d20":
+        if any(k in intent for k in ("stores", "per_day", "carry", "warn_days")):
+            return {"status": "done", "elapsed_minutes": 0,
+                    "data": {"error": "send usage dice in an upkeep action of their own (stores in another)"}}
         return _usage_dice(ctx, intent["dice"])
     if not on(ctx.campaign):
         return {"status": "done", "elapsed_minutes": 0,

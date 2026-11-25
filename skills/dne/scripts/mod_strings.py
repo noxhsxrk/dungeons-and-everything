@@ -3,7 +3,8 @@
 
 A string is a hold one character has on another: a bond point (mechanics `bond`) held by one side. Spent, it gives
 +1 to the holder's next roll, -1 to the other's next roll, an emotion (with the emotions module), or a temptation
-that pays the other 1 XP if they go along. The +1 and -1 are one-roll conditions, cleared after the next check."""
+that pays the other 1 XP if they go along. The +1 and -1 are one-roll conditions, taken off once a check has
+counted them (its `edges`)."""
 from __future__ import annotations
 
 import re
@@ -62,6 +63,9 @@ def _string(ctx, intent: dict) -> dict:
     spend = intent.get("spend")
     if spend is not None and spend not in SPENDS:
         return mechanics._err(f"spend: one of {', '.join(SPENDS)}")
+    if spend in ("plus", "minus") and paths.campaign_system(ctx.campaign) == "story":
+        return mechanics._err("story mode has no modifiers: spend a token afterwards to step the answer up "
+                              "({\"action\": \"pool\", \"id\": \"tokens\", \"step_up\": true})")
     if spend == "emotion" and "emotions" not in modules.enabled(ctx.campaign):
         return mechanics._err("spending a string on an emotion needs the emotions module switched on")
     if spend == "tempt" and not str(intent.get("offer") or "").strip():
@@ -77,10 +81,10 @@ def _string(ctx, intent: dict) -> dict:
     data = {"by": by, "on": on, "strings": bond["points"], "bond": bond["value"]}
     events = []
     if spend == "plus":
-        data["condition"] = _one_roll(ctx, by, f"Hold on {on}", int(nums["plus"]), f"spent a string on {on}")
+        data["condition"] = _one_roll(ctx, by, f"{by}'s hold on {on}", int(nums["plus"]), f"spent a string on {on}")
         events.append(f"{by} spends a string on {on}: +1 on the next roll")
     elif spend == "minus":
-        data["condition"] = _one_roll(ctx, on, f"{by}'s hold", int(nums["minus"]), f"{by} spent a string")
+        data["condition"] = _one_roll(ctx, on, f"{by}'s hold on {on}", int(nums["minus"]), f"{by} spent a string")
         events.append(f"{by} spends a string on {on}: {on} is -1 on the next roll")
     elif spend == "emotion":
         import mod_emotions
@@ -99,17 +103,22 @@ def _string(ctx, intent: dict) -> dict:
     return mechanics._done(data, visible_events=[{"type": "string", "recipient": "party", "text": t} for t in events])
 
 
+def _edges(obj) -> list:
+    """Every condition note a check counted (`edges`, wherever roll, judge, search, flashback or bargain put it)."""
+    if isinstance(obj, dict):
+        return [n for k, v in obj.items() for n in (v if k == "edges" and isinstance(v, list) else _edges(v))]
+    return [n for v in obj for n in _edges(v)] if isinstance(obj, list) else []
+
+
 def _after(ctx, intent: dict, out: dict) -> None:
-    """A one-roll +1 or -1 from a string is used up by the actor's next graded check."""
-    data = out.get("data") or {}
-    if not data.get("degree") or not data.get("actor") or intent.get("action") == "string":
-        return
-    if paths.campaign_system(ctx.campaign) == "d20":
+    """A one-roll +1 or -1 from a string is used up by the check that counted it, and only by that one."""
+    counted = _edges(out.get("data") or {})
+    if not counted:
         return
     for key, rec in wdb.all_of(ctx.db, "condition").items():
-        if rec.get("clears") == ONE_ROLL and rec["owner"].casefold() == str(data["actor"]).casefold():
+        if rec.get("clears") == ONE_ROLL and f"{rec['name']} {int(rec['mod']):+d}" in counted:
             wdb.delete(ctx.db, "condition", key)
-            data.setdefault("used", []).append(rec["name"])
+            out["data"].setdefault("used", []).append(rec["name"])
 
 
 turn.AFTER_ACTION.append(_after)

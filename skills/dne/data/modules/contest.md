@@ -7,8 +7,8 @@ usual check (the engine's `roll`), then the GM scores it with `subsystem.py`. Tw
     (a twist, a burnt hand, a rule bent); failure: +1 to the other side; critical failure: +2 to the other side.
 - **Countdown** (each side starts at a score and is worn down): a debate, a trial, a duel of nerves.
   `subsystem.py -c <campaign> start "The hearing" --countdown 6 --sides "Theo,The prosecutor"`
-  - critical success: the other side −3; success: −2; at a cost: −1 to each side; failure: the side that rolled
-    −1; critical failure: −2 *(defaults)*.
+  - critical success: the other side −3; success: −2; at a cost: −1 to each side (unless that −1 already
+    wins it); failure: the side that rolled −1; critical failure: −2 *(defaults)*.
   - The first side at 0 loses. The winner still owes a **concession** sized by what they lost on the way: none if
     untouched, small if they lost less than half, a real one if they lost half or more. The reply says which.
 - **Scoring a round:** `subsystem.py -c <campaign> check "The hearing" --side Theo --total 9` (the 2d6 total of the

@@ -16,5 +16,6 @@
  ],
  "pools": [],
  "tables": {},
- "numbers": {"min": -2, "max": 3, "start": [2, 1, 1, 0, -1], "edge_emotion": "insecure"}
+ "numbers": {"min": -2, "max": 3, "edge_emotion": "insecure",
+             "approach": {"fierce": "force", "uncanny": "finesse", "guardian": "grit", "proud": "wits", "grounded": "heart"}}
 }

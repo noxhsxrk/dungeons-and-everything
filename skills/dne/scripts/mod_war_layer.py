@@ -50,6 +50,7 @@ def _unit(ctx, intent: dict) -> dict:
         return mechanics._err(f"no unit {name!r}: muster it with a quality first")
     if intent.get("roll"):
         check = {"action": "roll", "actor": name, "spec": f"2d6{unit['rating']:+d}", "label": str(intent["roll"]),
+                 "likelihood": mechanics.PROGRESS_ODDS[(unit["rating"] + 2) * 2],             # story mode: the odds
                  **{k: intent[k] for k in ("push", "help") if k in intent}}
         return turn._check(ctx, check, paths.campaign_system(ctx.campaign))
     rec = mechanics.change_track(ctx, name, "harm", mark=int(intent.get("hit", 0)), why=str(intent.get("why") or "a hit"))

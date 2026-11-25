@@ -14,7 +14,9 @@ sheet's labels (job, background, power): those stay as they are. Each runs −2 
   Send `{"action": "modules", "apply": true}` first so every PC has the five tracks.
 - **Rolling with a label:** when the roll is about who the hero is (stand between a friend and danger, let the
   power loose, prove you are the smartest), roll the usual 2d6 with the label instead of an approach:
-  `{"action": "identity", "owner": "Kit", "roll": "guardian", "label": "shield the bus"}`. Push and help work.
+  `{"action": "identity", "owner": "Kit", "roll": "guardian", "label": "shield the bus"}`. Push and help work;
+  conditions count as for the label's approach (fierce Force, uncanny Finesse, guardian Grit, proud Wits,
+  grounded Heart), so an insecure hero rolls uncanny at −1. Story mode: the label sets the oracle's odds.
 - **Shifting:** when someone the hero cares about tells them who they are ("you are a danger to everyone"), and the
   player accepts it, one label goes up and another goes down, always together:
   `{"action": "identity", "owner": "Kit", "up": "uncanny", "down": "grounded", "by": "Coach Reyes", "why": "…"}`.

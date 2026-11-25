@@ -93,7 +93,7 @@ def main() -> None:
             start.error('a contest needs --sides "A,B": two different sides')
         args.goal = args.race if args.race is not None else args.countdown
     elif args.cmd == "start" and (args.sides or args.goal is None):
-        start.error("--goal is required (or --race / --countdown with --sides for a contest)")
+        start.error("the following arguments are required: --goal")
     if args.cmd == "start" and (args.goal < 1 or (args.limit is not None and args.limit < 1)):
         start.error("--goal and --limit must be positive")
     if args.cmd == "check":
@@ -162,8 +162,9 @@ def main() -> None:
                         raise ValueError(f"--side: one of {', '.join(challenge['sides'])}")
                     other = next(s for s in challenge["sides"] if s != side)
                     us, them = (RACE if challenge["mode"] == "race" else COUNTDOWN)[result]
-                    challenge["sides"][side] = max(0, challenge["sides"][side] + us)
                     challenge["sides"][other] = max(0, challenge["sides"][other] + them)
+                    if challenge["mode"] == "race" or challenge["sides"][other] > 0:   # a winning blow costs nothing
+                        challenge["sides"][side] = max(0, challenge["sides"][side] + us)
                 elif args.side:
                     raise ValueError(f"{name!r} is not a contest: no --side")
                 else:

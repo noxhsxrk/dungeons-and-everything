@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """mod_mooks.py — the mooks module's engine action, `foe` (data/modules/mooks.json).
 
-A group of nameless foes is one harm track, a box per mook, and every hit drops one (a critical, one more). A named
+A group of nameless foes is one harm track, a box per mook: any hit drops one, and each point of harm past the
+first drops another (a single nameless foe of any threat falls to one hit). A named
 foe takes the harm boxes of its threat, at least two. The harm a group deals rises with its size, as in the core
 rules, and falls as they drop."""
 from __future__ import annotations
@@ -35,8 +36,8 @@ def _foe(ctx, intent: dict) -> dict:
 
     {"action": "foe", "name": "Dock thugs", "threat": 1, "count": 5}   mooks: one box each, a hit drops one
     {"action": "foe", "name": "Captain Hale", "threat": 3}             named: harm boxes of the threat, at least 2
-    {"action": "foe", "name": "Dock thugs", "hit": 1, "critical": true} one mook down per hit, +1 on a critical
-    {"action": "foe", "name": "Captain Hale", "hit": 2}                named: the harm dealt
+    {"action": "foe", "name": "Dock thugs", "hit": 2}                  mooks: one down per point of harm dealt
+    {"action": "foe", "name": "Captain Hale", "hit": 2}                named: the harm dealt marks its boxes
     {"action": "foe", "name": "Dock thugs"}                            read: left, down, deals (harm per hit)"""
     err = modules.need(ctx, "mooks")
     if err:
@@ -65,8 +66,6 @@ def _foe(ctx, intent: dict) -> dict:
     if "hit" not in intent:
         return mechanics._done(_view(foe, wdb.get(ctx.db, "track", mechanics._key(name, "harm"))))
     hit = int(intent["hit"])
-    if foe["kind"] == "mooks":
-        hit = (1 if hit > 0 else 0) + (int(modules.load("mooks")["numbers"]["critical_extra_down"]) if intent.get("critical") else 0)
     rec = mechanics.change_track(ctx, name, "harm", mark=hit, why=str(intent.get("why") or "a hit"))
     view = _view(foe, rec)
     text = f"{name}: down" if view["down"] else (f"{name}: {view['left']} left" if foe["kind"] == "mooks"

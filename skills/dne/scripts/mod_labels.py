@@ -34,7 +34,9 @@ def _identity(ctx, intent: dict) -> dict:
         a shift: one up, one down. A half past the edge (+3 / -2) does not happen; the hero becomes insecure
         instead (emotions module on) or the reply says to name a condition.
     {"action": "identity", "owner": "Kit", "roll": "guardian", "label": "shield the bus"}   2d6 + that label;
-        push, help and conditions as on any roll; a token can step it up afterwards
+        push, help and conditions as on any roll (conditions on the label's approach: fierce Force, uncanny
+        Finesse, guardian Grit, proud Wits, grounded Heart); story mode: the label sets the oracle's odds; a
+        token can step it up afterwards
     {"action": "identity", "owner": "Kit"}   read the five"""
     err = modules.need(ctx, "labels")
     if err:
@@ -52,7 +54,9 @@ def _identity(ctx, intent: dict) -> dict:
         value = values(ctx, owner)[intent["roll"]]
         check = {"action": "roll", "actor": owner, "spec": f"2d6{value:+d}",
                  "label": intent.get("label") or f"as {intent['roll']}",
-                 **{k: intent[k] for k in ("approach", "push", "help") if k in intent}}
+                 "approach": intent.get("approach") or nums["approach"][intent["roll"]],   # whose conditions count
+                 "likelihood": mechanics.PROGRESS_ODDS[(value + 2) * 2],                    # story mode: the odds
+                 **{k: intent[k] for k in ("push", "help") if k in intent}}
         out = turn._check(ctx, check, paths.campaign_system(ctx.campaign))
         if out.get("status") == "done" and "degree" in (out.get("data") or {}):
             out["data"]["with_label"] = intent["roll"]
