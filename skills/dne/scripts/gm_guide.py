@@ -358,7 +358,7 @@ def turn_parts(campaign: str, count: bool = True, text: str = "", turn: "dict | 
             "XP NOT AWARDED BY THE ENGINE (" + "; ".join(gaps) + "). XP counts only when xp.py award gave it; never "
             "write it into a sheet or set it with push_stats.py --xp yourself. Fix it now: put the **XP:** line in "
             "characters/<pc>.md back to the xp.py figure, then for each encounter won since run "
-            f"`{_py('xp.py')} award --campaign {campaign} --characters \"<PC>\" --monsters \"<name>:<CR>:<count>\"` "
+            f"`{_py('xp.py')} award --campaign {campaign} --characters \"<PC>\" --monsters \"<name>:<CR>:<count>\" --event <encounter-id>` "
             "(or `--difficulty easy|medium|hard|deadly --type noncombat`). It works the amount out from the tables, "
             "writes the sheet and sets the display to match."))
     try:

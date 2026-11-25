@@ -797,7 +797,7 @@ Run `scripts/dice.py <notation>`. Display output verbatim. Examples: `d20`, `2d6
 6. Step through turns using the per-turn sequence (in SKILL.md Active DM Mode).
 7. On combat end: update HP in character sheets, clear `## Active Combat`, `push_stats.py --turn-clear`, narrate aftermath, send XP summary, run `tracker.py -c <campaign> clear` (ends encounter conditions and round-long effects; minute/hour effects, exhaustion and petrification stay).
 
-**XP awards:** first `python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py award --campaign <name> --characters "<PCs>" --monsters "<name>:<CR>:<count>,…"` (or `--difficulty … --type noncombat` for an objective). It works the amounts out from the tables, writes each sheet and updates the display; XP typed onto the display or into a sheet by hand is flagged on the next turn (`XP NOT AWARDED BY THE ENGINE`). Then announce its numbers in the final display send:
+**XP awards:** first `python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py award --campaign <name> --characters "<PCs>" --monsters "<name>:<CR>:<count>,…" --event <encounter-id>` (or `--difficulty … --type noncombat` for an objective; `--event` lets the same encounter be paid only once). It works the amounts out from the tables, writes each sheet and updates the display; XP typed onto the display or into a sheet by hand is flagged on the next turn (`XP NOT AWARDED BY THE ENGINE`). Then announce its numbers in the final display send:
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/display/send.py << 'DNDEND'
 [combat aftermath narration]

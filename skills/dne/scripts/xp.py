@@ -16,11 +16,11 @@ Usage:
 
     # Award after a combat encounter — exact CR calculation:
     python3 xp.py award --campaign my-campaign --characters "Aldric,Mira" \\
-        --monsters "goblin:1/4:3,hobgoblin:1:1" --note "Ambush in the alley"
+        --monsters "goblin:1/4:3,hobgoblin:1:1" --event alley-ambush --note "Ambush in the alley"
 
     # Award for a qualifying non-combat encounter:
     python3 xp.py award --campaign my-campaign --characters "Aldric,Mira" \\
-        --difficulty medium --type noncombat --note "guild informant interrogation"
+        --difficulty medium --type noncombat --event guild-informant --note "guild informant interrogation"
 """
 
 import sys
@@ -482,8 +482,8 @@ def cmd_award(args: argparse.Namespace) -> None:
     if note:
         print(f"  Note: {note}")
 
-    # The same encounter is paid once (here or by the engine's `reward`): --event, else --note, names it.
-    event = (args.event or note).strip()
+    # The same encounter is paid once (here or by the engine's `reward`); --event names it.
+    event = (args.event or "").strip()
     done = {str(r.get("character", "")).casefold() for r in _read_ledger(campaign)
             if event and str(r.get("event", "")).casefold() == event.casefold()}
     if done and not args.again:
@@ -561,7 +561,7 @@ def main() -> None:
     award_p.add_argument("--monsters",   metavar="LIST",
                          help="name:cr:count,... for exact CR-based calculation")
     award_p.add_argument("--note",       metavar="TEXT",
-                         help="Brief label for this award; stored, and names the encounter when --event is not given")
+                         help="Brief label for this award; stored in the ledger")
     award_p.add_argument("--event",      metavar="ID", default="",
                          help="Encounter id; the same one is never awarded twice (the engine's `reward` uses it too)")
     award_p.add_argument("--again",      action="store_true",

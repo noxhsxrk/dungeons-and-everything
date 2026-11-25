@@ -655,7 +655,8 @@ CAMP=<campaign-name>
 # After combat (exact CR calculation — preferred):
 python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py award \
   --campaign $CAMP --characters "Max of Thraxx,Ethros the 19th" \
-  --monsters "goblin:1/4:3,hobgoblin:1:1" --note "description"
+  --monsters "goblin:1/4:3,hobgoblin:1:1" --event <encounter-id> --note "description"
+# --event: a short id for this fight (alley-ambush); the same id is never paid twice
 
 # After combat (difficulty-rated — use when monster CRs are unavailable):
 python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py award \

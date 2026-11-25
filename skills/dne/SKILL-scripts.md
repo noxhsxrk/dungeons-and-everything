@@ -79,14 +79,14 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py award \
 # Award after a combat encounter — exact CR calculation (preferred for standard combats):
 python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py award \
   --campaign <name> --characters "Max of Thraxx,Ethros the 19th" \
-  --monsters "goblin:1/4:3,hobgoblin:1:1" --note "Ambush in the alley"
+  --monsters "goblin:1/4:3,hobgoblin:1:1" --event alley-ambush --note "Ambush in the alley"
 
 # Award for a qualifying non-combat encounter:
 python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py award \
   --campaign <name> --characters "Max of Thraxx,Ethros the 19th" --difficulty medium --type noncombat \
   --note "guild informant interrogation"
-# One award per encounter: --event <id> (else --note) names it, and a repeat of the same one is skipped for
-# everyone already paid (the engine's `reward` action shares the ids). --again pays a genuine second award.
+# One award per encounter: --event <id> names it, and a repeat of the same id is skipped for everyone already
+# paid (the engine's `reward` action shares the ids). Without --event nothing is guarded. --again pays a real repeat.
 ```
 
 **Difficulty tiers:** 2014 `easy` `medium` `hard` `deadly`; 2024 `low` `moderate` `high` (`easy`/`medium`/`hard` are accepted and mapped; `deadly` becomes `high` with a note)

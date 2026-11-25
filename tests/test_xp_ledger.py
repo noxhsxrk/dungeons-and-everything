@@ -110,8 +110,8 @@ class CliWiringTests(unittest.TestCase):
 
 class OneAwardPerEncounter(unittest.TestCase):
     """Running `xp.py award` twice for one fight paid it twice: nothing named the
-    encounter, so nothing could tell a second award from a repeat. --event (else
-    --note) names it now, and the ledger refuses a repeat unless --again."""
+    encounter, so nothing could tell a second award from a repeat. --event names
+    it now, and the ledger refuses a repeat unless --again."""
 
     def setUp(self):
         import argparse
@@ -143,11 +143,11 @@ class OneAwardPerEncounter(unittest.TestCase):
         self.assertEqual(self.xp_now(), once)
         self.assertEqual(len(xp._read_ledger("c")), 1)
 
-    def test_the_note_names_the_encounter_when_there_is_no_event(self):
-        xp.cmd_award(self.ns(note="Ambush in the alley"))
+    def test_a_reused_note_is_not_an_encounter_id(self):
+        xp.cmd_award(self.ns(note="ambush"))
         once = self.xp_now()
-        xp.cmd_award(self.ns(note="Ambush in the alley"))
-        self.assertEqual(self.xp_now(), once)
+        xp.cmd_award(self.ns(note="ambush"))                     # weeks later, another ambush
+        self.assertEqual(self.xp_now(), once + (once - 1000))
 
     def test_again_pays_a_real_second_award(self):
         xp.cmd_award(self.ns(event="arena"))
