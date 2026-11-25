@@ -63,6 +63,10 @@ SEED = {"seed_version": 1, "campaign": "braid", "system": "core",
         "map": {"party_location": "ford", "places": {"ford": {"name": "The Ford"}, "market": {"name": "Market"}},
                 "edges": [{"a": "ford", "b": "market", "miles": 12}]},
         "npcs": [{"name": "Captain Hale", "role": "toll captain", "threat": 3, "location": "The Ford"}]}
+KIT = {"_meta": {"name": "Ford", "genre": ["mystery"], "premise": "a toll bridge"},
+       "labels": [{"name": "Smuggler", "description": "knows every back door"}],
+       "equipment": [{"name": "Forged papers"}],
+       "threats": [{"name": "Toll Guard", "threat": 2, "moves": ["blows the whistle"]}]}
 
 MIRA = ["new", "--name", "Mira Vale", "--concept", "A smuggler who owes everyone", "--drive", "Get her brother out",
         "--flaw", "Can't walk away from a bet", "--approaches", "wits=2,finesse=1,heart=1,force=0,grit=-1",
@@ -135,7 +139,7 @@ class BraidCampaign(unittest.TestCase):
 class NoFiveEOnTheWay(BraidCampaign):
     def test_init_start_turn_check_audit_say_nothing_5e(self):
         with no_5e() as used:
-            self.build()
+            self.build(worldkit=KIT)
             import campaign_version
             import gm_guide
             self.out += gm_guide.session_start("braid")
@@ -151,6 +155,25 @@ class NoFiveEOnTheWay(BraidCampaign):
             self.assertIn("**Threat:** 3", npcs)
         said = "\n".join(self.out)
         self.assertIn("SKILL-core.md", said)
+        self.assertIn("worldkit.json: review warning: labels", said)        # the Braid kit branch ran
+        self.assertEqual(leaks(said), [], said)
+        self.assertEqual(used, [])
+
+    def test_story_mode_the_same_way(self):
+        with no_5e() as used:
+            self.build(system="story", worldkit=KIT)
+            import campaign_version
+            import gm_guide
+            self.out += gm_guide.session_start("braid")
+            self.assertEqual(self.sheet(*MIRA), 0)
+            r = self.turn_with("[Mira]: is the captain asleep?",
+                               {"action": "roll", "actor": "Mira", "likelihood": "likely", "label": "asleep?"})
+            self.assertIn(self.data(r)["degree"], ("critical failure", "failure", "success at a cost", "success",
+                                                   "critical success"))
+            self.assertEqual(self.sheet("check"), 0)
+            self.out += campaign_version.audit("braid")
+        said = "\n".join(self.out)
+        self.assertIn("the oracle answers", said)
         self.assertEqual(leaks(said), [], said)
         self.assertEqual(used, [])
 
@@ -164,6 +187,11 @@ class NoFiveEOnTheWay(BraidCampaign):
         said = "\n".join(gm_guide.session_start("braid") + [l for _p, l in gm_guide.turn_parts("braid", False, "hi")])
         self.assertIn(r"combat\.py", leaks(said))
         self.assertIn(r"\bAC\b", leaks(said))
+        import worldkit
+        with no_5e() as used:                                                # and the spy sees a 5e module used
+            with self.assertRaises(ImportError):
+                worldkit.validate({"_meta": {}}, system="d20")
+        self.assertTrue(used)
 
 
 class ScriptedScene(BraidCampaign):
@@ -203,6 +231,9 @@ class ScriptedScene(BraidCampaign):
             self.assertIn("Wounded -1", d["edges"])
             r = self.turn_with("[Mira]: I spend a token", {"action": "pool", "owner": "Mira", "id": "tokens", "step_up": True})
             self.assertEqual(self.data(r)["degree"], "success at a cost")
+            r = self.turn_with("[Mira]: a token on the gate too?", {"action": "pool", "owner": "Mira", "id": "tokens",
+                                                                     "step_up": True, "why": "again"})
+            self.assertIn("error", self.data(r))                                # no tokens left
             r = self.turn_with("[GM]: the guard goes down", {"action": "track", "owner": "Gate Guard", "id": "harm",
                                                              "mark": 2, "why": "over the rail"})
             self.assertEqual(self.data(r)["value"], self.data(r)["max"])
@@ -310,6 +341,20 @@ class SheetRules(BraidCampaign):
         self.assertEqual(self.sheet("advance", "Mira", "--move", "x"), 1)       # no XP left
         self.assertEqual(sheet.problems(path.read_text(encoding="utf-8")), [])
         self.assertEqual(sheet.approach("braid", "Mira", "wits"), 3)
+        theo = self.root / "campaigns" / "braid" / "characters" / "theo.md"
+        self.assertEqual(self.sheet(*THEO), 0)
+        self.assertEqual(sheet.parse(theo.read_text(encoding="utf-8"))["bonds"], [])   # no bond invented
+
+    def test_a_token_does_not_reach_back_past_a_judge(self):
+        self.build()
+        self.sheet(*MIRA)
+        self.turn_with("t", {"action": "pool", "owner": "Mira", "id": "tokens", "max": 3, "set": 2},
+                       {"action": "roll", "actor": "Mira", "approach": "wits"}, answers=["5"])
+        self.turn_with("j", {"action": "judge", "actor": "Mira", "plan": "p", "risk": "r", "if_fails": "f",
+                             "approach": "wits"}, answers=["2"])
+        r = self.turn_with("tok", {"action": "pool", "owner": "Mira", "id": "tokens", "step_up": True})
+        self.assertIn("error", self.data(r))
+        self.assertEqual(self.thing("pool", "mira/tokens")["value"], 2)
 
     def test_a_d20_campaign_is_refused(self):
         self.build(system="d20", ruleset="2014", npcs=[])

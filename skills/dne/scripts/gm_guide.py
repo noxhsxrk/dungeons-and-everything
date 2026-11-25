@@ -95,6 +95,8 @@ def session_start(campaign: str) -> list[str]:
                             f"{SKILL / 'SKILL-core.md'} to its last line now, and use only its rules and "
                             "scripts this session.")
             steps.append(f"{_py('sheet.py')} -c {campaign} check   (every character sheet against the Braid rules)")
+            steps[steps.index(f"{_py('migrate_system.py')} {campaign} --check   (exit 1: an old 5e save; run it with "
+                              "--system d20 --yes)")] = f"{_py('migrate_system.py')} {campaign} --check"
     except ValueError as exc:
         steps.insert(0, f"FIX state.md before play: {exc}")
     try:

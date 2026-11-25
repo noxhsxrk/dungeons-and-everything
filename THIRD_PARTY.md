@@ -73,6 +73,9 @@ is SRD material, credited above. `dnd5e_srd_2024.json` names both projects in
   lower-cased) for the scene-meaning word pair.
 - **Files:** `skills/dne/scripts/oracle.py` (`_ACTIONS`, `_SUBJECTS`; kept inline because they are
   two short word lists, credited in the module docstring).
+- **Mechanics only, no text:** Braid's harm and stress severities (1 / 2 / 3 by how bad the source is) and the pack
+  rule (3-5 foes one threat step up, 6-10 two) follow Ironsworn's; written in our own words in
+  `skills/dne/SKILL-core.md` and `skills/dne/data/braid.json`.
 - **Changes:** words lower-cased; nothing else.
 - **Checked:** 2026-11-26, against the Ironsworn SRD text from https://www.ironswornrpg.com.
 

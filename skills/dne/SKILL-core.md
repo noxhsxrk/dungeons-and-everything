@@ -30,8 +30,9 @@ prints each action's manual). Python keeps every number; you decide what it mean
 - **Push:** before rolling, the player may push: +1, and they mark 1 stress. Not when stress is full.
 - **Help:** a character with a bond (1 or more) to the roller adds +1 and shares whatever goes wrong.
 - **Tokens:** each PC has a `tokens` pool, 1 at the start of each session, at most 3 *(default)*. Gain 1 when the
-  character's flaw makes real trouble or they accept a hard bargain. Spend 1 after any roll to move it one step up the
-  ladder. Engine: `{"action": "pool", "owner": "Mira", "id": "tokens", "max": 3, "set": 1, "cadence": "session"}`
+  character's flaw makes real trouble or they accept a hard bargain. Spend 1 right after a `roll` check (or a progress
+  roll) to move it one step up the ladder; a `judge`, `flashback` or `bargain` settles its outcome at once, so push
+  or get help before those instead. Engine: `{"action": "pool", "owner": "Mira", "id": "tokens", "max": 3, "set": 1, "cadence": "session"}`
   once, `{"action": "pool", "refill": "session"}` at each session start, `{"action": "pool", "owner": "Mira", "id":
   "tokens", "step_up": true}` to spend.
 - **Engine:** `{"action": "roll", "actor": "Mira", "approach": "wits", "label": "pick the lock"}` rolls 2d6 + Mira's
@@ -89,7 +90,7 @@ does; you ask for the roll that matters; enemies never roll — they act through
   back to 0. Modules that bring fear or composure use this same track unless they say otherwise.
 - **How much:** an enemy deals the harm of its threat (section 4): 1 from a nuisance, up to 3 from something
   overwhelming. Armour or cover that fits takes 1 off. Stress follows the same 1 / 2 / 3 for an unsettling, a
-  distressing or a horrifying moment (Ironsworn's severity steps, in our words).
+  distressing or a horrifying moment.
 - **Engine:** `{"action": "track", "owner": "Mira", "id": "harm", "mark": 2, "why": "the guard's club"}`. The reply
   says what was crossed (Wounded, Badly hurt, Taken out); the conditions come and go with the track by themselves.
   `fight` may hold the objective and the zones; there is no HP and no `damage` in Braid.
@@ -112,8 +113,7 @@ when a roll against it misses. Named enemies also get a motive and a weakness.
 | 4 | 4 | 2 | formidable: a champion, a monster |
 | 5 | 6 | 3 | overwhelming: a dragon, a tank |
 
-- **Mooks** run as a pack with one track: 3–5 of them are threat +1, 6–10 are threat +2 (Ironsworn's pack rule, in
-  our words). Each box of harm is one of them down or fleeing.
+- **Mooks** run as a pack with one track: 3–5 of them are threat +1, 6–10 are threat +2. Each box of harm is one of them down or fleeing.
 - **A PC's hit** (success, or success at a cost) deals 1 harm; +1 with a weapon or label that fits; +1 on a critical
   success. A threat 4–5 enemy is −1 to every roll against it unless the PCs found an edge (a weakness, a trap, help).
 - **Taken out** at full harm — killed, routed, captured or yielding, as fits. Most enemies break before that: when

@@ -214,6 +214,9 @@ def _last_check(ctx, actor: str, of: "str | None") -> "tuple[str, dict] | tuple[
             continue
         if data.get("spec") and data.get("degree") and (of or str(data.get("actor", "")).casefold() == actor.casefold()):
             return r["action_id"], data
+        if not of and data.get("degree") and "check" not in data and \
+                str(data.get("actor") or data.get("by") or "").casefold() == actor.casefold():
+            return None, None        # their latest check was a judge, flashback or bargain: its outcome is already settled
     return None, None
 
 

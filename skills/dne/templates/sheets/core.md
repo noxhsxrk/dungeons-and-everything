@@ -21,7 +21,7 @@ Kept by the world engine, not written here: tracks `harm` (0-4) and `stress` (0-
 `sheet.py -c <campaign> show <name>` prints them with any conditions.
 
 ## Bonds
-- <name>: <what ties them> (also send the engine `bond` action so help works)
+- <who>: <what ties them> (also send the engine `bond` action so help works)
 
 ## Gear
 - <item>
