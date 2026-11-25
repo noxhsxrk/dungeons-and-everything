@@ -109,7 +109,7 @@ Not every story wants hit points and spell slots. From 2.0 a campaign can run on
 - **One roll.** 2d6 plus one of five approaches (Force, Finesse, Wits, Heart, Grit). 10+ you do it, 7–9 you do it at a cost named before the dice, 6 or less it goes wrong. Harm and stress instead of hit points; an enemy is a threat from 1 to 5. Or play **story mode**: no numbers on the sheet, the oracle answers every risk.
 - **Pick your genres.** Run `/dne new`, describe the world and pick one to five of 18 genres, the main one first: mystery, heist, war, competition, cosmic horror, slasher, analog horror, romance, cozy, comedy, fantasy, hard sci-fi, space opera, wuxia, LitRPG, historical, time loop, traitor among us. Each genre switches on the small rules it needs (a mind that frays in horror, heat after a loud job, seasons in a cozy village, a day that resets in a time loop, sealed secret roles in a traitor game), and the table can add or drop any of them. When mixed genres disagree, the engine says where, and the table picks.
 - **A story that holds together.** The story generator rolls the skeleton of the story so it does not repeat the last one, and checks that a mystery stays solvable even when the players miss a third of the clues.
-- **Your 5e campaigns are untouched.** Say "D&D" or "5e" at `/dne new` to play on the 5e rules as before.
+- **Your 5e campaigns play as before.** Say "D&D" or "5e" at `/dne new` to play on the 5e rules as before.
 
 It is an alpha: the numbers are our starting values and will change with play, and wuxia, LitRPG, analog horror and competition are marked *early*. The rules are in [`SKILL-core.md`](skills/dne/SKILL-core.md), the genres in [`data/genres/`](skills/dne/data/genres/), and what changed in the [changelog](CHANGELOG.md).
 

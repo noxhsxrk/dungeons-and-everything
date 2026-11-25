@@ -311,6 +311,9 @@ def import_chara_card(campaign: str, card_path: str, import_book: bool = True) -
     out_md = cdir / f"{slug}.md"
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    # built outside the f-string: Python 3.10/3.11 refuse a backslash inside {...}
+    extra = {"Personality": personality, "Scenario": scenario, "Greeting": first_mes}
+    personality_md, scenario_md, greeting_md = (f"### {k}\n{v}" if v else "" for k, v in extra.items())
     sheet = f"""# {name}
 **Player:** Imported  **Campaign:** {campaign}  **Last Updated:** {today}
 
@@ -342,9 +345,9 @@ def import_chara_card(campaign: str, card_path: str, import_book: bool = True) -
 ## Backstory & Notes
 {desc}
 
-{('### Personality\n' + personality) if personality else ''}
-{('### Scenario\n' + scenario) if scenario else ''}
-{('### Greeting\n' + first_mes) if first_mes else ''}
+{personality_md}
+{scenario_md}
+{greeting_md}
 """.strip() + "\n"
     out_md.write_text(sheet, encoding="utf-8")
 
