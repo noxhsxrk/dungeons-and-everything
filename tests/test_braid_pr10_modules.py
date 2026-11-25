@@ -112,7 +112,7 @@ class ContestAndContext(Module):
 
     def run_sub(self, *argv) -> str:
         return subprocess.run([sys.executable, str(SCRIPTS / "subsystem.py"), "-c", "oldworld", *argv],
-                              capture_output=True, text=True, env=dict(os.environ), check=True).stdout
+                              capture_output=True, text=True, encoding="utf-8", env=dict(os.environ), check=True).stdout
 
     def test_contest_status_counts_rounds_and_scores_the_final_degree(self):
         self.run_sub("start", "Bake-off", "--race", "3", "--sides", "Dot,The vicar")
