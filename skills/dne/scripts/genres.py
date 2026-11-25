@@ -142,6 +142,7 @@ def combine(ids, drives=None, sets=None) -> dict:
         order.remove(out["drives"])
         order.insert(min(order.index(p) for p in plots if p != out["drives"]), out["drives"])
     out["story_axes"] = order
+    out["set"] = dict(sets)
     for k, v in sets.items():
         if k == "modules":
             out["modules"] = [] if v.casefold() in ("", "none", "(none)") else list(
@@ -168,21 +169,23 @@ def flag_lines(mix: dict, system: str = "core") -> list:
 
 
 def apply_to_seed(seed: dict, mix: dict) -> dict:
-    """The seed for campaign_init with the mix's flags (and system core unless the seed says otherwise).
-    Returns {"seed", "replaced"}: flags the seed already had that the mix changed."""
+    """The seed for campaign_init with the mix's flags. A flag the seed already has is the table's own answer and
+    stays, unless `--set` changed it; the system is the seed's (none = d20, as campaign_init reads it).
+    Returns {"seed", "kept"}: the seed's flags that differ from the preset."""
     seed = json.loads(json.dumps(seed))
-    seed.setdefault("system", mix["system"])
     flags = seed.setdefault("flags", {})
-    replaced = {}
-    for line in flag_lines(mix, seed["system"]):
+    kept = {}
+    for line in flag_lines(mix, str(seed.get("system", "d20"))):
         k, v = line[2:].split(": ", 1)
-        if k in flags and str(flags[k]) != v:
-            replaced[k] = flags[k]
+        if k in flags and k not in mix.get("set", {}):
+            if str(flags[k]) != v:
+                kept[k] = flags[k]
+            continue
         flags[k] = v
     kit = seed.get("worldkit")
     if isinstance(kit, dict) and not (kit.get("_meta") or {}).get("genre"):
         kit.setdefault("_meta", {})["genre"] = mix["genres"]
-    return {"seed": seed, "replaced": replaced}
+    return {"seed": seed, "kept": kept}
 
 
 def _report(mix: dict) -> str:
@@ -254,8 +257,10 @@ def main(argv=None) -> int:
             sys.stdout.write(text)
         else:
             Path(args.seed).write_text(text, encoding="utf-8")
-            print(json.dumps({"ok": True, "seed": args.seed, "flags": done["seed"]["flags"], "replaced": done["replaced"],
-                              "conflicts": mix["conflicts"], "warnings": mix["warnings"]}, ensure_ascii=False, indent=1))
+            notes = [] if "system" in done["seed"] else ["the seed has no system: campaign_init reads that as 5e (d20), "
+                                                          "so no modules were written; add \"system\": \"core\" for Braid"]
+            print(json.dumps({"ok": True, "seed": args.seed, "flags": done["seed"]["flags"], "kept": done["kept"],
+                              "conflicts": mix["conflicts"], "warnings": mix["warnings"] + notes}, ensure_ascii=False, indent=1))
         return 0
     except (ValueError, OSError) as exc:
         print(f"genres: {exc}", file=sys.stderr)

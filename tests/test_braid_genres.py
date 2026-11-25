@@ -36,7 +36,7 @@ from test_braid_modules import TRADE as TRADE_4  # noqa: E402
 from test_braid_pr5 import TRADE as TRADE_5  # noqa: E402
 
 LADDER = ("critical failure", "failure", "success at a cost", "success", "critical success")
-SEED = {"seed_version": 1, "campaign": "g", "flags": {"display": "none", "roll_mode": "auto"},
+SEED = {"seed_version": 1, "campaign": "g", "system": "core", "flags": {"display": "none", "roll_mode": "auto"},
         "calendar": {"date": "1 Thaw 412", "time": "morning", "months": ["Thaw", "Bloom"], "month_length": 30}}
 MIRA = ["new", "--name", "Mira Vale", "--concept", "A smuggler who owes everyone", "--drive", "Get her brother out",
         "--flaw", "Can't walk away from a bet", "--approaches", "wits=2,finesse=1,heart=1,force=0,grit=-1",
@@ -197,14 +197,18 @@ class Apply(unittest.TestCase):
         s = done["seed"]
         self.assertEqual(s["system"], "core")
         self.assertEqual(s["flags"]["modules"], "composure, clues, gm_budget")
-        self.assertEqual((s["flags"]["claims"], s["flags"]["pacing"]), ("grounded", "slow"))
-        self.assertEqual(done["replaced"], {"pacing": "adventure"})
+        self.assertEqual((s["flags"]["claims"], s["flags"]["pacing"]), ("grounded", "adventure"))   # the table's answer stays
+        self.assertEqual(done["kept"], {"pacing": "adventure"})
+        over = genres.apply_to_seed(seed, genres.combine("horror,mystery", sets=["pacing=mixed"]))["seed"]
+        self.assertEqual(over["flags"]["pacing"], "mixed")                          # unless the players changed it
         self.assertEqual(s["worldkit"]["_meta"]["genre"], ["horror", "mystery"])
         self.assertNotIn("content", s["flags"])
         self.assertEqual(seed["flags"]["pacing"], "adventure")                       # the input is not changed
-        d20 = genres.apply_to_seed({**SEED, "system": "d20"}, genres.combine("fantasy"))["seed"]
-        self.assertNotIn("modules", d20["flags"])
-        self.assertEqual(d20["flags"]["storyteller"], "pulp")
+        for five in ({**SEED, "system": "d20"}, {k: v for k, v in SEED.items() if k != "system"}):  # none = d20
+            d20 = genres.apply_to_seed({**five, "ruleset": "2014"}, genres.combine("fantasy"))["seed"]
+            self.assertNotIn("modules", d20["flags"])
+            self.assertEqual(d20["flags"]["storyteller"], "pulp")
+            self.assertEqual(d20.get("system", "d20"), "d20")
 
     def test_cli_seed_file_and_existing_campaign(self):
         with tempfile.TemporaryDirectory() as tmp:
