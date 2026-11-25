@@ -115,6 +115,7 @@ class Acceptance(_Root):
                         for i in range(3000))
         self.assertGreater(twist[table["axes"]["twist"][0]["v"]] / 3000, 0.5)   # "no twist" is exempt, stays ~60%
 
+        # end to end: decay and the >3-shared gate together (the roll_axes half above isolates decay)
         def repeats(record):
             seen, hits = [], 0
             for s in range(40):
@@ -167,6 +168,19 @@ class MysteryValidator(_Root):
         self.assertLess(sg.check_case(case, skel["seed"])["solve_rate"], sg.SOLVE_RATE)
         self.assertTrue(sg.check(skel)["ok"])
         self.assertGreaterEqual(sg.check_case(case, skel["seed"])["solve_rate"], sg.SOLVE_RATE)
+
+    def test_written_case_is_never_rerolled(self):
+        skel, case = self._case(6)
+        cands = [{"text": f"A wax seal pressed with a thumb, version {i}.", "p": 0.05} for i in range(5)]
+        got = sg.flesh(skel, f"clue:{case['clues'][0]['id']}", cands, record=False)
+        self.assertEqual(case["clues"][0]["text"], got["text"])
+        case["clues"][1]["where"] = "a place that is not in the case"
+        result = sg.check(skel)
+        self.assertFalse(result["ok"])
+        self.assertNotIn("rerolled", result["threads"]["mystery"])
+        self.assertEqual(self.thread(skel, "mystery")["case"]["clues"][0]["text"], got["text"])
+        with self.assertRaises(ValueError):
+            sg.flesh(skel, "clue:nope", cands, record=False)
 
     def test_unrepairable_case_is_rerolled(self):
         skel, _ = self._case(4)

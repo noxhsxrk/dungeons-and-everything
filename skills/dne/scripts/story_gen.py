@@ -207,6 +207,10 @@ def build_case(rng, axes: dict, table: dict, cid: str) -> dict:
     return case
 
 
+def _placeholder(text: str) -> bool:
+    return text.startswith("[clue ") and text.endswith("the GM writes it]")
+
+
 def _add_clue(case: dict, proves: str, where: str, leads: str = "", obvious: bool = False) -> dict:
     n = len(case["clues"]) + 1
     clue = {"id": f"c{n}", "text": f"[clue {n} at {where}: the GM writes it]", "where": where,
@@ -374,7 +378,8 @@ def check_thread(thread: dict, table: dict, seed) -> dict:
 
 
 def check(skel: dict) -> dict:
-    """Every thread's validator, plus the seed facts. Repairs in place; re-rolls a mystery it cannot repair."""
+    """Every thread's validator, plus the seed facts. Repairs in place; re-rolls a mystery it cannot repair,
+    but only while its clue texts are still stand-ins: a written case is never thrown away, its problems are listed."""
     out, ok = {}, True
     for n, thread in enumerate(skel["threads"]):
         table = load_genre(thread["genre"])
@@ -383,7 +388,8 @@ def check(skel: dict) -> dict:
                for a, v in pins.items() if thread["axes"].get(a) != v]
         rep = check_thread(thread, table, skel["seed"])
         tries = 0
-        while thread["genre"] == "mystery" and not rep["ok"] and tries < 5:   # re-roll that part
+        written = [c for c in (thread.get("case") or {}).get("clues") or [] if not _placeholder(c.get("text", ""))]
+        while thread["genre"] == "mystery" and not rep["ok"] and not written and tries < 5:   # re-roll that part
             tries += 1
             rng = random.Random(f"{skel['seed']}:reroll:{n}:{tries}")
             thread["case"] = build_case(rng, thread["axes"], table, thread["case"].get("id") or f"case-{skel['seed']}")
@@ -452,7 +458,14 @@ def banned(skel: dict, history: list) -> tuple:
 
 
 def flesh(skel: dict, slot: str, candidates: list, record=True) -> dict:
-    """Drop banned candidates, then pick one by rng weighted by the GM's probabilities."""
+    """Drop banned candidates, then pick one by rng weighted by the GM's probabilities.
+    Slot `clue:<id>` also writes the pick into that clue's text, which is what `search` shows the player."""
+    clue = None
+    if slot.startswith("clue:"):
+        clue = next((c for t in skel["threads"] for c in (t.get("case") or {}).get("clues") or []
+                     if c["id"] == slot[5:]), None)
+        if clue is None:
+            raise ValueError(f"no clue {slot[5:]!r} in this skeleton")
     if len(candidates) != 5:
         raise ValueError(f"write exactly 5 candidates (got {len(candidates)})")
     for c in candidates:
@@ -471,6 +484,8 @@ def flesh(skel: dict, slot: str, candidates: list, record=True) -> dict:
     rng = random.Random(f"{skel['seed']}:flesh:{slot}")
     chosen = pick(rng, [(c, float(c["p"])) for c in kept])
     skel.setdefault("flesh", {})[slot] = {"text": chosen["text"], "p": chosen["p"], "dropped": dropped}
+    if clue is not None:
+        clue["text"] = chosen["text"]
     if record:
         append_history({"kind": "flesh", "seed": skel["seed"], "genres": skel["genres"], "slot": slot,
                         "text": chosen["text"]})

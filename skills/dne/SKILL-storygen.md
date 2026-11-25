@@ -41,8 +41,8 @@ story_gen.py -c <camp> skeleton --genre war,mystery,horror [--seed N]
 - **What each genre builds:**
   - **mystery:** a case with suspects, places and clues. It goes straight to `table.py case` (`truth`, and
     clues with `id`, `text`, `where`, `obvious`), plus `proves` and `leads` for you. The clue `text` is a
-    stand-in: write the real text (step 3) before the case reaches play, because `search` sends it to the
-    player's phone word for word.
+    stand-in: flesh each clue with `--slot clue:<id>` (step 3) before the case reaches play, because `search`
+    sends the text to the player's phone word for word.
   - **horror, slasher, analog-horror, war, competition, comedy:** a ladder of at least 3 steps that rise one
     after another. Play them in order. Do not jump to the top step.
   - **heist:** a plan with the target, two defences, the insider and what goes wrong.
@@ -68,6 +68,7 @@ This prints the givens, the facts and a `do_not_use` list (the genre's clichés 
 story_gen.py -c <camp> flesh --slot premise --candidates '[{"text": "...", "p": 0.06}, ... five ...]'
 ```
 
+- **Clue slots.** With `--slot clue:<id>` the pick also becomes that clue's `text` in the case.
 - **Write exactly 5 candidates.** Give each a probability of at most 0.10, meaning each is one you would rarely
   write. Write from the unlikely tail, not the obvious middle.
 - **Dropped candidates.** The script drops any that use a cliché or are close to a recent pick.
@@ -92,7 +93,8 @@ story_gen.py -c <camp> check
 
 When a mystery fails, `check` repairs it one step at a time: it adds a lead to a place that is hard to reach,
 adds a clue to the weakest conclusion, or gives a second "full" suspect an alibi. If repair cannot fix it, it
-re-rolls the case and keeps the axes.
+re-rolls the case and keeps the axes, but only while no clue text has been written yet. A case with written
+clues is never thrown away: fix the listed problems by hand.
 
 **Other genres:**
 - **horror and the other ladder genres:** at least 3 steps that rise one after another;
