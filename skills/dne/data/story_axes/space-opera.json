@@ -1,0 +1,60 @@
+{
+ "_about": "Space opera and cyberpunk: crews, empires, corporations, debts and heat. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "setting",
+ "axes": {
+  "power": [
+   "a dying empire",
+   "a corporate council",
+   "a pirate confederation",
+   "a church with a fleet",
+   "an AI-run city",
+   "a trade guild of families"
+  ],
+  "crew_need": [
+   "a debt to a crime boss",
+   "a ship that needs repairs they cannot afford",
+   "a passenger with a price on their head",
+   "a cargo they cannot sell",
+   "a lost member to find",
+   "a reputation to rebuild"
+  ],
+  "street": [
+   "neon markets in the lower city",
+   "a station ring full of refugees",
+   "a canal city of hackers",
+   "a tech-noble's floating estate",
+   "the docks of a free port",
+   "a megatower's service floors"
+  ],
+  "tech": [
+   "memory chips you can trade",
+   "jump gates owned by one family",
+   "body mods that need a subscription",
+   "a ship that dreams",
+   "a cheap clone line",
+   "a forbidden translator"
+  ],
+  "betrayal": [
+   "the client is the target",
+   "the fixer sold them out",
+   "the crew's pilot owes the empire",
+   "the rebels are worse",
+   "the corp knew all along",
+   "the passenger is a weapon"
+  ],
+  "heat_source": [
+   "the law",
+   "a rival crew",
+   "a corporate cleaner",
+   "an imperial inquisitor",
+   "a bounty hunter with a past",
+   "the media"
+  ]
+ },
+ "cliches": [
+  "the corp is evil",
+  "the hacker in a hoodie",
+  "the farm boy with a secret father",
+  "the rebellion against the empire"
+ ]
+}

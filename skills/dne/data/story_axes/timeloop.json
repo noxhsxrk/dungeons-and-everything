@@ -1,0 +1,51 @@
+{
+ "_about": "Time loop: one day repeats; knowledge carries over, nothing else. Designed by us. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "frame",
+ "axes": {
+  "trigger": [
+   "at midnight",
+   "when a character dies",
+   "when the bell rings at noon",
+   "when someone tells the truth",
+   "when the train leaves",
+   "when a certain song ends"
+  ],
+  "length": [
+   "one day",
+   "one hour",
+   "one week",
+   "one evening",
+   "the length of a wedding",
+   "a single train journey"
+  ],
+  "anchor": [
+   "a scar that stays",
+   "a written note that survives",
+   "a stranger who also remembers",
+   "a smell of smoke",
+   "a coin that does not reset",
+   "the dreams"
+  ],
+  "breaker": [
+   "saving one particular person",
+   "letting something happen",
+   "everyone being honest at once",
+   "finding who started the loop",
+   "breaking an old promise",
+   "the loop ends on its own after a number of days"
+  ],
+  "also_remembers": [
+   "nobody",
+   "the culprit",
+   "a child",
+   "an old woman who has lived it for years",
+   "a dog",
+   "the town itself, a little"
+  ]
+ },
+ "cliches": [
+  "groundhog day",
+  "learning piano in the loop",
+  "the loop was a punishment from god"
+ ]
+}

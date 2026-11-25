@@ -1,0 +1,60 @@
+{
+ "_about": "Grounded science fiction: frontiers, scarce resources, hard choices. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "setting",
+ "axes": {
+  "frontier": [
+   "an ice moon mining station",
+   "a generation ship's middle decks",
+   "a terraforming camp on a red desert",
+   "a deep-sea habitat",
+   "a survey ship far from home",
+   "an orbital dock above a dying world"
+  ],
+  "resource": [
+   "air",
+   "reactor fuel",
+   "spare parts",
+   "fresh water",
+   "data rights",
+   "crew hours"
+  ],
+  "hazard": [
+   "a dust storm that lasts weeks",
+   "radiation from a flare",
+   "a hull breach slowly growing",
+   "a crop blight",
+   "an AI that is quietly failing",
+   "a signal nobody can decode"
+  ],
+  "faction": [
+   "the company that owns the debt",
+   "a union about to strike",
+   "settlers who were here first",
+   "a military survey team",
+   "a religious crew faction",
+   "smugglers who keep things running"
+  ],
+  "wrinkle": [
+   "the colony charter is a fraud",
+   "the signal is a distress call from the future",
+   "the AI is lying to protect them",
+   "the planet is already inhabited",
+   "rescue is not coming",
+   "one crew member is a stowaway"
+  ],
+  "tone": [
+   "hard and quiet",
+   "space opera colour",
+   "rain-soaked cyberpunk",
+   "lonely survey",
+   "corporate thriller",
+   "pioneer hope"
+  ]
+ },
+ "cliches": [
+  "the AI goes evil",
+  "the alien is the real victim",
+  "it was earth all along",
+  "the captain's log"
+ ]
+}

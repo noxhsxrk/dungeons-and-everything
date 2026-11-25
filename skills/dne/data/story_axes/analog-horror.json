@@ -1,0 +1,71 @@
+{
+ "_about": "Creepypasta and analog horror: found media, wrong details, an archive that keeps going. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "mood",
+ "axes": {
+  "medium": [
+   "a box of unlabelled tapes",
+   "a public-access channel that only broadcasts at night",
+   "an old safety-training video",
+   "a website frozen years ago that still updates",
+   "a children's show nobody else remembers",
+   "a set of weather reports",
+   "a voicemail inbox",
+   "an emergency broadcast system test"
+  ],
+  "anomaly": [
+   "a figure that moves only between frames",
+   "instructions that change on rewatching",
+   "a host who looks at the viewer",
+   "a countdown no one started",
+   "a place that appears on every map but this one",
+   "a number that keeps calling"
+  ],
+  "wrong_detail": [
+   "the shadows fall the wrong way",
+   "everyone has one tooth too many",
+   "the date is in the future",
+   "the background is the viewer's own room",
+   "the audio is half a second early",
+   "the credits list the viewer"
+  ],
+  "source": [
+   "an estate sale",
+   "a dead relative's attic",
+   "a library donation bin",
+   "a forum thread that was deleted",
+   "a job clearing out an old station",
+   "a parcel with no return address"
+  ],
+  "spread": [
+   "watching it makes you want to share it",
+   "it copies itself onto whatever it is near",
+   "others who saw it begin to call",
+   "it changes to match whoever watches",
+   "it is in the news, but only for the characters",
+   "it slowly replaces other recordings"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "a recording is a little wrong",
+   "a detail matches the character's own life"
+  ],
+  "2": [
+   "the wrongness follows them off the screen",
+   "someone who watched it is missing"
+  ],
+  "3": [
+   "the recording addresses them by name",
+   "the world around them starts to match the footage"
+  ],
+  "4": [
+   "they find the end of the archive, and the next entry is them"
+  ]
+ },
+ "cliches": [
+  "do not watch this",
+  "the cursed videotape kills in seven days",
+  "a jumpscare face",
+  "it was a hoax all along"
+ ]
+}

@@ -1,0 +1,81 @@
+{
+ "_about": "War: a unit with a mission, under time, pressure, morale and supply. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "plot",
+ "axes": {
+  "objective": [
+   "hold a bridge until relieved",
+   "get civilians through the lines",
+   "find a missing patrol",
+   "take a hill nobody wants",
+   "carry a message the radio cannot",
+   "destroy a supply dump",
+   "escort a defector",
+   "retake a village lost last week"
+  ],
+  "enemy": [
+   "a disciplined army with better guns",
+   "irregulars who know the land",
+   "an enemy who is also starving",
+   "a former ally",
+   "an unseen force that strikes at night",
+   "your own side's command"
+  ],
+  "terrain": [
+   "frozen forest",
+   "flooded farmland",
+   "a ruined city",
+   "mountain passes",
+   "a desert road",
+   "marshes and fog",
+   "jungle"
+  ],
+  "pressure": [
+   "the clock: relief arrives in three days, maybe",
+   "supply: one meal a day",
+   "morale: the last mission went badly",
+   "orders that make no sense",
+   "wounded who slow everyone",
+   "weather turning"
+  ],
+  "unit_trouble": [
+   "a new officer nobody trusts",
+   "two soldiers with a blood feud",
+   "a deserter in the ranks",
+   "a medic who has stopped caring",
+   "a soldier too young to be there",
+   "a hero whose nerve is going"
+  ],
+  "moral_choice": [
+   "prisoners the unit cannot feed",
+   "a village that helped the enemy",
+   "an order to burn the fields",
+   "a wounded enemy asking for help",
+   "leaving someone behind to save the rest",
+   "looting to survive"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "first contact, small and confusing",
+   "a scout does not come back"
+  ],
+  "2": [
+   "supplies or time run short",
+   "the plan breaks on the ground"
+  ],
+  "3": [
+   "a loss in the unit",
+   "the enemy commits in force"
+  ],
+  "4": [
+   "the objective is in reach, at a price",
+   "hold, break, or choose who lives"
+  ]
+ },
+ "cliches": [
+  "the soldier with a photo of his sweetheart dies first",
+  "one man army",
+  "the war ends tomorrow",
+  "the cowardly officer"
+ ]
+}

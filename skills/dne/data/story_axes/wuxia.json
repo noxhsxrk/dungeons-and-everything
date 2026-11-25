@@ -1,0 +1,60 @@
+{
+ "_about": "Martial arts and cultivation: sects, grudges, manuals and the jianghu. Designed by us. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "setting",
+ "axes": {
+  "sect": [
+   "a mountain sword sect in decline",
+   "a beggars' brotherhood",
+   "a sect of healers who will not fight",
+   "a merchant clan's guard school",
+   "a hidden order of assassins",
+   "a wandering opera troupe that teaches fists"
+  ],
+  "grudge": [
+   "a master killed twenty years ago",
+   "a broken engagement between sects",
+   "a stolen manual",
+   "a family wiped out",
+   "a duel lost unfairly",
+   "a betrayal at a tournament"
+  ],
+  "treasure": [
+   "half of a sword manual",
+   "a pill that breaks a realm",
+   "a jade token for a hidden valley",
+   "a famous blade's broken tip",
+   "a teacher's last letter",
+   "a map of meridians"
+  ],
+  "bottleneck": [
+   "the next realm needs a tribulation",
+   "their qi turns cold under pressure",
+   "a wound that blocks a meridian",
+   "a heart-demon from an old sin",
+   "too much power too fast",
+   "a vow that limits them"
+  ],
+  "rival": [
+   "a sect heir with everything",
+   "a sworn sibling who chose the other side",
+   "a masked swordsman",
+   "an elder who wants their manual",
+   "a demonic cultivator who saved their life",
+   "a prodigy who is kind"
+  ],
+  "jianghu_rule": [
+   "no one draws a blade at the inn",
+   "debts of life must be repaid",
+   "the orthodox and the unorthodox do not mix",
+   "a challenge must be answered",
+   "a master's word is law",
+   "the court stays out of the jianghu, until now"
+  ]
+ },
+ "cliches": [
+  "you dare offend me",
+  "the trash young master",
+  "a cliff with a secret manual at the bottom",
+  "face slapping"
+ ]
+}

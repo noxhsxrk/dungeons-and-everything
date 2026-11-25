@@ -1,0 +1,60 @@
+{
+ "_about": "Fantasy adventure: places of wonder and danger, and a reason to go. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "setting",
+ "axes": {
+  "hook": [
+   "a map in a dead man's boot",
+   "a village that pays in gold it should not have",
+   "a dragon's offer of work",
+   "a road nobody has walked for a hundred years",
+   "a heir who must be found",
+   "a temple that sank and rose again"
+  ],
+  "threat": [
+   "a warlord gathering the hill clans",
+   "a plague that turns people to stone",
+   "a wizard's experiment loose",
+   "giants coming down from the mountains",
+   "a curse on the royal line",
+   "the old gods waking"
+  ],
+  "place": [
+   "a city built on a giant's bones",
+   "a forest that moves at night",
+   "an underground lake kingdom",
+   "a tower above the clouds",
+   "a desert of glass",
+   "a swamp of drowned bells"
+  ],
+  "patron": [
+   "a merchant princess",
+   "a dying knight",
+   "a talking fox",
+   "a temple of the sun",
+   "a thieves' guild",
+   "a scholar in exile"
+  ],
+  "reward": [
+   "a weapon with a voice",
+   "a title and land",
+   "a cure",
+   "a true name",
+   "a debt repaid",
+   "a door home"
+  ],
+  "complication": [
+   "the patron lies about why",
+   "a rival party wants it too",
+   "the threat has a fair grievance",
+   "the reward is cursed",
+   "an ally is a spy",
+   "the road itself is alive"
+  ]
+ },
+ "cliches": [
+  "chosen one",
+  "a dark lord in black armour",
+  "you meet in a tavern",
+  "an ancient prophecy"
+ ]
+}

@@ -1,0 +1,151 @@
+{
+ "_about": "Story axes for a fixed-answer mystery (story_gen.py). Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. decay:false keeps a value from being down-weighted by recent use. All text is our own.",
+ "kind": "plot",
+ "axes": {
+  "question": [
+   {"v": "whodunit: the party must name who did it", "w": 3},
+   {"v": "howdunit: who is plain, how it was possible is not", "w": 2},
+   {"v": "whydunit: the act is known, the reason is the puzzle", "w": 2},
+   {"v": "inverted: the players see the culprit first and must prove it", "w": 2},
+   {"v": "locked room: it could not have happened, and it did", "w": 2},
+   {"v": "heist in reverse: something was taken and the party must work out the plan", "w": 2},
+   "missing person: find them before the trail goes cold",
+   "the alibi that is too good: one story fits everything, and that is the problem"
+  ],
+  "crime": [
+   {"v": "a killing", "w": 2},
+   "a theft",
+   "a disappearance",
+   "sabotage",
+   "blackmail",
+   "a forgery",
+   "a poisoning that did not kill",
+   "a fire that was set",
+   "a ruined reputation",
+   "a broken seal on something sealed for good reason"
+  ],
+  "victim": [
+   "a well-liked teacher",
+   "the head of a family business",
+   "a debt collector nobody will mourn",
+   "a stranger who arrived three days ago",
+   "a young apprentice with a bright future",
+   "a retired investigator",
+   "a local official up for re-election",
+   "a performer at the height of their fame",
+   "a courier carrying something that was not theirs",
+   "the keeper of an important archive",
+   "a doctor who knew too many secrets",
+   "a beloved animal and, through it, its owner"
+  ],
+  "culprit": [
+   "the victim's closest friend",
+   "a business partner",
+   "the quiet servant",
+   "the victim's heir",
+   "the one who reported it",
+   "a respected elder",
+   "a rival in the same trade",
+   "the victim's former lover",
+   "a guard on duty that night",
+   "a visiting expert",
+   "a neighbour with a grievance",
+   "the victim's sibling"
+  ],
+  "motive": [
+   "protecting someone they love",
+   "an old debt",
+   "revenge for an injury years ago",
+   "fear of a secret coming out",
+   "money, plainly",
+   "a belief that this was right",
+   "jealousy",
+   "covering up an earlier accident",
+   "ambition: the victim stood in the way",
+   "pity that went wrong",
+   "keeping a promise to someone dead",
+   "being blackmailed into it"
+  ],
+  "method": [
+   "with a key they should not have had",
+   "under cover of a crowd",
+   "by swapping two things that look alike",
+   "through an errand nobody questioned",
+   "by changing the records afterwards",
+   "through a way in that the plans do not show",
+   "by making the time of it look different",
+   "with help from someone who did not know what they were helping",
+   "by staging it to look like an accident",
+   "using the victim's own habit against them",
+   "by being in two places through a stand-in",
+   "with something ordinary turned into a tool"
+  ],
+  "twist": [
+   {"v": "no twist: the clues mean what they seem to", "w": 15, "decay": false},
+   "two people did it, each without knowing about the other",
+   "the victim set part of it up themselves",
+   "the crime the party is chasing hides a second, smaller one",
+   "the culprit is protecting the person the party suspects",
+   "the victim is not who everyone thought",
+   "the one who hired the party has something to hide",
+   "it was meant for someone else",
+   "the culprit has already confessed, to the wrong person",
+   "an innocent person has a reason to lie about where they were"
+  ],
+  "red_herring": [
+   "a suspect with a shameful but unrelated secret",
+   "an object that looks like the weapon and is not",
+   "a rumour that started as a joke",
+   "a witness who is honestly wrong about the time",
+   "a quarrel overheard and misread",
+   "a letter that seems to threaten but is about something else",
+   "a stranger seen nearby on unrelated business",
+   "a missing item that was only mislaid"
+  ],
+  "clue_channel": [
+   "paper: ledgers, letters, receipts",
+   "bodies and objects: what things show if you look closely",
+   "talk: gossip, testimony, what people let slip",
+   "routine: who broke their habits that day",
+   "money: who paid whom, and when",
+   "the place itself: marks, dust, what was moved",
+   "animals and children, who notice and are not asked",
+   "time: clocks, schedules, the order things happened"
+  ],
+  "setting_hook": [
+   "a town cut off by weather",
+   "a celebration that cannot stop for this",
+   "an inheritance about to be read",
+   "an inspection due in two days",
+   "a funeral that brought everyone back",
+   "a market week with strangers everywhere",
+   "a building about to be torn down",
+   "a vote that the crime could swing",
+   "a household in mourning that wants this quiet",
+   "a journey where nobody can leave until it ends"
+  ]
+ },
+ "pools": {
+  "suspects": [
+   "the victim's closest friend", "a business partner", "the quiet servant", "the victim's heir",
+   "the one who reported it", "a respected elder", "a rival in the same trade", "the victim's former lover",
+   "a guard on duty that night", "a visiting expert", "a neighbour with a grievance", "the victim's sibling",
+   "the family's lawyer", "a nervous clerk", "a cook who hears everything", "a lodger behind on rent"
+  ],
+  "places": [
+   "the scene itself", "the victim's home", "the culprit's workplace", "a tavern or eating house",
+   "the records office", "a back room nobody uses", "the market square", "a doctor's rooms",
+   "the stables or garage", "a place of worship", "the riverside", "an upstairs study"
+  ],
+  "suspicious": [
+   "lied about where they were, for a reason of their own", "was seen arguing with the victim",
+   "is short of money", "stands to gain from the outcome", "burned some papers that day",
+   "has a record of trouble", "changed their story once", "is hiding a relationship"
+  ]
+ },
+ "cliches": [
+  "the butler did it", "it was all a dream", "evil twin", "dying message written in blood",
+  "a mysterious stranger in a long coat", "the detective's long-lost", "poison nobody has heard of",
+  "the least likely person", "dark and stormy night"
+ ]
+}

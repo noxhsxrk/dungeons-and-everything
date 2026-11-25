@@ -1,0 +1,93 @@
+{
+ "_about": "Cosmic horror: something vast and indifferent, and the cost of understanding it. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "mood",
+ "axes": {
+  "presence": [
+   "a pattern in the stars that only some can see",
+   "a sound under the floor of the world",
+   "a thing that lives in a language",
+   "a tide that comes in from somewhere other than the sea",
+   "a geometry that should not close",
+   "a sleeper whose dreams leak",
+   "a colour that was not there yesterday",
+   "an archive that writes itself"
+  ],
+  "wants": [
+   "nothing: it does not notice people at all",
+   "to be finished, and people are the last pieces",
+   "to be remembered",
+   "a way through, and the town is the door",
+   "to be counted correctly",
+   "to be fed something people value",
+   "to wake, slowly",
+   "to replace one particular person"
+  ],
+  "first_sign": [
+   "animals leave",
+   "a neighbour repeats the same sentence",
+   "the maps disagree",
+   "everyone dreams the same street",
+   "a stain that comes back after scrubbing",
+   "a letter arrives from someone long dead",
+   "the church bell rings one too many times",
+   "children draw the same shape"
+  ],
+  "rule": [
+   "it cannot act on what is not looked at",
+   "it follows anyone who says its name",
+   "salt slows it, nothing stops it",
+   "it can only take what is offered",
+   "it is weaker at noon",
+   "it keeps every promise made near it",
+   "each glimpse costs a memory",
+   "it cannot cross running water, yet"
+  ],
+  "cost": [
+   "knowing more means sleeping less",
+   "the ones who understand start to forget their families",
+   "every answer leaves a mark on the skin",
+   "trust between the characters wears thin",
+   "the town turns against whoever asks",
+   "the safe places shrink",
+   "someone close changes, a little at a time",
+   "money and goods lose all meaning to the touched"
+  ],
+  "refuge_fails": [
+   "the locked room was never locked",
+   "the friend who shelters them is already part of it",
+   "the church is the centre of it",
+   "the road out loops back",
+   "the daylight hours grow short",
+   "the records that would help have been rewritten"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "something small is wrong and nobody else minds",
+   "a thing goes missing that no one else remembers owning",
+   "an animal acts as if someone is standing behind a character"
+  ],
+  "2": [
+   "someone the party knows is touched by it",
+   "the wrongness has a shape now, and it is near",
+   "a safe place proves it is not"
+  ],
+  "3": [
+   "it notices the party",
+   "a character's own mind turns against them for a moment",
+   "the town begins to act as one"
+  ],
+  "4": [
+   "the truth is seen whole, and something must be given up to walk away",
+   "the door opens",
+   "the choice: stop it or flee with what is left"
+  ]
+ },
+ "cliches": [
+  "it was all in their head",
+  "ancient evil awakens",
+  "the tentacled",
+  "the old book of the dead",
+  "mad cultists in robes"
+ ]
+}
