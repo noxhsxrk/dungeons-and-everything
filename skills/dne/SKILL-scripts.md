@@ -85,6 +85,8 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py award \
 python3 ${CLAUDE_SKILL_DIR}/scripts/xp.py award \
   --campaign <name> --characters "Max of Thraxx,Ethros the 19th" --difficulty medium --type noncombat \
   --note "guild informant interrogation"
+# One award per encounter: --event <id> (else --note) names it, and a repeat of the same one is skipped for
+# everyone already paid (the engine's `reward` action shares the ids). --again pays a genuine second award.
 ```
 
 **Difficulty tiers:** 2014 `easy` `medium` `hard` `deadly`; 2024 `low` `moderate` `high` (`easy`/`medium`/`hard` are accepted and mapped; `deadly` becomes `high` with a note)
@@ -421,7 +423,10 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c $CAMP effect tick  "Max of Thr
 python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c $CAMP effect advance 90m                     # in-game time passes (90 / 90m / 8h / 10r) for everyone
 
 # Typed modifier: Bless adds +1d4 to attacks and saves; dice.py / combat.py --effects apply it
-python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c $CAMP effect start "Piper" "Bless" 10r conc --mod +1d4 --on attack,save
+# A concentration spell on someone else names its caster with --caster (one line per target): the caster
+# concentrates, and when that ends (break, a new spell, unconscious, long rest, 0 HP) it ends on every target.
+python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c $CAMP effect start "Piper" "Bless" 10r conc --mod +1d4 --on attack,save --caster "Brother Aldo"
+python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c $CAMP effect start "Mira"  "Bless" 10r conc --mod +1d4 --on attack,save --caster "Brother Aldo"
 # An effect placed on a target that lasts "until the start/end of the caster's next turn" counts down on the caster's turn:
 python3 ${CLAUDE_SKILL_DIR}/scripts/tracker.py -c $CAMP effect start "Ghoul" "Vicious Mockery" 1r --until "Piper"
 

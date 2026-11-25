@@ -455,6 +455,16 @@ def _damage(ctx, intent: dict) -> dict:
         data["error"] = f"no HP on record for {name}: nothing was taken off"
     if rec.get("concentrating") and dealt > 0:
         data["concentration_save"] = {"spell": rec["concentrating"], "dc": max(10, dealt // 2), "con_mod": rec.get("con_mod", 0)}
+    trk = world.json("tracker.json") or {}
+    held = trk.get(name.lower()) if isinstance(trk, dict) else None
+    if isinstance(held, dict) and held.get("concentration") and dealt > 0 and "concentration_save" not in data:
+        # A player character's concentration lives in tracker.json, not on the combatant record.
+        if data.get("down"):
+            import tracker as tracker_mod
+            data["concentration_ends"] = tracker_mod.drop_concentration(trk, held)
+            world.touch("tracker.json")
+        else:
+            data["concentration_save"] = {"spell": held["concentration"], "dc": max(10, dealt // 2)}
     return {"status": "done", "elapsed_minutes": 0, "writes": {**world.writes(), **writes}, "refresh": "battlemap",
             "data": data, "visible_events": check_end(world)}
 

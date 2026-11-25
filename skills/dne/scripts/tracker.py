@@ -20,7 +20,7 @@ Usage:
     python3 tracker.py -c $CAMPAIGN concentrate <entity> break
 
     # Timed effects — duration formats: 10r (rounds), 60m (minutes), 8h (hours), indef
-    python3 tracker.py -c $CAMPAIGN effect start <entity> "<spell>" <duration> [conc]
+    python3 tracker.py -c $CAMPAIGN effect start <entity> "<spell>" <duration> [conc] [--caster <who>]
                        [--mod +1d4 --on attack,save]   # a typed modifier (Bless)
     python3 tracker.py -c $CAMPAIGN effect end   <entity> "<spell>"
     python3 tracker.py -c $CAMPAIGN effect tick  <entity>   # call on that entity's turn start
@@ -161,6 +161,33 @@ def _entity(state: dict, name: str) -> dict:
     return state[key]
 
 
+#: Conditions that make a creature incapacitated, which ends its concentration.
+ENDS_CONCENTRATION = ("incapacitated", "paralyzed", "petrified", "stunned", "unconscious")
+
+
+def drop_concentration(state: dict, caster: dict) -> "str | None":
+    """End what `caster` concentrates on, on every creature it was holding it on.
+
+    A concentration spell on several targets (Bless on three allies) is one
+    spell: when the caster's concentration ends, every target loses it. An
+    effect placed with `--caster` names its caster; one without names nobody,
+    so it belongs to the creature carrying it. Returns the spell, or None.
+    """
+    spell = caster.get("concentration")
+    if not spell:
+        return None
+    caster["concentration"] = None
+    me = str(caster.get("name", "")).lower()
+    for key, ent in state.items():
+        if key.startswith("_") or not isinstance(ent, dict):
+            continue
+        holder = str(ent.get("name", key)).lower()
+        ent["effects"] = [e for e in ent.get("effects", [])
+                          if not (e.get("concentration") and str(e.get("name", "")).lower() == spell.lower()
+                                  and str(e.get("caster") or holder).lower() == me)]
+    return spell
+
+
 def _parse_duration(dur_str: str) -> "dict | None":
     """Parse a duration string into an effect dict fragment.
     Formats: 10r (rounds), 60m (minutes), 8h (hours), indef (indefinite).
@@ -254,11 +281,13 @@ def _run_down(ent: dict, minutes: float) -> list:
     return expired
 
 
-def _report_expired(ent: dict, expired: list) -> None:
+def _report_expired(ent: dict, expired: list, state: "dict | None" = None) -> None:
     entity_name = ent["name"]
     for e in expired:
         spell_name = e["name"]
         if e.get("concentration") and (ent.get("concentration") or "").lower() == spell_name.lower():
+            if state is not None:
+                drop_concentration(state, ent)
             ent["concentration"] = None
             _send_announce(f"{entity_name} — {spell_name} expired (concentration ends)")
             print(f"  ! {entity_name}: {spell_name} EXPIRED — concentration ends")
@@ -280,7 +309,11 @@ def advance(campaign: str, minutes: float, quiet: bool = False) -> list:
             continue
         expired = _run_down(ent, minutes)
         if not quiet:
-            _report_expired(ent, expired)
+            _report_expired(ent, expired, state)
+        else:
+            for e in expired:
+                if e.get("concentration") and (ent.get("concentration") or "").lower() == str(e.get("name", "")).lower():
+                    drop_concentration(state, ent)
         out.extend((ent["name"], e) for e in expired)
     if state:
         _save(campaign, state)
@@ -338,7 +371,7 @@ def _send_announce(msg: str) -> None:
 
 def cmd_effect(campaign: str, action: str, entity_name: str,
                spell: str = "", duration: str = "", is_conc: bool = False,
-               mod: str = "", on: str = "", until: str = "") -> None:
+               mod: str = "", on: str = "", until: str = "", caster: str = "") -> None:
     if action == "advance":
         # `effect advance <time>` — the time arrives in the entity slot.
         minutes = parse_time(entity_name)
@@ -377,17 +410,29 @@ def cmd_effect(campaign: str, action: str, entity_name: str,
                 sys.exit(2)
             effect["modifier"] = {"value": mod.strip().lower(), "applies": applies}
 
+        caster = caster.strip()
+        if caster and caster.lower() == entity_name.strip().lower():
+            caster = ""
+        if caster and is_conc:
+            effect["caster"] = caster
+
+        # Mirror concentration onto whoever holds it: the caster, or this entity.
+        if is_conc:
+            holder = _entity(state, caster) if caster else ent
+            old = holder.get("concentration")
+            if old and old.lower() != spell.lower():
+                drop_concentration(state, holder)
+                print(f"  {holder['name']}: dropped concentration on '{old}'")
+            holder["concentration"] = spell
+            if caster and not any(e["name"].lower() == spell.lower() for e in holder["effects"]):
+                # The caster carries the spell's clock (no modifier), so it ends for everyone together.
+                holder["effects"].append({"name": spell, "concentration": True, "holding": True, **dur})
+            if old is None or old.lower() != spell.lower():
+                _send_announce(f"{holder['name']} — concentrating on {spell}")
+
         # Replace any existing effect with same name
         ent["effects"] = [e for e in ent["effects"] if e["name"].lower() != spell.lower()]
         ent["effects"].append(effect)
-
-        # Mirror concentration into the concentrate field
-        if is_conc:
-            old = ent.get("concentration")
-            ent["concentration"] = spell
-            if old and old.lower() != spell.lower():
-                print(f"  {entity_name}: dropped concentration on '{old}'")
-            _send_announce(f"{entity_name} — concentrating on {spell}")
 
         rem = _fmt_effect(effect)
         conc_tag = " [conc]" if is_conc else ""
@@ -407,9 +452,9 @@ def cmd_effect(campaign: str, action: str, entity_name: str,
             return
         was_conc = any(e.get("concentration") for e in removed)
         if was_conc and (ent.get("concentration") or "").lower() == spell.lower():
-            ent["concentration"] = None
+            drop_concentration(state, ent)
             _send_announce(f"{entity_name} — concentration on {spell} ends")
-            print(f"  - {entity_name}: {spell} ends (concentration broken)")
+            print(f"  - {entity_name}: {spell} ends (concentration broken, on every target)")
         else:
             _send_announce(f"{entity_name} — {spell} ends")
             print(f"  - {entity_name}: {spell} ends")
@@ -450,7 +495,7 @@ def cmd_effect(campaign: str, action: str, entity_name: str,
             gone = _run_down(other, MINUTES_PER_ROUND)
             other["effects"] += rest
             if gone:
-                _report_expired(other, gone)
+                _report_expired(other, gone, state)
 
         if not all_expired and not kept:
             # Nothing to report
@@ -462,7 +507,7 @@ def cmd_effect(campaign: str, action: str, entity_name: str,
             lines = [f"⧗ {e['name']} · {_fmt_effect(e)}" for e in kept]
             print(f"  {entity_name} — effects: {', '.join(lines)}")
 
-        _report_expired(ent, all_expired)
+        _report_expired(ent, all_expired, state)
         _save(campaign, state)
 
     else:
@@ -510,6 +555,11 @@ def cmd_condition(campaign: str, entity_name: str, action: str, condition: str =
             _push_conditions(entity_name, conds)
             _send_announce(f"{entity_name} → {cond.capitalize()}")
             print(f"  + {entity_name}: {cond}")
+            if cond in ENDS_CONCENTRATION:
+                spell = drop_concentration(state, ent)
+                if spell:
+                    _send_announce(f"{entity_name} — concentration on {spell} ends")
+                    print(f"  - {entity_name}: concentration on {spell} ends ({cond})")
         else:
             print(f"  (already has {cond})")
 
@@ -542,8 +592,7 @@ def cmd_concentrate(campaign: str, entity_name: str, spell_or_break: str) -> Non
     ent   = _entity(state, entity_name)
 
     if spell_or_break.lower() == "break":
-        old = ent.get("concentration")
-        ent["concentration"] = None
+        old = drop_concentration(state, ent)
         if old:
             _send_announce(f"{entity_name} — concentration on {old} broken")
             print(f"  {entity_name}: concentration on '{old}' broken")
@@ -552,6 +601,8 @@ def cmd_concentrate(campaign: str, entity_name: str, spell_or_break: str) -> Non
     else:
         spell = spell_or_break
         old   = ent.get("concentration")
+        if old and old.lower() != spell.lower():
+            drop_concentration(state, ent)
         ent["concentration"] = spell
         if old and old != spell:
             _send_announce(f"{entity_name} — {old} ends, concentrating on {spell}")
@@ -1031,11 +1082,8 @@ def cmd_rest(campaign: str, rest_type: str, advance_time: bool = True) -> None:
             continue
         _entity(state, ent["name"])
         name = ent["name"]
-        if ent.get("concentration"):
-            spell = ent["concentration"]
-            ent["concentration"] = None
-            ent["effects"] = [e for e in ent["effects"]
-                              if not (e.get("concentration") and e["name"].lower() == spell.lower())]
+        spell = drop_concentration(state, ent)
+        if spell:
             print(f"  {name}: concentration on {spell} ends")
         if _is_dead(ent):
             continue
@@ -1074,6 +1122,9 @@ def main() -> None:
                      help="Typed modifier the effect grants, e.g. +1d4 (Bless) or -1d4 (Bane)")
     eff.add_argument("--on", default="",
                      help=f"Roll types the modifier applies to: {', '.join(MODIFIER_TARGETS)}")
+    eff.add_argument("--caster", default="",
+                     help="Who holds the concentration (Bless on an ally: the cleric). When the caster's "
+                          "concentration ends, the effect ends on every target")
     eff.add_argument("--until", default="",
                      help="Count the effect down on this creature's turn instead (e.g. the caster's, "
                           "for 'until the start of your next turn' effects placed on a target)")
@@ -1143,7 +1194,7 @@ def main() -> None:
         cmd_effect(args.campaign, args.action, args.entity,
                    spell=args.spell, duration=args.duration,
                    is_conc=(args.conc.lower() == "conc"),
-                   mod=args.mod, on=args.on, until=args.until)
+                   mod=args.mod, on=args.on, until=args.until, caster=args.caster)
     elif args.cmd == "rest":
         cmd_rest(args.campaign, args.type)
     elif args.cmd == "condition":

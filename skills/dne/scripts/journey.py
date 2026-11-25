@@ -88,10 +88,7 @@ def _grant_rest(world, st: dict, rest_type: str, writes: dict) -> list:
             if st.get("resting") is not None and name not in resting | watch:
                 continue                          # not part of this rest
             if ent.get("concentration") and name not in watch:      # sleeping ends it; someone on watch is awake
-                spell = ent["concentration"]
-                ent["concentration"] = None
-                ent["effects"] = [e for e in ent.get("effects", [])
-                                  if not (e.get("concentration") and str(e.get("name", "")).lower() == spell.lower())]
+                tracker_mod.drop_concentration(state, ent)
                 world.touch("tracker.json")
             if ent.get("exhaustion", 0) > 0 and not tracker_mod._is_dead(ent) and not tracker_mod._is_down(ent, world.campaign):
                 ent["exhaustion"] -= 1

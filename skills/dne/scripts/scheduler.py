@@ -108,7 +108,7 @@ class World:
                     expired = tracker_mod._run_down(ent, minutes)
                     for e in expired:
                         if e.get("concentration") and (ent.get("concentration") or "").lower() == str(e.get("name", "")).lower():
-                            ent["concentration"] = None
+                            tracker_mod.drop_concentration(tracker, ent)
                     if expired:
                         self.expired += [(ent.get("name", key), e.get("name")) for e in expired]
                     self.touch("tracker.json")
