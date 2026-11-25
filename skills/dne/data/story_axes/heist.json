@@ -1,0 +1,86 @@
+{
+ "_about": "Heist: the target, the layers that guard it, the insider, and the thing that goes wrong. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "plot",
+ "axes": {
+  "target": [
+   "a ledger that names every bribe",
+   "a painting that is worth more as a forgery",
+   "a key held by three people",
+   "a prisoner, not a thing",
+   "the winnings of a crooked game",
+   "a seed vault's only sample",
+   "a ship's manifest",
+   "a voice: a recording of a confession",
+   "a crown on display for one night",
+   "data on a machine with no network",
+   "a will before it is read",
+   "the deed to the whole street"
+  ],
+  "mark": [
+   "a banker who never forgets a face",
+   "a guild that runs the docks",
+   "a collector who hosts a gala",
+   "an old noble family down to its last money",
+   "a corporation's head of security",
+   "a crime boss who is also a priest",
+   "a museum with a new curator",
+   "a government that does not know what it has"
+  ],
+  "defence": [
+   "guards who change shift at odd hours",
+   "a lock nobody has opened",
+   "a vault that floods if forced",
+   "a guest list checked by face",
+   "a dog that cannot be bribed",
+   "an inventory counted twice a day",
+   "a building that moves",
+   "a witness who sees everything",
+   "a hidden second vault",
+   "alarms tied to the owner's heartbeat"
+  ],
+  "insider": [
+   "a cleaner with a grudge",
+   "the mark's bored child",
+   "an accountant about to be fired",
+   "a guard in debt",
+   "a forger who made the original",
+   "a servant who was promised freedom",
+   "a rival who wants the mark ruined",
+   "the architect who drew the place"
+  ],
+  "angle": [
+   "a party for cover",
+   "a fire drill",
+   "a fake inspection",
+   "a swap during a move",
+   "a con on the buyer instead",
+   "a tunnel from next door",
+   "turning the guards against each other",
+   "a long game over weeks"
+  ],
+  "goes_wrong": [
+   "the target has already been stolen",
+   "the insider sells them out",
+   "a second crew picks the same night",
+   "the mark changes the plan at the last minute",
+   "someone on the crew wants it for themselves",
+   "the thing is not what they were told",
+   "an innocent gets caught in the middle",
+   "the getaway is blocked"
+  ],
+  "getaway": [
+   "by water",
+   "in plain sight, as guests",
+   "underground",
+   "by switching places with someone",
+   "on the roofs",
+   "by not leaving at all"
+  ]
+ },
+ "cliches": [
+  "one last job",
+  "the laser grid",
+  "the safe-cracker who is too old for this",
+  "the crew betrays each other at the end"
+ ]
+}

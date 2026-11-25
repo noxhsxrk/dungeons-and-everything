@@ -1,0 +1,67 @@
+{
+ "_about": "Competition and courtroom: a contest of rounds, a rival, and something at stake. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "plot",
+ "axes": {
+  "arena": [
+   "a trial before a sceptical judge",
+   "a cooking contest",
+   "a tournament of duels",
+   "a debate before a vote",
+   "an entrance exam",
+   "a race across the country",
+   "a chess or strategy final",
+   "a talent show with a cruel host"
+  ],
+  "rival": [
+   "the reigning champion",
+   "a prodigy half their age",
+   "an old partner",
+   "a cheat with friends in charge",
+   "someone they once wronged",
+   "a kind rival they like too much"
+  ],
+  "stake": [
+   "a family's home",
+   "a place in the academy",
+   "a name cleared",
+   "a debt forgiven",
+   "freedom for a friend",
+   "the right to stay"
+  ],
+  "rule_quirk": [
+   "the judges change each round",
+   "every win costs something to keep",
+   "the audience votes",
+   "contestants pick each other's challenges",
+   "testimony can be bought, but at a price",
+   "the final round is secret until it starts"
+  ],
+  "hidden_card": [
+   "a witness nobody called",
+   "a rule the organisers forgot",
+   "a sponsor with an agenda",
+   "a forged document in the evidence",
+   "the rival is protecting someone",
+   "an injury the champion is hiding"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "the first round, won or lost by a hair"
+  ],
+  "2": [
+   "the rival plays dirty, or plays brilliantly"
+  ],
+  "3": [
+   "the decisive round: first to three"
+  ],
+  "4": [
+   "the result, and who it changes"
+  ]
+ },
+ "cliches": [
+  "the underdog wins with a last-second miracle",
+  "the surprise witness confesses on the stand",
+  "a training montage"
+ ]
+}

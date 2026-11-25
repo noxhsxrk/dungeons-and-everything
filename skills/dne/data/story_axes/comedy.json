@@ -1,0 +1,65 @@
+{
+ "_about": "Comedy and gonzo: a simple premise pushed further than it should go. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "mood",
+ "axes": {
+  "premise": [
+   "a lie that must be kept up all day",
+   "two events booked in the same hall",
+   "a wrong delivery that must be returned",
+   "a pet that is not what the shop said",
+   "a job interview during a disaster",
+   "the boss's prize possession, broken"
+  ],
+  "straight_one": [
+   "a tired official",
+   "a very serious knight",
+   "a robot that takes words literally",
+   "someone's mother",
+   "an inspector on their first day",
+   "a priest with a schedule"
+  ],
+  "running_gag": [
+   "the same unlucky passer-by",
+   "a song nobody can stop humming",
+   "a door that never opens the first time",
+   "a goat",
+   "a rumour that grows every time it is told",
+   "someone who keeps arriving too late"
+  ],
+  "escalator": [
+   "more guests arrive",
+   "the authorities get involved",
+   "the lie gets a second lie",
+   "the weather joins in",
+   "the animal gets loose",
+   "the cameras are rolling"
+  ],
+  "payoff": [
+   "everyone finds out at once",
+   "the gag saves the day",
+   "the straight one finally snaps",
+   "it was not even necessary",
+   "they win, by accident",
+   "the original problem solved itself"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "a small mistake"
+  ],
+  "2": [
+   "a cover-up that makes it bigger"
+  ],
+  "3": [
+   "it spills into public"
+  ],
+  "4": [
+   "the payoff"
+  ]
+ },
+ "cliches": [
+  "and then they woke up",
+  "slipping on a banana peel",
+  "it was a dream sequence"
+ ]
+}

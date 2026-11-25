@@ -1,0 +1,60 @@
+{
+ "_about": "LitRPG and other-world: a game-like system with status windows and achievements. Designed by us. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "setting",
+ "axes": {
+  "system_quirk": [
+   "experience is shared with whoever you hate most",
+   "every skill has a hidden cost",
+   "the system is new and buggy",
+   "levels can be traded",
+   "titles change your personality a little",
+   "the system speaks, and it has opinions"
+  ],
+  "class_twist": [
+   "a support class nobody wants",
+   "a class that should not exist",
+   "a cook in a world of warriors",
+   "a summoner whose summons talk back",
+   "a merchant who levels by deals",
+   "a class that resets each dawn"
+  ],
+  "dungeon": [
+   "a tower that adds a floor each week",
+   "a dungeon that is someone's mind",
+   "a city that becomes a dungeon at night",
+   "a sunken train line",
+   "a forest that respawns",
+   "a dungeon run by its monsters as a business"
+  ],
+  "achievement_hook": [
+   "a hidden achievement for sparing an enemy",
+   "a first-clear reward nobody has claimed",
+   "an achievement for dying in a funny way",
+   "a title for befriending a boss",
+   "a quest from the system itself",
+   "a reward that only appears for a party"
+  ],
+  "rival_player": [
+   "a guild leader who exploits beginners",
+   "a speedrunner",
+   "a former friend with a better class",
+   "a player who knows the system's secret",
+   "an NPC who has realised they are an NPC",
+   "a cheater the system protects"
+  ],
+  "exploit": [
+   "a stacking bug",
+   "an unattended shop",
+   "a skill that works on the system",
+   "a respawn trick",
+   "a quest loop",
+   "a mistranslated item"
+  ]
+ },
+ "cliches": [
+  "the main character is secretly the strongest",
+  "a harem",
+  "the useless skill is actually overpowered",
+  "the system says ding"
+ ]
+}

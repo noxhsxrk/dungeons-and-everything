@@ -1,0 +1,51 @@
+{
+ "_about": "Traitor in the party: secret roles handed out by the script, public evidence. Designed by us. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "frame",
+ "axes": {
+  "traitor_goal": [
+   "delay the party until a deadline",
+   "steal one thing",
+   "lead them into a trap",
+   "protect the enemy's leader",
+   "make the party turn on each other",
+   "get one of them killed"
+  ],
+  "cover": [
+   "a hero's reputation",
+   "a broken past everyone pities",
+   "being the quietest",
+   "being the loudest accuser",
+   "an obvious decoy who is innocent",
+   "a real friendship"
+  ],
+  "tell": [
+   "knows something they could not",
+   "is never there when things go wrong",
+   "a habit from the other side",
+   "too good at one task",
+   "a small lie about home",
+   "messages sent at odd hours"
+  ],
+  "channel": [
+   "notes left in a hollow tree",
+   "a bird",
+   "coded songs",
+   "a merchant's ledger",
+   "a dream link",
+   "a radio frequency"
+  ],
+  "reveal_trigger": [
+   "the party finds the channel",
+   "the traitor must act openly to win",
+   "the enemy betrays the traitor",
+   "a fellow party member confesses for them",
+   "the deadline passes",
+   "a vote"
+  ]
+ },
+ "cliches": [
+  "the traitor has a twirling moustache",
+  "it was the newest member",
+  "an evil laugh at the reveal"
+ ]
+}

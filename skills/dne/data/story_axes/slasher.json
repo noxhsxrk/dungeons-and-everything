@@ -1,0 +1,84 @@
+{
+ "_about": "Survival horror and slasher: a hunter, a closed place, and dwindling supplies. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "mood",
+ "axes": {
+  "hunter": [
+   "a figure in a work uniform",
+   "something that wears the faces of the dead",
+   "a family that will not let guests leave",
+   "a creature that hunts by sound",
+   "the house itself",
+   "a former friend who came back wrong",
+   "a swarm that acts as one",
+   "a man who cannot be hurt by daylight things"
+  ],
+  "place": [
+   "a summer camp out of season",
+   "a ferry stuck in fog",
+   "a snowed-in lodge",
+   "a hospital on its last night open",
+   "a mall after closing",
+   "a mining town at the bottom of a valley",
+   "a research hut on the ice",
+   "a farm a long way from the road"
+  ],
+  "rule": [
+   "it never runs, and it is always there",
+   "it only takes those who are alone",
+   "it cannot enter where it was not invited",
+   "it repeats the last thing that hurt it",
+   "it comes when the lights go out",
+   "it remembers every name spoken"
+  ],
+  "shortage": [
+   "light",
+   "fuel",
+   "clean water",
+   "medicine",
+   "a working radio",
+   "a way to lock doors",
+   "trust"
+  ],
+  "betrayal": [
+   "someone hid the keys",
+   "one of them called it here",
+   "the rescuers are worse",
+   "a survivor is already bitten",
+   "the map they trusted was wrong",
+   "someone will trade the others to live"
+  ],
+  "last_hope": [
+   "a boat that might start",
+   "dawn, if they last",
+   "a radio tower on the ridge",
+   "the old tunnels",
+   "a car with a quarter tank",
+   "burning the place down"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "a sign someone was here and left in a hurry",
+   "a scream far off that nobody else heard"
+  ],
+  "2": [
+   "the first of them is gone",
+   "the way out is cut"
+  ],
+  "3": [
+   "it gets inside the safe room",
+   "panic splits the group"
+  ],
+  "4": [
+   "face it, or run with what is left",
+   "the last hope fails or holds"
+  ]
+ },
+ "cliches": [
+  "let's split up",
+  "the phone has no signal",
+  "the car won't start",
+  "a hockey mask",
+  "it was the janitor all along"
+ ]
+}

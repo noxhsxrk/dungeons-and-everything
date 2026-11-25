@@ -1,0 +1,77 @@
+{
+ "_about": "Romance and drama: two people, what keeps them apart, and what it costs to choose. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "mood",
+ "axes": {
+  "bond": [
+   "old friends who never said it",
+   "rivals forced to work together",
+   "a promise made as children",
+   "strangers who keep meeting by chance",
+   "one saved the other's life",
+   "a marriage of convenience that stopped being one",
+   "a teacher and a former student, years later",
+   "two people on opposite sides of a dispute",
+   "pen pals who finally meet",
+   "a second chance after a bad ending"
+  ],
+  "obstacle": [
+   "pride: neither will speak first",
+   "a promise already made to someone else",
+   "duty to a family that disapproves",
+   "a secret one of them is keeping",
+   "fear of being left again",
+   "ambition that leaves no room",
+   "guilt over what happened the last time",
+   "loyalty to a friend who loves the same person",
+   "a belief that they do not deserve it",
+   "a lie told early that grew too big"
+  ],
+  "obstacle_holder": [
+   "one of the two themselves",
+   "a parent",
+   "a best friend",
+   "a former partner",
+   "a mentor",
+   "a sibling",
+   "a rival suitor",
+   "the community's elder"
+  ],
+  "pressure": [
+   "one of them is leaving soon",
+   "a war or crisis nearby",
+   "a debt that must be paid",
+   "a contest where they compete",
+   "an illness in the family",
+   "the season is ending",
+   "a scandal in the town",
+   "a job that sends them apart"
+  ],
+  "secret": [
+   "a letter never sent",
+   "a child nobody knows about",
+   "a past name",
+   "a promise to someone dead",
+   "a debt to the wrong people",
+   "a gift they made and never gave",
+   "they have met before and one forgot",
+   "they were paid to get close at first"
+  ],
+  "turning_point": [
+   "a dance at a festival",
+   "a night stranded together",
+   "a fight in public",
+   "nursing the other through illness",
+   "an apology that costs everything",
+   "a shared loss",
+   "choosing the other over a dream",
+   "a public confession"
+  ]
+ },
+ "cliches": [
+  "love at first sight",
+  "a misunderstanding that one sentence would fix",
+  "the airport chase",
+  "an evil ex",
+  "a love triangle where one side is a cardboard villain"
+ ]
+}

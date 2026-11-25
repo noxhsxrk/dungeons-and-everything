@@ -1,0 +1,51 @@
+{
+ "_about": "Slice of life and cozy: a community, the season, small troubles, nobody dies. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "mood",
+ "axes": {
+  "season": [
+   "the first frost",
+   "spring thaw",
+   "harvest week",
+   "the long summer evenings",
+   "the rainy season",
+   "midwinter festival"
+  ],
+  "need": [
+   "the bakery needs a new oven",
+   "the bridge needs mending before the fair",
+   "an orchard needs pickers",
+   "the library is closing unless someone helps",
+   "a lost pet must be found",
+   "the festival needs a new song"
+  ],
+  "trouble": [
+   "two neighbours not speaking",
+   "a storm on the way",
+   "a shop with no customers",
+   "a recipe that will not come right",
+   "a visitor who does not fit in",
+   "a letter with bad news from far away"
+  ],
+  "newcomer": [
+   "a shy child",
+   "a travelling tinker",
+   "a retired soldier",
+   "a scholar who is lost",
+   "a cat that adopts someone",
+   "a former rival moving in next door"
+  ],
+  "tradition": [
+   "the lantern walk",
+   "the bread contest",
+   "the first-swim of the year",
+   "planting a tree for each newborn",
+   "the town's yearly portrait",
+   "the night of shared stories"
+  ]
+ },
+ "cliches": [
+  "the big city developer wants to buy the town",
+  "the grumpy old man has a heart of gold",
+  "everything is solved by a bake sale"
+ ]
+}
