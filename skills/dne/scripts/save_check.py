@@ -58,13 +58,18 @@ def _unwritten(section: str) -> bool:
     return any(p in section for p in PLACEHOLDERS)
 
 
+def _bare(section: str) -> str:
+    """A section without the engine's own block, which it rewrites at every finish."""
+    return re.sub(r"<!-- unrolled:world -->.*?<!-- /unrolled:world -->", "", section, flags=re.S)
+
+
 def _unchanged_since(camp: Path, name: str, title: str, since: float, now: str) -> bool:
     """True when the engine's first snapshot this session holds the same `## title` section: the GM did not write it.
     No snapshot this session (no engine turns) → False; the file time decides alone."""
     snaps = sorted(d for d in (camp / ".snapshots").glob("turn_*") if d.is_dir() and (_mtime(d) or 0) >= since)
     for d in snaps:
         try:
-            return _section((d / "campaign" / name).read_text(encoding="utf-8"), title) == _section(now, title)
+            return _bare(_section((d / "campaign" / name).read_text(encoding="utf-8"), title)) == _bare(_section(now, title))
         except OSError:
             continue
     return False

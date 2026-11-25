@@ -212,6 +212,45 @@ class BuiltWorld(unittest.TestCase):
         self.assertIn("Composure 8/10", out)
         self.assertIn("Tokens 2/3", out)
 
+    def test_a_playtest_shaped_world_is_up_to_date_by_check_and_audit(self):
+        kit = {"_meta": {"name": "Ban Lom Mor", "genre": "mystery, horror", "premise": "A village in the monsoon"},
+               "labels": [{"name": n, "description": "d"} for n in ("Journalist", "Photographer", "Fisher", "Monk",
+                                                                     "Medium", "Smuggler")],
+               "equipment": [{"name": "film camera"}, {"name": "torch"}],
+               "threats": [{"name": f"Threat {i}", "threat": i, "moves": ["a", "b"]} for i in range(1, 5)]}
+        seed = {**self.seed, "worldkit": kit,
+                "map": {"party_location": "pier", "places": {"pier": {"name": "Pier"}, "shrine": {"name": "Shrine"}},
+                        "edges": [{"a": "pier", "b": "shrine", "miles": 1}]},
+                "npcs": [{"name": "Lung Chuan", "role": "boat owner", "threat": 2, "location": "Pier"}],
+                "factions": [{"name": "Ice Factory", "force": 3, "wealth": 3, "influence": 2, "goal": "Keep it quiet",
+                              "clock": 6, "goal_stat": "influence"}]}
+        res = self.build(seed)
+        self.assertTrue(res["ok"], res)
+        self.assertIn("up to date", self.py("campaign_version.py", "-c", "monsoon", "check")[1])
+        self.assertIn("Nothing to change", self.py("campaign_version.py", "-c", "monsoon", "audit")[1])
+
+    def test_an_engine_turn_alone_does_not_tick_current_situation(self):
+        import re
+        self.assertTrue(self.build()["ok"])
+        state = self.root / "campaigns" / "monsoon" / "state.md"
+        written = "## Current Situation\n- **Location:** the pier, at dusk\n- **Party:** Ploy, a journalist\n\n"
+        state.write_text(re.sub(r"## Current Situation\n.*?(?=^## )", written, state.read_text(encoding="utf-8"),
+                                count=1, flags=re.S | re.M), encoding="utf-8")
+        time.sleep(0.05)
+        for args in (("begin", "--text", "x"), ("resolve", "--intents", '[{"action": "ask"}]'),
+                     ("finish", "--narration", "ok")):
+            self.assertEqual(self.py("turn.py", "-c", "monsoon", *args)[0], 0)
+        out = self.py("save_check.py", "-c", "monsoon")[1]
+        self.assertIn("☐ state.md: Current Situation", out)            # the engine wrote state.md, the GM did not
+        state.write_text(state.read_text(encoding="utf-8").replace("the pier, at dusk", "the shrine, at night"),
+                         encoding="utf-8")
+        self.assertIn("✓ state.md: Current Situation", self.py("save_check.py", "-c", "monsoon")[1])
+
+    def test_combat_with_a_named_campaign_is_not_gated_on_the_active_one(self):
+        self.assertTrue(self.build()["ok"])
+        out = self.py("combat.py", "init", '[{"name": "Gareth", "hp": 9, "ac": 10}]', "--campaign", "nope")[1]
+        self.assertNotIn("5e (d20) rules", out)
+
     def test_labels_with_commas_split_on_semicolons(self):
         self.assertTrue(self.build()["ok"])
         argv = list(MIRA)

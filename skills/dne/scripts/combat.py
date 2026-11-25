@@ -391,7 +391,8 @@ if __name__ == "__main__":
         _active = json.loads((runtime_dir() / "active-campaign.json").read_text(encoding="utf-8")).get("name")
     except (OSError, ValueError, AttributeError):
         _active = None
-    if _active and "-c" not in sys.argv and (find_campaign(_active) / "state.md").is_file():
+    named = any(a in ("-c", "--campaign") or a.startswith("--campaign=") for a in sys.argv[2:])
+    if _active and not named and (find_campaign(_active) / "state.md").is_file():
         refuse_unless_d20(["-c", _active], "combat.py")
 
     cmd = sys.argv[1]

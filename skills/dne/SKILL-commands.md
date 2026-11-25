@@ -7,7 +7,7 @@ Full step-by-step procedures for all `/dne` slash commands. Load this file at `/
 ---
 
 ## `/dne new <campaign-name> [theme]`
-1. **Session setup — call `AskUserQuestion`** with **four questions**:
+1. **Session setup — call `AskUserQuestion`** with **four questions** (a world that is not classic D&D: settle the system first, step 2's first question, and if it is Braid ask only Q1 and Q2 here; Q4 is then Yes, since Braid always runs on the world engine):
 
    **Q1 *"Display & input mode?"***
    - `Display + autorun (ngrok) (Recommended / Default)` → `bash ${CLAUDE_SKILL_DIR}/display/start-display.sh --ngrok`, print public ngrok HTTPS URL, set `_display_running = true`, write `autorun: true` to `state.md → ## Session Flags`, then `python3 ${CLAUDE_SKILL_DIR}/display/push_stats.py --clear`. Always enter the autorun wait loop (`autorun_wait.py`) at the end of each turn.
@@ -135,11 +135,11 @@ Then `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_init.py --seed - --check` wit
 
    *(Standing rule: Default to `Display + autorun (ngrok)` so players can immediately play via phone over internet).*
 
-   **Q2 *"Dice rolls?"*** — confirm how PC d20s are handled this session (see SKILL.md "Dice convention"). Pre-fill the recommended option from the existing `roll_mode` in `state.md` if present, else `players`:
+   **Q2 *"Dice rolls?"*** — confirm how PC rolls are handled this session (5e: the d20; Braid: two d6 added together; see SKILL.md "Dice convention"). Pre-fill the recommended option from the existing `roll_mode` in `state.md` if present, else `players`:
    - `Players roll their own` → write `roll_mode: players`. Call for each PC roll and wait — never auto-roll a PC.
    - `DM rolls everything openly` → write `roll_mode: auto`. Resolve PC rolls yourself with full math shown.
 
-   **Q3 *"How much of the game runs on the rules engine?"*** — ask only when `state.md → ## Session Flags` has no `engine:` line yet; otherwise keep the saved value (the table changes it from Table Settings).
+   **Q3 *"How much of the game runs on the rules engine?"*** — 5e only (never for Braid); ask only when `state.md → ## Session Flags` has no `engine:` line yet; otherwise keep the saved value (the table changes it from Table Settings).
    - `Full (Recommended)` → write `engine: full`. Every fight is tracked on the scripts (HP and AC for each enemy, each attack resolved) and XP comes from the tables.
    - `Light` → write `engine: light`. You judge fights and XP yourself and call for the rolls that matter; saves, NPC records and the in-world clock are still kept.
 
