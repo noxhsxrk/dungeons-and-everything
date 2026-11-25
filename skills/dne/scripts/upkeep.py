@@ -185,7 +185,11 @@ def _upkeep(ctx, intent: dict) -> dict:
      "per_day": {"food": 2, "water": 2, "coin": 20}, "warn_days": 2, "carry": {"limit": 300, "load": 240}}
     Track only what makes for decisions in this world. A store with a daily rate goes down as in-world time passes
     (rest, travel, wait); the players are stopped and told when it reaches `warn_days` of supply and again when it
-    is gone. A store with no rate (ammo) is spent with `use`. A load over `carry.limit` slows every journey by half."""
+    is gone. A store with no rate (ammo) is spent with `use`. A load over `carry.limit` slows every journey by half.
+    Braid with the usage_die module: {"action": "upkeep", "dice": {"torches": "d8", "fuel": "d10"}} stocks usage
+    dice (party pools), with or without `survival`; `use` on one of them rolls it (1-2: a size down, then gone)."""
+    if "dice" in intent and paths.campaign_system(ctx.campaign) != "d20":
+        return _usage_dice(ctx, intent["dice"])
     if not on(ctx.campaign):
         return {"status": "done", "elapsed_minutes": 0,
                 "data": {"error": "survival is off for this campaign: add `- survival: on` to Session Flags to track supplies"}}
@@ -238,8 +242,49 @@ def _supply(ctx, intent: dict) -> dict:
 
 @turn.handler("use")
 def _use(ctx, intent: dict) -> dict:
-    """use — spend supplies by hand: {"action": "use", "item": "ammo", "qty": 3}. Refused if there is not enough."""
+    """use — spend supplies by hand: {"action": "use", "item": "ammo", "qty": 3}. Refused if there is not enough.
+    A usage die (usage_die module, stocked with `upkeep` "dice") is rolled instead: {"action": "use", "item": "torches"}."""
+    die = _usage_die(ctx, str(intent.get("item", "")))
+    if die:
+        import mechanics
+        out = mechanics._pool(ctx, {"action": "pool", "owner": "party", "id": die["id"], "use": True})
+        d = out["data"]
+        if not d.get("error"):
+            out["data"] = {"item": die["id"], "was": d["was"], "rolled": d["rolled"], "die": d["die"], "gone": d["gone"]}
+            if d["gone"]:
+                out["visible_events"] = [{"type": "upkeep_out", "recipient": "party", "item": die["id"],
+                                          "text": f"The {die['id']} {'are' if die['id'].endswith('s') else 'is'} gone."}]
+        return out
     return _change(ctx, intent, -1)
+
+
+# ── usage dice (Braid, usage_die module) ──────────────────────────────────────
+
+def _usage_die(ctx, item: str) -> "dict | None":
+    """The party usage-die pool named `item`, in a Braid campaign with usage_die on; None otherwise (5e never)."""
+    if not item or paths.campaign_system(ctx.campaign) == "d20":
+        return None
+    rec = wdb.get(ctx.db, "pool", f"party/{item.strip().casefold()}")
+    if not rec or not (rec.get("die") or rec.get("gone")):
+        return None
+    import modules
+    return rec if "usage_die" in modules.enabled(ctx.campaign) else None
+
+
+def _usage_dice(ctx, dice: dict) -> dict:
+    import mechanics
+    import modules
+    err = modules.need(ctx, "usage_die")
+    if err:
+        return {"status": "done", "elapsed_minutes": 0, "data": {"error": err}}
+    if not isinstance(dice, dict) or not dice or any(d not in mechanics.DIE_STEPS for d in dice.values()):
+        return {"status": "done", "elapsed_minutes": 0,
+                "data": {"error": f"dice: {{item: size}}, sizes {', '.join(mechanics.DIE_STEPS)}"}}
+    for item, size in dice.items():
+        mechanics._pool(ctx, {"action": "pool", "owner": "party", "id": str(item).strip(), "die": size})
+    return {"status": "done", "elapsed_minutes": 0, "refresh": "clocks", "data": {"dice": dict(dice)},
+            "visible_events": [{"type": "upkeep", "recipient": "party",
+                                "text": "Stocked: " + ", ".join(f"{k} {v}" for k, v in dice.items())}]}
 
 
 @turn.handler("conditions")

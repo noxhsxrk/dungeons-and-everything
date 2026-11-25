@@ -1,0 +1,39 @@
+{
+ "id": "heat",
+ "name": "Heat",
+ "use_when": "Use when the crew's jobs should leave a trail: the louder the work, the more the law and the rivals come knocking.",
+ "genres": ["heist", "space-opera"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_heat",
+ "actions": ["crew_heat"],
+ "tracks": [
+  {"id": "crew_heat", "owner": "party", "min": 0, "max": 8, "start": 0, "thresholds": []},
+  {"id": "wanted", "owner": "party", "min": 0, "max": 4, "start": 0, "thresholds": []}
+ ],
+ "pools": [],
+ "tables": {
+  "entangle_low": [
+   "old friends call in a favour: someone the crew owes needs a job done now, no pay",
+   "a rival crew moves on the crew's turf while it is busy elsewhere",
+   "a quiet week: someone useful offers help, a tip or a cheap deal"
+  ],
+  "entangle_mid": [
+   "the watch leans on the neighbourhood: a contact is picked up and asked about the crew",
+   "word gets out: someone wants a cut of the take to keep quiet",
+   "a debt comes due: a backer wants their share sooner than agreed"
+  ],
+  "entangle_high": [
+   "a raid: the law hits a place the crew uses; get out or lose what is there",
+   "a crew member is named: pay off the law, hand someone over, or go to ground",
+   "the law closes in: an arrest is coming; pay (wanted + 3 coin), hand someone over, or run"
+  ]
+ },
+ "numbers": {
+  "job": {"quiet": 0, "contained": 2, "loud": 4, "wild": 6},
+  "extra": {"high_profile": 1, "hostile_turf": 1, "war": 1, "killing": 2},
+  "overflow": 9,
+  "columns": [[0, 3, "entangle_low"], [4, 5, "entangle_mid"], [6, 99, "entangle_high"]],
+  "rows": [3, 5, 6]
+ }
+}

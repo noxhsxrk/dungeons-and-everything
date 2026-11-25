@@ -1,0 +1,15 @@
+{
+ "id": "vows",
+ "name": "Vows",
+ "use_when": "Use when the characters swear to long goals that should take many sessions and feel earned when done.",
+ "genres": ["fantasy", "wuxia", "war", "romance", "historical"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_vows",
+ "actions": ["vow", "progress"],
+ "tracks": [],
+ "pools": [],
+ "tables": {},
+ "numbers": {"xp": {"easy": 1, "tough": 2, "hard": 3, "extreme": 4, "epic": 5}, "cost_xp_less": 1,
+             "miss_ticks_lost": 8, "forsake_stress": {"easy": 1, "tough": 1, "hard": 2, "extreme": 2, "epic": 3}}
+}

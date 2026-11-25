@@ -1,0 +1,20 @@
+{
+ "id": "labels",
+ "name": "Identity Labels",
+ "use_when": "Use when young heroes are still finding out who they are, and other people keep telling them (teen heroes, coming-of-age drama).",
+ "genres": ["romance", "comedy", "space-opera"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_labels",
+ "actions": ["identity", "emotion"],
+ "tracks": [
+  {"id": "fierce", "owner": "pc", "min": -2, "max": 3, "start": 0, "thresholds": []},
+  {"id": "uncanny", "owner": "pc", "min": -2, "max": 3, "start": 0, "thresholds": []},
+  {"id": "guardian", "owner": "pc", "min": -2, "max": 3, "start": 0, "thresholds": []},
+  {"id": "proud", "owner": "pc", "min": -2, "max": 3, "start": 0, "thresholds": []},
+  {"id": "grounded", "owner": "pc", "min": -2, "max": 3, "start": 0, "thresholds": []}
+ ],
+ "pools": [],
+ "tables": {},
+ "numbers": {"min": -2, "max": 3, "start": [2, 1, 1, 0, -1], "edge_emotion": "insecure"}
+}

@@ -1,0 +1,23 @@
+{
+ "id": "emotions",
+ "name": "Emotions",
+ "use_when": "Use when feelings should stay with the characters between scenes and push them to act on them (drama, romance, teen heroes).",
+ "genres": ["romance", "comedy", "cozy"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_emotions",
+ "actions": ["emotion", "condition"],
+ "tracks": [],
+ "pools": [],
+ "tables": {},
+ "numbers": {
+  "mod": -1,
+  "emotions": {
+   "afraid": {"approach": "force", "clear": "admit the fear out loud to someone, or step back from a fight that matters"},
+   "angry": {"approach": "heart", "clear": "say the cruel thing, or break something that belongs to whoever caused it"},
+   "guilty": {"approach": "wits", "clear": "confess, or pay for it with something they value"},
+   "hopeless": {"approach": "grit", "clear": "give up on something for an easy comfort tonight"},
+   "insecure": {"approach": "finesse", "clear": "do something reckless, alone, to prove they can"}
+  }
+ }
+}

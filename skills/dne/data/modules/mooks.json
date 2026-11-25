@@ -1,0 +1,14 @@
+{
+ "id": "mooks",
+ "name": "Mooks",
+ "use_when": "Use when fights should feel like action films: nameless foes drop in one hit, the named ones take real work.",
+ "genres": ["wuxia", "space-opera", "comedy", "fantasy"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_mooks",
+ "actions": ["foe", "track"],
+ "tracks": [],
+ "pools": [],
+ "tables": {},
+ "numbers": {"named_min_boxes": 2, "critical_extra_down": 1, "pack": [[3, 5, 1], [6, 10, 2]]}
+}

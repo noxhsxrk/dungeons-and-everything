@@ -1,0 +1,45 @@
+{
+ "id": "position_effect",
+ "name": "Position and Effect",
+ "use_when": "Use when every risky action should say up front how bad a miss gets and how much a hit achieves (heists, capers, tense missions).",
+ "genres": ["heist", "space-opera", "war"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_position_effect",
+ "actions": ["position", "clock"],
+ "tracks": [],
+ "pools": [],
+ "tables": {
+  "controlled": [
+   "a real setback, but on your terms: back off, or try again from risky",
+   "it does not work: back off, or try again from risky",
+   "it works, with a small cost: a little less done, or a minor snag",
+   "it works",
+   "it works better than planned: more done, and something extra"
+  ],
+  "risky": [
+   "it goes wrong and it gets worse: harm, and the position turns desperate",
+   "it goes wrong: harm, a complication, or the position turns desperate",
+   "it works, but the cost is real: harm, a complication, or less done",
+   "it works",
+   "it works better than planned: more done, and something extra"
+  ],
+  "desperate": [
+   "the worst happens: serious harm and the plan breaks here",
+   "it goes wrong badly: serious harm, a lost chance, or a heavy complication",
+   "it works, at a serious price: harm, or a heavy complication",
+   "it works, against the odds",
+   "it works brilliantly: more done, and the position eases"
+  ]
+ },
+ "numbers": {
+  "default_position": "risky",
+  "default_effect": "standard",
+  "ticks": {"limited": 1, "standard": 2, "great": 3},
+  "critical_extra_ticks": 1,
+  "harm": {"controlled": 1, "risky": 2, "desperate": 3},
+  "harm_on_cost_less": 1,
+  "harm_on_critical_failure_more": 1,
+  "harm_max": 4
+ }
+}

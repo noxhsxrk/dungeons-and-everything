@@ -1,0 +1,21 @@
+{
+ "id": "engagement",
+ "name": "Engagement",
+ "use_when": "Use when a job should skip the long planning talk: pick a plan and one detail, roll once, and start at the first obstacle.",
+ "genres": ["heist", "war", "space-opera"],
+ "requires": ["position_effect"],
+ "conflicts": [],
+ "script": "mod_engagement",
+ "actions": ["engagement"],
+ "tracks": [],
+ "pools": [],
+ "tables": {},
+ "numbers": {
+  "plans": {"assault": "the point of attack", "deception": "the lie and who it is told to", "stealth": "the way in",
+            "uncanny": "the strange means", "social": "the contact who opens the door", "transport": "the route and the ride"},
+  "factors": {"bold": 1, "complex": -1, "weakness": 1, "strength": -1, "help": 1, "interfere": -1},
+  "other_max": 2,
+  "position": {"critical failure": "desperate", "failure": "desperate", "success at a cost": "risky",
+               "success": "controlled", "critical success": "controlled"}
+ }
+}

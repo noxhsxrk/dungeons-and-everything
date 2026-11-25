@@ -1,0 +1,25 @@
+{
+ "id": "war_layer",
+ "name": "War Layer",
+ "use_when": "Use when the characters fight inside a war: the army's time, the enemy's pressure, the troops' morale and supplies matter between missions.",
+ "genres": ["war", "historical"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_war_layer",
+ "actions": ["war", "track"],
+ "tracks": [
+  {"id": "war_time", "owner": "party", "min": 0, "max": 12, "start": 0,
+   "thresholds": [{"at": 12, "dir": "up", "note": "Out of time: the enemy reaches what the army was racing to save"}]},
+  {"id": "war_pressure", "owner": "party", "min": 0, "max": 6, "start": 0, "thresholds": []},
+  {"id": "morale", "owner": "party", "min": 0, "max": 12, "start": 8,
+   "thresholds": [{"at": 3, "dir": "down", "note": "Low morale: the army can take no campaign actions until it rises"},
+                  {"at": 0, "dir": "down", "note": "Broken morale: every further loss is a desertion"}]},
+  {"id": "supply", "owner": "party", "min": 0, "max": 6, "start": 3, "thresholds": []}
+ ],
+ "pools": [],
+ "tables": {},
+ "numbers": {"pass": {"war_time": 1, "war_pressure": 1, "supply": -1}, "hungry_morale": -2, "loss_morale": -1,
+             "advance_time": [[3, 1], [5, 2], [6, 3]], "advance_two_sixes": 5,
+             "actions_by_morale": [[3, 0], [7, 1], [12, 2]],
+             "quality": {"raw": [0, 1], "trained": [1, 2], "veteran": [2, 3]}, "unit_broken_morale": -1}
+}

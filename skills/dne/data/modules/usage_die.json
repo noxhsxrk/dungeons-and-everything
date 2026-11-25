@@ -1,0 +1,13 @@
+{
+ "id": "usage_die",
+ "name": "Usage Dice",
+ "use_when": "Use when running low should be felt but not counted one by one: torches, ammunition, fuel, rations, air.",
+ "genres": ["sci-fi", "slasher", "fantasy", "war", "historical"],
+ "requires": [],
+ "conflicts": [],
+ "actions": ["upkeep", "use", "pool"],
+ "tracks": [],
+ "pools": [],
+ "tables": {},
+ "numbers": {}
+}

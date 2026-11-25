@@ -1,0 +1,14 @@
+{
+ "id": "strings",
+ "name": "Strings",
+ "use_when": "Use when the characters' hold on each other should matter as much as any skill (romance, drama, school, court intrigue).",
+ "genres": ["romance", "comedy", "cozy"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_strings",
+ "actions": ["string", "bond", "condition"],
+ "tracks": [],
+ "pools": [],
+ "tables": {},
+ "numbers": {"plus": 1, "minus": -1, "tempt_xp": 1}
+}

@@ -1,0 +1,47 @@
+{
+ "id": "seasons",
+ "name": "Seasons",
+ "use_when": "Use for gentle, everyday play where time is measured in seasons, not fights (cozy, village life, slow fantasy).",
+ "genres": ["cozy", "historical", "fantasy"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_seasons",
+ "actions": ["season", "pool"],
+ "tracks": [],
+ "pools": [{"id": "tokens", "owner": "pc", "max": 5, "set": 1}],
+ "tables": {
+  "spring": [
+   "the river floods the low meadow: someone's garden is under water",
+   "a stranger arrives with seeds nobody has seen before",
+   "the old bridge needs mending before the fair, and nobody agrees who should pay",
+   "lambs, calves and chicks everywhere: one is born that should not have lived",
+   "a letter arrives that was sent years ago",
+   "the first warm night: everyone is outside, and someone says too much"
+  ],
+  "summer": [
+   "the well runs low and the village must share",
+   "a travelling show sets up in the square for a week",
+   "the longest day: a festival, and a contest nobody wants to lose",
+   "a fire on the hill: put out in time, but whose was it?",
+   "a child goes missing for an afternoon and comes back with a story",
+   "the harvest looks too good: someone is already counting the money"
+  ],
+  "autumn": [
+   "the harvest needs every hand for three days",
+   "a death in the village, and what they left behind",
+   "the geese leave early: the old folk say a hard winter",
+   "the market town raises its prices, and the village must decide",
+   "the apple press breaks in the middle of the pressing",
+   "someone who left long ago comes home for good"
+  ],
+  "winter": [
+   "snow closes the road: the village is on its own for a while",
+   "the longest night: lanterns, songs, and one empty chair",
+   "a sickness goes round; who will nurse whom",
+   "the stores run short and someone has been taking more than their share",
+   "the lake freezes hard enough to walk to the island",
+   "a guest trapped by the snow stays for a week"
+  ]
+ },
+ "numbers": {"names": ["winter", "spring", "summer", "autumn"], "tokens_per_season": 1}
+}

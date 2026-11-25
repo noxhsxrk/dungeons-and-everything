@@ -1,0 +1,14 @@
+{
+ "id": "gm_budget",
+ "name": "GM Budget",
+ "use_when": "Use when the table wants the GM's unprompted twists to be few, counted and fair (tense games, competitive tables).",
+ "genres": ["horror", "slasher", "heist", "mystery", "war"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_gm_budget",
+ "actions": ["complicate", "pool"],
+ "tracks": [],
+ "pools": [{"id": "complications", "owner": "party", "max": 3, "set": 3, "cadence": "session"}],
+ "tables": {},
+ "numbers": {"max_cost": 3}
+}

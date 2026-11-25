@@ -1,0 +1,13 @@
+{
+ "id": "contest",
+ "name": "Contest",
+ "use_when": "Use when two sides compete over several rounds: a debate, a cooking match, a race, a game, a trial.",
+ "genres": ["competition", "comedy", "cozy", "historical", "mystery"],
+ "requires": [],
+ "conflicts": [],
+ "actions": ["roll"],
+ "tracks": [],
+ "pools": [],
+ "tables": {},
+ "numbers": {}
+}
