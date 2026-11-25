@@ -108,5 +108,59 @@ class CliWiringTests(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
 
 
+class OneAwardPerEncounter(unittest.TestCase):
+    """Running `xp.py award` twice for one fight paid it twice: nothing named the
+    encounter, so nothing could tell a second award from a repeat. --event (else
+    --note) names it now, and the ledger refuses a repeat unless --again."""
+
+    def setUp(self):
+        import argparse
+        from unittest import mock
+        self._d = tempfile.TemporaryDirectory()
+        self.addCleanup(self._d.cleanup)
+        base = pathlib.Path(self._d.name)
+        self.sheet = base / "mira.md"
+        self.sheet.write_text("# Mira\n**Level:** 3\n**XP:** 1000 / 2700\n", encoding="utf-8")
+        for p in (mock.patch.object(xp, "CAMPAIGNS_DIR", base),
+                  mock.patch.object(xp, "_find_char_path", lambda c, n: self.sheet),
+                  mock.patch.object(xp, "_push_xp_display", lambda *a, **k: None),
+                  mock.patch.object(xp, "campaign_ruleset", lambda c: "2014"),
+                  mock.patch("sys.stdout", new_callable=__import__("io").StringIO)):
+            p.start()
+            self.addCleanup(p.stop)
+        self.ns = lambda **kw: argparse.Namespace(**{"campaign": "c", "characters": "Mira", "difficulty": "medium",
+                                                     "type": "combat", "monsters": None, "note": "", "event": "",
+                                                     "again": False, **kw})
+
+    def xp_now(self):
+        return xp._read_char_state(self.sheet)[0]
+
+    def test_the_same_event_is_not_paid_twice(self):
+        xp.cmd_award(self.ns(event="ambush-in-the-alley"))
+        once = self.xp_now()
+        self.assertGreater(once, 1000)
+        xp.cmd_award(self.ns(event="Ambush-in-the-Alley"))
+        self.assertEqual(self.xp_now(), once)
+        self.assertEqual(len(xp._read_ledger("c")), 1)
+
+    def test_the_note_names_the_encounter_when_there_is_no_event(self):
+        xp.cmd_award(self.ns(note="Ambush in the alley"))
+        once = self.xp_now()
+        xp.cmd_award(self.ns(note="Ambush in the alley"))
+        self.assertEqual(self.xp_now(), once)
+
+    def test_again_pays_a_real_second_award(self):
+        xp.cmd_award(self.ns(event="arena"))
+        once = self.xp_now()
+        xp.cmd_award(self.ns(event="arena", again=True))
+        self.assertEqual(self.xp_now(), once + (once - 1000))
+
+    def test_unnamed_awards_are_not_guarded(self):
+        xp.cmd_award(self.ns())
+        once = self.xp_now()
+        xp.cmd_award(self.ns())
+        self.assertEqual(self.xp_now(), once + (once - 1000))
+
+
 if __name__ == "__main__":
     unittest.main()

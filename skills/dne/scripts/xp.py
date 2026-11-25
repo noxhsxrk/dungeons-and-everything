@@ -341,9 +341,10 @@ def _ledger_path(campaign: str) -> pathlib.Path:
     return CAMPAIGNS_DIR / campaign / LEDGER_NAME
 
 
-def _record_award(campaign: str, entries: list, note: str) -> None:
+def _record_award(campaign: str, entries: list, note: str, event: str = "") -> None:
     """Append one line per character. Never raises — a ledger write must not
-    cost a player their XP, which is already on the sheet by the time we run."""
+    cost a player their XP, which is already on the sheet by the time we run.
+    `event` names the encounter, so the same one is not awarded twice."""
     try:
         path = _ledger_path(campaign)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -357,6 +358,7 @@ def _record_award(campaign: str, entries: list, note: str) -> None:
                     "awarded": e["awarded"],
                     "total_after": e["total_after"],
                     "note": note,
+                    **({"event": event} if event else {}),
                 }, ensure_ascii=False) + "\n")
     except Exception as exc:                      # noqa: BLE001
         print(f"xp.py: warning — could not write the award ledger: {exc}",
@@ -480,6 +482,17 @@ def cmd_award(args: argparse.Namespace) -> None:
     if note:
         print(f"  Note: {note}")
 
+    # The same encounter is paid once (here or by the engine's `reward`): --event, else --note, names it.
+    event = (args.event or note).strip()
+    done = {str(r.get("character", "")).casefold() for r in _read_ledger(campaign)
+            if event and str(r.get("event", "")).casefold() == event.casefold()}
+    if done and not args.again:
+        print(f"\n  Already awarded for {event!r}: "
+              + ", ".join(c["name"] for c in chars if c["name"].casefold() in done)
+              + " — skipped (pass --again if this really is a second award).")
+        kept = [(c, a) for c, a in zip(chars, awards) if c["name"].casefold() not in done]
+        chars, awards = [c for c, _ in kept], [a for _, a in kept]
+
     # Apply XP to each character
     print()
     any_levelup = False
@@ -502,7 +515,9 @@ def cmd_award(args: argparse.Namespace) -> None:
 
     # Recorded AFTER the sheets are written, so the ledger never claims an
     # award that did not land.
-    _record_award(campaign, _ledger_entries, note=f"{diff} {enc_type}")
+    if _ledger_entries:
+        _record_award(campaign, _ledger_entries,
+                      note=f"{diff} {enc_type}" + (f" — {note}" if note else ""), event=event)
 
     if any_levelup:
         print("\n  Level-up pending — run /dne level up")
@@ -546,7 +561,11 @@ def main() -> None:
     award_p.add_argument("--monsters",   metavar="LIST",
                          help="name:cr:count,... for exact CR-based calculation")
     award_p.add_argument("--note",       metavar="TEXT",
-                         help="Brief label for this award (printed only, not stored)")
+                         help="Brief label for this award; stored, and names the encounter when --event is not given")
+    award_p.add_argument("--event",      metavar="ID", default="",
+                         help="Encounter id; the same one is never awarded twice (the engine's `reward` uses it too)")
+    award_p.add_argument("--again",      action="store_true",
+                         help="Award even though the ledger already holds this event")
 
     check_p = sub.add_parser(
         "check", help="Reconcile the award ledger against the character sheets")

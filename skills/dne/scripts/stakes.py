@@ -215,6 +215,19 @@ def _reward(ctx, intent: dict) -> dict:
     if not eid:
         return {"status": "done", "elapsed_minutes": 0, "data": {"error": "a reward needs an encounter id"}}
     enc = world.get("encounter", eid) or {}
+    try:
+        ledger = (world.camp / "xp-ledger.jsonl").read_text(encoding="utf-8")
+    except OSError:
+        ledger = ""
+    paid = set()
+    for line in ledger.splitlines():
+        try:
+            paid.add(str(json.loads(line).get("event", "")).casefold())
+        except (ValueError, AttributeError):
+            continue
+    if not enc.get("rewarded") and eid.casefold() in paid:
+        return {"status": "done", "elapsed_minutes": 0,
+                "data": {"awarded": False, "error": f"{eid} was already awarded with xp.py award (see xp-ledger.jsonl)"}}
     if enc.get("rewarded"):
         return {"status": "done", "elapsed_minutes": 0,
                 "data": {"awarded": False, "error": f"{eid} was already rewarded ({enc['rewarded']['total']} XP)"}}
@@ -223,11 +236,6 @@ def _reward(ctx, intent: dict) -> dict:
     ruleset = paths.campaign_ruleset(ctx.campaign)
     writes, given = {}, []
     stamp = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
-    ledger = ""
-    try:
-        ledger = (world.camp / "xp-ledger.jsonl").read_text(encoding="utf-8")
-    except OSError:
-        pass
     for rel, (title, text) in journey._pc_sheets(world, intent.get("characters")).items():
         m = re.search(r"(\*\*(?:XP|经验|经验值):\*\*\s*)(\d+)", text)
         level_m = paths.CHARACTER_LEVEL_RE.search(text)
@@ -240,7 +248,7 @@ def _reward(ctx, intent: dict) -> dict:
         given.append({"character": title, "awarded": gain, "total_after": total,
                       "level_up": total >= xp._next_level_xp(level)})
         ledger += json.dumps({"at": stamp, "character": title, "awarded": gain, "total_after": total,
-                              "note": f"{eid}: {intent.get('note', '')}"}, ensure_ascii=False) + "\n"
+                              "note": f"{eid}: {intent.get('note', '')}", "event": eid}, ensure_ascii=False) + "\n"
     if not given:
         return {"status": "done", "elapsed_minutes": 0, "data": {"awarded": False, "error": "no character sheet with an XP line"}}
     writes["xp-ledger.jsonl"] = ledger

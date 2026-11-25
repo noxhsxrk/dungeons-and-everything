@@ -3,6 +3,7 @@ scene is over; a plan that leaves no risk needs no roll and still earns its rewa
 player's to accept."""
 from __future__ import annotations
 
+import json
 import pathlib
 import sys
 import unittest
@@ -92,6 +93,15 @@ class StakesTests(EngineCase):
         self.assertFalse(again["awarded"])
         self.assertIn("already rewarded", again["error"])
         self.assertIn(f"**XP:** {1150 + gain} / 2700", (self.camp / "characters" / "mira.md").read_text(encoding="utf-8"))
+
+    def test_an_encounter_already_paid_by_xp_py_is_not_paid_again(self):
+        self.do("the storm gate", GATE)
+        (self.camp / "xp-ledger.jsonl").write_text(json.dumps({"character": "Mira", "awarded": 450, "total_after": 1150,
+                                                                "event": "Gate-Before-The-Storm"}) + "\n", encoding="utf-8")
+        again = self.data(self.do("reward", {"action": "reward", "encounter": "gate-before-the-storm", "characters": ["Mira"]}))
+        self.assertFalse(again["awarded"])
+        self.assertIn("xp.py award", again["error"])
+        self.assertIn("**XP:** 1150 / 2700", (self.camp / "characters" / "mira.md").read_text(encoding="utf-8"))
 
     def test_a_risky_plan_must_say_what_is_at_stake(self):
         self.do("the storm gate", GATE)
