@@ -98,7 +98,7 @@ def _grant_rest(world, st: dict, rest_type: str, writes: dict) -> list:
 
 @turn.handler("rest")
 def _rest(ctx, intent: dict) -> dict:
-    """rest — a short (1 hour) or long (8 hours) rest that can be interrupted.
+    """rest — (5e only) a short (1 hour) or long (8 hours) rest that can be interrupted.
 
     {"action": "rest", "type": "long", "resting": ["Mira", "Theo"], "watch": ["Bren"],
      "hit_dice": {"Mira": 2}, "heal": {"Mira": 9}}      (hit_dice / heal: a short rest's spent dice and their total)

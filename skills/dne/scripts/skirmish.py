@@ -225,7 +225,7 @@ def _fight_action(ctx, intent: dict) -> dict:
 
 @turn.handler("combatant")
 def _combatant(ctx, intent: dict) -> dict:
-    """combatant — someone in the fight, where they are and what they can do.
+    """combatant — (5e only) someone in the fight, where they are and what they can do.
 
     {"action": "combatant", "name": "Guard", "side": "enemy", "kind": "enemy", "x": 9, "y": 5, "hp": "18/18",
      "reach": 5, "range": 60, "needs_sight": true, "resist": ["fire"], "immune": [], "vulnerable": ["cold"],
@@ -257,7 +257,7 @@ def _combatant(ctx, intent: dict) -> dict:
 
 @turn.handler("advise")
 def _advise(ctx, intent: dict) -> dict:
-    """advise — what an enemy can sensibly do this turn: {"action": "advise", "enemy": "Guard"}.
+    """advise — (5e only) what an enemy can sensibly do this turn: {"action": "advise", "enemy": "Guard"}.
 
     Lists the targets it can actually see and reach (an attack that needs sight never picks someone behind a wall),
     with distance and cover, and the moves its orders and the fight's objective suggest: hold a spot, block the way
@@ -321,7 +321,7 @@ def _reactors(world, mover: dict, start: tuple, end: tuple) -> list:
 
 @turn.handler("move")
 def _move(ctx, intent: dict) -> dict:
-    """move — move someone on the map: {"actor": "Guard", "action": "move", "to": [4, 5], "speed": 30}
+    """move — (5e only) move someone on the map: {"actor": "Guard", "action": "move", "to": [4, 5], "speed": 30}
     (or "to": "stairs" in a fight with zones; "disengage": true to provoke nobody).
 
     The path respects walls and difficult ground and is refused if it costs more than `speed`. Leaving a hostile
@@ -383,7 +383,7 @@ def _move(ctx, intent: dict) -> dict:
 
 @turn.handler("spend")
 def _spend(ctx, intent: dict) -> dict:
-    """spend — use up part of a creature's turn or a limited resource.
+    """spend — (5e only) use up part of a creature's turn or a limited resource.
 
     {"actor": "Mira", "action": "spend", "use": "reaction"}      use: action | bonus | reaction | <a resource name>
     Refused if it was already used this round (one action, one bonus action, one reaction) or none is left."""
@@ -421,7 +421,7 @@ def reduce(amount: int, kind: str, rec: dict) -> tuple:
 
 @turn.handler("damage")
 def _damage(ctx, intent: dict) -> dict:
-    """damage — hurt someone: {"action": "damage", "target": "Guard", "amount": 12, "type": "fire", "source": "Mira"}.
+    """damage — (5e only) hurt someone: {"action": "damage", "target": "Guard", "amount": 12, "type": "fire", "source": "Mira"}.
 
     The amount passes through the target's immunity, resistance and vulnerability, comes off its HP (the map token
     for a creature, the sheet for a player character), and the result says what follows: a concentration save (DC 10
@@ -489,7 +489,7 @@ def _in_cone(origin: tuple, toward: tuple, cells: int, at: tuple) -> bool:
 
 @turn.handler("area")
 def _area(ctx, intent: dict) -> dict:
-    """area — who is caught in an area: {"action": "area", "shape": "sphere", "at": [6, 5], "feet": 20}
+    """area — (5e only) who is caught in an area: {"action": "area", "shape": "sphere", "at": [6, 5], "feet": 20}
     (shape: sphere | cube | line with "to": [x, y] | cone from "at" toward "to"; or "zone": "platform" in a fight
     with zones).
 
@@ -542,7 +542,7 @@ def _prop(ctx, intent: dict) -> dict:
 
 @turn.handler("round")
 def _round(ctx, intent: dict) -> dict:
-    """round — the next round begins: {"action": "round"}.
+    """round — (5e only) the next round begins: {"action": "round"}.
 
     Everyone gets their action, bonus action and reaction back, and anything the fight was set up to do on this
     round happens (`round_triggers`)."""

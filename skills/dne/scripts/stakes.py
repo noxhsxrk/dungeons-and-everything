@@ -229,7 +229,7 @@ def _judge(ctx, intent: dict) -> dict:
 
 @turn.handler("reward")
 def _reward(ctx, intent: dict) -> dict:
-    """reward — XP for a whole plan, once.
+    """reward — (5e only) XP for a whole plan, once.
 
     {"action": "reward", "encounter": "gate-before-the-storm", "characters": ["Mira", "Theo"],
      "difficulty": "hard", "note": "scouted the hatch, talked to both sides, got the medicine in"}
