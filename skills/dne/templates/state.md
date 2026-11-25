@@ -167,6 +167,7 @@ revision_log: []
 - success_at_cost: on
 - degrees: on
 - hero_points: off
+- when_down: saves
 - content: standard
 - romance: fade
 - pacing: mixed
@@ -183,7 +184,7 @@ revision_log: []
 - lines: (none)
 - veils: (none)
 *(display: none|local|lan|ngrok — the mode chosen at /dne new or /dne load; autorun is only ever true with a display running. roll_mode: players|auto. tutor_mode, autorun, autorun_interval, tts_voice, sfx_languages, autosave — session-scoped flags set via /dne commands or by the display companion)*
-*(Table rules — success_at_cost: on|off (on), degrees: on|off (on), hero_points: on|off (off); see SKILL-table-rules.md.)*
+*(Table rules — success_at_cost: on|off (on), degrees: on|off (on), hero_points: on|off (off), when_down: saves|choices (saves); see SKILL-table-rules.md.)*
 *(content: standard|18|20 (standard) · romance: off|fade|open (fade; open needs 18/20) · pacing: adventure|mixed|slow (mixed) · companions: quiet|normal|chatty · rolls: few|normal|many · show_dc: on|off · turn_end: open|options · engine: full|light (full) · npc_growth: off|slow|normal|fast (normal) · sparks: on|off · style_guard: on|off · storyteller: none|pulp|noir|banter|dread · world_engine: off|on (off, experimental) · survival: off|on (off) · beat_policy: players_can_prevent|must_land · lines: things that never appear · veils: things kept off-screen — see SKILL.md → Table Dials. A player can pause any scene with `x`.)*
 *(autosave: on|off — default on. Governs the behind-the-scenes continuity checkpoint (Live State Flags + graph + session tail). Toggle with /dne autosave on|off.)*
 

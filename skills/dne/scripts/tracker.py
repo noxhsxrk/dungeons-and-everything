@@ -971,6 +971,17 @@ def cmd_enemy(
         elif hp_pct <= prof.get("morale_pct", 25):
             tips.append(f"MORALE CHECK due: run `tracker.py enemy morale \"{ent['name']}\"`; on BREAKS it flees, "
                         "surrenders or parleys instead of fighting to 0 HP.")
+        down = []
+        for k, e in state.items():
+            if k.startswith("_") or not isinstance(e, dict) or e.get("enemy_profile") or _is_dead(e):
+                continue
+            s = e.get("death_saves", {})
+            if s.get("stable") or s.get("successes") or s.get("failures") or _sheet_hp(campaign, e["name"]) == 0:
+                down.append(e["name"])
+        if down:
+            tips.append(f"DOWN AT 0 HP: {', '.join(down)} — out of the fight. Go for someone still standing; strike a "
+                        "dying character only when its nature or orders demand it (a predator, a grudge, 'kill that "
+                        "one'), and say so in the narration.")
         if conc:
             tips.append(f"CONCENTRATING on '{conc}': avoid casting another concentration spell; protect position / stay behind cover.")
         if ready_rechs:

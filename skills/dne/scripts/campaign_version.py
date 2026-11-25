@@ -118,7 +118,7 @@ def check(campaign: str) -> tuple[str, str]:
 
 
 #: Session Flags every campaign should carry now, with their defaults.
-FLAGS = {"success_at_cost": "on", "degrees": "on", "hero_points": "off", "content": "standard", "romance": "fade", "pacing": "mixed",
+FLAGS = {"success_at_cost": "on", "degrees": "on", "hero_points": "off", "when_down": "saves", "content": "standard", "romance": "fade", "pacing": "mixed",
          "companions": "normal", "rolls": "normal", "show_dc": "on", "turn_end": "open",
          "engine": "full", "npc_growth": "normal", "world_engine": "off",
          "sparks": "on", "style_guard": "on", "storyteller": "none",
@@ -165,7 +165,7 @@ def audit(campaign: str) -> list[str]:
     flags = state.split("## Session Flags", 1)[1].split("\n## ", 1)[0] if "## Session Flags" in state else ""
     for flag, default in FLAGS.items():
         if not re.search(rf"^\s*-\s*{flag}\s*:", flags, re.M):
-            ask = " (ask the table)" if flag in ("content", "romance", "pacing", "lines", "veils", "hero_points") else ""
+            ask = " (ask the table)" if flag in ("content", "romance", "pacing", "lines", "veils", "hero_points", "when_down") else ""
             todo.append(f"state.md Session Flags: add `- {flag}: {default}`{ask}")
     sheet_tpl = tpl / "character-sheet.md"
     for sheet in sorted((camp / "characters").glob("*.md")) if (camp / "characters").is_dir() else []:

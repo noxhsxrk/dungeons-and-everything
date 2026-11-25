@@ -159,6 +159,15 @@ class MoraleInstinctTests(_Camp):
         self.assertIn("FIGHTS TO THE END", out)
         self.assertNotIn("enemy morale", out)
 
+    def test_advise_names_who_is_down(self):
+        self.e("set", "Orc")
+        self.assertNotIn("DOWN AT 0 HP", self.e("advise", "Orc").stdout)
+        state = json.loads((self.camp / "tracker.json").read_text(encoding="utf-8"))
+        state["mira"] = {"name": "Mira", "conditions": ["unconscious"], "effects": [],
+                         "death_saves": {"successes": 0, "failures": 1, "stable": False}}
+        (self.camp / "tracker.json").write_text(json.dumps(state), encoding="utf-8")
+        self.assertIn("DOWN AT 0 HP: Mira", self.e("advise", "Orc").stdout)
+
     def test_kit_validation_and_lookup(self):
         import worldkit
         kit = json.loads((self.camp / "worldkit.json").read_text(encoding="utf-8"))

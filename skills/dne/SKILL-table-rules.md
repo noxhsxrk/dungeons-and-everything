@@ -6,7 +6,7 @@ rolls, quick-build templates and social status (GURPS); degrees of success, mons
 Victory Points, Hero Points, valued conditions, Treat Wounds, Focus Points, rarity and traits, and a
 treasure curve (Pathfinder 2e); faction turns, enemy morale and instinct, and place tags (Worlds
 Without Number). Only the ideas are used; every number and word here is our own.
-Attacks, damage, spell slots, death saves and XP stay plain 5e.
+Attacks, damage, spell slots and XP stay plain 5e; death saves too, unless `when_down: choices` (§12).
 
 Read this file when a campaign uses any of these rules (see the flags below) or when the World Kit
 has the fields in §8.
@@ -18,6 +18,7 @@ has the fields in §8.
 | `success_at_cost` | on \| off | on | A check that misses the DC by 1–4 may still succeed, with a price (§2). |
 | `degrees` | on \| off | on | Beating a DC by 10 or more is a critical success; missing by 10 or more is a critical failure (§2). |
 | `hero_points` | on \| off | off | Hero Points replace Inspiration (§6). |
+| `when_down` | saves \| choices | saves | `choices`: a character who would die picks how they fall instead (§12). |
 
 Offer them at `/dne new` with the other Table Dials. Reaction rolls, Victory Points, Treat Wounds,
 the treasure curve and the monster table are GM tools with no flag; use them when they help.
@@ -218,6 +219,9 @@ it for you, so the AI's monsters behave like living things rather than perfect t
   nature instead of the best move. It uses the monster's `instincts` if the World Kit gives any,
   otherwise one that fits its role. Animals and swarms 6–8, ordinary people 3–4, trained soldiers 1–2,
   machines 0–2. Roll for the ones that matter, not every goblin every round.
+- **Someone at 0 HP is out of the fight.** Enemies turn to whoever is still standing. A creature hits a
+  dying character only when its nature or orders demand it (a predator dragging off prey, a zealot with a
+  grudge, "kill that one"); show it coming so the party can answer. `enemy advise` names who is down.
 - `enemy set <name> --kit "<monster>"` copies role, morale, instinct and instincts from the World Kit.
 
 ## 11. Place tags (`tags.py`)
@@ -231,3 +235,28 @@ place drawn at random. `--all` shows every entry to choose from.
 - Name everyone and everything you use, and write the place into world.md like any other.
 - The World Kit's `place_tags` (written in this world's voice) are drawn first; the 20 generic tags
   in `data/place_tags.json` fill in.
+
+## 12. When a character goes down (`when_down: choices`)
+
+With `saves` (the default) 0 HP is plain 5e: death saves, and three failures is death. With
+`choices` a loss can be a turn in the story instead of the end of it.
+
+- **When it applies:** a character's third death-save failure, a blow that would kill them outright,
+  or a fight the party has lost with everyone down. Stop before narrating death and offer the choice.
+- **Who chooses:** the fallen character's player, with the host agreeing. In a party, ask the player
+  first; the host only steps in when the choice would undo what the rest of the table just did.
+- **The choices** (each costs something real; name the cost before they pick):
+  1. **Hold on.** They stay where they fell, stable at 0 HP (`tracker.py saves <name> stable`), and
+     carry a lasting mark: a level of exhaustion, a scar that becomes a disadvantage, or something
+     they carried is lost or broken.
+  2. **Dragged clear.** An ally, a stranger or plain luck gets them out. They wake later at 1 HP
+     somewhere safe for now, and the enemy got what it came for (the prisoner, the relic, the
+     ground). Advance any clock it was racing.
+  3. **Wake elsewhere.** They come to after the worst has already happened: captured, robbed and
+     left for dead, or carried off by the enemy. Start the next scene from there.
+  4. **Die.** Always on the table, and always the player's call; play it with the weight it deserves.
+- **What stays the same:** death saves are still rolled; a natural 20 still brings them back at 1 HP.
+  A creature that chooses to strike someone who is down (§10) is a threat to show and answer, and
+  `choices` still applies if it lands.
+- Write what happened to the character's sheet (`## Notes` or `## Flaws & Quirks` for a new mark)
+  and to `session-log.md`.
