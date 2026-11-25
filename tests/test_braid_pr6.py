@@ -34,12 +34,12 @@ WORLD_FILES = ("calendar.json", "tracker.json", "world-map.json", "factions.json
 
 
 class Pr6(EngineCase):
-    MODULES, ROLL = ", ".join(PR6), "auto"
+    MODULES, ROLL, SYSTEM = ", ".join(PR6), "auto", "core"
 
     def setUp(self):
         self.FLAGS = FLAGS.format(self.ROLL, self.MODULES)
         super().setUp()
-        stamp(self.camp, "core")
+        stamp(self.camp, self.SYSTEM)
 
     def turn_with(self, text, *intents, answers=()):
         r = self.do(text, *intents)
@@ -282,6 +282,21 @@ class Realm(Pr6):
                        answers=["5", "6", "12"])
         self.assertEqual(self.thing("track", "mira/realm")["value"], 2)
         self.assertIsNotNone(self.thing("condition", "mira/qi deviation"))
+
+
+class RealmStory(Pr6):
+    MODULES, SYSTEM = "realm", "story"
+
+    def test_the_oracle_answers_a_breakthrough(self):
+        seen = set()
+        for n in range(12):
+            r = self.turn_with(f"try {n}", {"action": "track", "owner": "Mira", "id": "realm", "set": 0, "why": f"{n}"},
+                               {"action": "realm", "actor": "Mira", "breakthrough": True, "why": f"try {n}"})
+            d = self.data(r)
+            self.assertEqual(d["likelihood"], "likely")
+            self.assertEqual(d["realm"], 1 if d["passed"] else 0, d)
+            seen.add(d["passed"])
+        self.assertEqual(seen, {True, False})
 
 
 # ── status window ─────────────────────────────────────────────────────────────

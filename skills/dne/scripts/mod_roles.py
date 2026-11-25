@@ -49,7 +49,8 @@ def _roles(ctx, intent: dict) -> dict:
     {"action": "roles", "deal": ["Mira", "Theo", "Vos", "Kell"], "roles": {"traitor": 1}}
         shuffle and deal: the named counts, everyone else "loyal" (no counts: 1 traitor per 4, default). The table is
         sent the seal (sha256); each player character is told their own role privately. Refused while a deal is
-        unrevealed. The reply never shows the deal.
+        unrevealed. The reply's data never shows the deal; the PCs' private messages pass through the turn's
+        `sent` list on their way out (the GM sees PC roles there, never the NPCs').
     {"action": "roles", "act": "Vos", "why": "the vote"}   what an NPC does now, drawn from its role's table
         (`<role>_acts` in the module, or send "options": [...]); refused for a player character
     {"action": "roles", "reveal": true, "expect": "<seal a player kept>"}   the end: the deal, and whether it

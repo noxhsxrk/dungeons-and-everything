@@ -6,7 +6,8 @@ anyone else: that is what makes the betrayal fair.
   with no counts, one traitor per 4 names *(default)*. Other roles are fine (`"cultist": 1, "spy": 1`).
   - The script shuffles, adds a secret salt, and sends the whole table the **seal**: a sha256 of the deal.
     Ask a player to copy it somewhere outside the game.
-  - Each player character is told their role privately. Your reply does not show the deal.
+  - Each player character is told their role privately; those messages pass through your reply's `sent` on
+    their way out. NPC roles you never see: ask the script what an NPC does (below).
 - **NPCs play their role by the odds.** When an NPC with a role does something that matters (a vote, a claim,
   a watch, a choice), ask the script: `{"action": "roles", "act": "Vos", "why": "the vote"}`. Narrate what it
   returns. Traitors mostly look loyal; slips are rare and real. A role with no table needs
