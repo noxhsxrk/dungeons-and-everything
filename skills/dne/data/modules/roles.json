@@ -1,0 +1,33 @@
+{
+ "id": "roles",
+ "name": "Secret Roles",
+ "use_when": "Use when someone at the table or among the NPCs works against the group in secret, and the script must hold the truth.",
+ "genres": ["traitor", "war", "heist", "mystery"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_roles",
+ "actions": ["roles"],
+ "tracks": [],
+ "pools": [],
+ "tables": {
+  "traitor_acts": [
+   "claims to be loyal, calmly and with a good reason",
+   "claims to be loyal, calmly and with a good reason",
+   "goes along with the group and waits",
+   "goes along with the group and waits",
+   "casts doubt on someone loyal, with half a fact",
+   "sabotages something small where nobody can see",
+   "passes word to the enemy through a safe channel",
+   "slips: a detail that does not fit (a tell the players can catch)"
+  ],
+  "loyal_acts": [
+   "does the job well and says so",
+   "does the job well and says so",
+   "suspects the wrong person, out loud",
+   "keeps a worry to themselves",
+   "shares what they saw, plainly",
+   "makes an honest mistake that looks bad"
+  ]
+ },
+ "numbers": {"one_traitor_per": 4}
+}

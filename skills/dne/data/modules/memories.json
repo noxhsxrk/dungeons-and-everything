@@ -1,0 +1,14 @@
+{
+ "id": "memories",
+ "name": "Memories",
+ "use_when": "Use when what a character remembers is limited and precious: amnesia, the undying, a mind worn by loops.",
+ "genres": ["timeloop", "horror", "romance", "fantasy"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_memories",
+ "actions": ["memories"],
+ "tracks": [],
+ "pools": [],
+ "tables": {},
+ "numbers": {"slots": 5}
+}

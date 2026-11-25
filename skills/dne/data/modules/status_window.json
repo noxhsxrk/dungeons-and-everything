@@ -1,0 +1,51 @@
+{
+ "id": "status_window",
+ "name": "Status Window",
+ "use_when": "Use when the world runs on a visible system that announces every change, awards feats and hands out loot.",
+ "genres": ["litrpg", "comedy", "sci-fi"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_status_window",
+ "actions": ["status"],
+ "tracks": [],
+ "pools": [],
+ "tables": {
+  "first_critical_success": [
+   "Showoff",
+   "Beginner's Luck",
+   "The Dice Like You",
+   "Flawless (Once)",
+   "Main Character Energy"
+  ],
+  "first_critical_failure": [
+   "Learning Experience",
+   "Gravity Enthusiast",
+   "Well, You Tried",
+   "Tutorial Skipper",
+   "Spectacular Misjudgement"
+  ],
+  "loot_common": [
+   "a minor healing draught (clears 1 harm)",
+   "a pouch of mixed coins",
+   "a torch that never quite goes out",
+   "a rope that knots itself on command",
+   "trail rations that taste of home",
+   "a whetstone that sharpens in one pass"
+  ],
+  "loot_rare": [
+   "a calming tonic (clears 2 stress)",
+   "boots that leave no tracks",
+   "a ring that warms near hidden doors",
+   "a map scrap of this place, with one secret marked",
+   "a token that turns one miss into 7-9, once"
+  ],
+  "loot_epic": [
+   "a weapon with a name and an opinion",
+   "a cloak that makes the wearer forgettable",
+   "a skill book: a new label of your choice",
+   "a key that opens one door anywhere, once"
+  ]
+ },
+ "numbers": {"tiers": ["common", "rare", "epic"],
+             "boxes": {"bronze": [80, 18, 2], "silver": [50, 40, 10], "gold": [15, 55, 30]}}
+}
