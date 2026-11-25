@@ -14,6 +14,7 @@
   <p>
     <a href="#quick-start">Quick start</a> ·
     <a href="#what-the-engine-does">What the engine does</a> ·
+    <a href="#play-any-genre-with-braid-alpha">Any genre</a> ·
     <a href="#play-together">Play together</a> ·
     <a href="#install">Install</a> ·
     <a href="README.th.md">ภาษาไทย</a>
@@ -100,6 +101,17 @@ It is experimental. The contract every engine module keeps is in [`world_db.py`]
 - **A note with every player action** tells the GM what is due (a save, an XP award, a clock out of step) and which rules apply right now.
 - **A style guard** catches repeated phrases, feelings narrated for the players and talking past the moment to stop; a **spark** every few turns offers an idea the GM may drop.
 - **Your table's limits.** Content `standard`, `18` or `20`; romance `off`, `fade` or `open` (adults only); lines and veils; anyone can type `x` to skip a moment.
+
+## Play any genre with Braid (alpha)
+
+Not every story wants hit points and spell slots. From 2.0 a campaign can run on **Braid**, our own light rules for any genre, instead of 5e:
+
+- **One roll.** 2d6 plus one of five approaches (Force, Finesse, Wits, Heart, Grit). 10+ you do it, 7–9 you do it at a cost named before the dice, 6 or less it goes wrong. Harm and stress instead of hit points; an enemy is a threat from 1 to 5. Or play **story mode**: no numbers on the sheet, the oracle answers every risk.
+- **Pick your genres.** Run `/dne new`, describe the world and pick one to five of 18 genres, the main one first: mystery, heist, war, competition, cosmic horror, slasher, analog horror, romance, cozy, comedy, fantasy, hard sci-fi, space opera, wuxia, LitRPG, historical, time loop, traitor among us. Each genre switches on the small rules it needs (a mind that frays in horror, heat after a loud job, seasons in a cozy village, a day that resets in a time loop, sealed secret roles in a traitor game), and the table can add or drop any of them. When mixed genres disagree, the engine says where, and the table picks.
+- **A story that holds together.** The story generator rolls the skeleton of the story so it does not repeat the last one, and checks that a mystery stays solvable even when the players miss a third of the clues.
+- **Your 5e campaigns are untouched.** Say "D&D" or "5e" at `/dne new` to play on the 5e rules as before.
+
+It is an alpha: the numbers are our starting values and will change with play, and wuxia, LitRPG, analog horror and competition are marked *early*. The rules are in [`SKILL-core.md`](skills/dne/SKILL-core.md), the genres in [`data/genres/`](skills/dne/data/genres/), and what changed in the [changelog](CHANGELOG.md).
 
 ## Play together
 

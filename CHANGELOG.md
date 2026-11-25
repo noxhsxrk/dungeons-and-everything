@@ -8,14 +8,40 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
-## [2.0.0-alpha.1] — 2026-11-26 — Unrolled Engine 2.0 groundwork
+## [2.0.0-alpha] — 2026-11-26 — Braid: any genre
 
-First pre-release of the Unrolled Engine 2.0 line (play in any genre). 5e rules resolve exactly as in 1.8.6 (pinned by `tests/test_d20_golden.py`).
+First alpha of the Unrolled Engine 2.0 line: a campaign can now run on **Braid**, our own 2d6 rules for any genre, instead of 5e. Pick one to five genres at `/dne new` and the engine switches on the rules that genre needs. 5e campaigns play exactly as in 1.8.6 (pinned by `tests/test_d20_golden.py`). This release also folds in the unpublished `2.0.0-alpha.1` groundwork.
+
+### Added
+- **Braid** (`**System:** core`). Roll 2d6 plus an approach (Force, Finesse, Wits, Heart, Grit) and read a five-step ladder: critical failure, failure, success at a cost (7–9), success, critical success. The cost is named before the roll. Push for +1 at 1 stress, get +1 help through a bond, spend a token to step a result up. Harm 0–4 and stress 0–6 bring conditions; enemies have a threat 1–5 instead of stat blocks; XP comes from drives, flaws, misses and milestones, five XP buys an advance. Rules in `SKILL-core.md` (read only by Braid campaigns), numbers in `data/braid.json`, sheets made and checked by `sheet.py` (`templates/sheets/core.md`). Every check goes through one resolver, `resolve.py`.
+- **Story mode** (`**System:** story`): no dice on the sheet. Every check asks the oracle (likely, 50/50, unlikely, with a chaos factor) and tokens move an answer one step.
+- **Shared mechanics** as engine actions (`mechanics.py`; `turn.py help <action>`): tracks with thresholds, pools and usage dice, conditions, bonds, progress tracks and table rolls. Tracks, pools and progress show on the display's clocks panel.
+- **23 modules**, switched on per campaign with the `modules` dial and `modules.py` (`list`, `show`, `check`, `rules`, `apply`). Each one is a small rule with its own engine action and a one-page rules text in `data/modules/<id>.md`:
+  - investigation: `clues` (a fixed answer, checked so it stays solvable), `make_the_case` (no hidden answer: a well-argued theory becomes true);
+  - fear: `composure`, `panic`, `doom`;
+  - drama: `strings`, `emotions`, `labels`, `memories`;
+  - jobs and fights: `position_effect`, `engagement`, `heat`, `mooks`, `gm_budget`;
+  - the long road: `vows`, `usage_die`, `seasons`, `war_layer`, `contest`;
+  - frames and worlds: `loop` (the same day again, rewound by the engine), `roles` (secret roles dealt under a seal anyone can check at the end), `realm` (cultivation stages and tribulations), `status_window` (a world that announces every change).
+  `modules.py check` names what clashes or what a module needs; more than 8 at once is a warning.
+- **18 genre presets** (`data/genres/`, `genres.py list | show | combine | apply`): mystery, heist, war, competition; cosmic horror, slasher, analog horror, romance, cozy, comedy; fantasy, hard sci-fi, space opera, wuxia, LitRPG, historical; time loop, traitor among us. Each preset lists its modules, optional modules, dials, GM moves and checks. **Mix** up to five: the first genre leads, every disagreement is named so the table can pick, two plot genres need `--drives`, and `--set key=value` is the players' change.
+- **Story generator** (`story_gen.py`, `SKILL-storygen.md`): rolls a story skeleton for the chosen genres and remembers past stories so the next one differs. A mystery comes out checked: every place reachable, each conclusion backed by three or more clues in two or more places, and still solvable in at least 95% of 1000 trials that drop a third of the clues. The case goes straight to the engine (`{"action": "case", "skeleton": true}`).
+- **Dials** `modules` and `claims` (`grounded`, `declare`, `open`: how much of what a player says about the world simply becomes true) in `state.md`, the Table Settings page (`setup.html`: genre ticks fill the modules box) and `campaign_version.py`.
+- `/dne new` asks for genres first (step 1b), then the system: Braid unless the players ask for 5e.
 
 ### Changed
+- 5e campaigns: same rules, same numbers. `/dne load` writes `**System:** d20` into an old save's header once, with a backup (`migrate_system.py`, `state.md.backup-pre-system-*`). 5e-only scripts (`character.py`, `xp.py`, `combat.py`, `encounter_gen.py`, `lookup.py`, rest and reward) refuse a Braid campaign and say what to use instead.
+- `table.py case` takes a story skeleton; `search` says where a found clue points; `accuse` tells the GM who did it. A case without places is unchanged.
+- `subsystem.py` runs contests (race, countdown, concession) and `upkeep` stocks usage dice, both only in a Braid campaign with that module on.
+- The oracle's event-focus labels are in our own words (same table and odds; `remote event` now reads `news from afar`).
 - `oracle.py scene` (`/dne oracle scene`) draws its two words from the Ironsworn Action and Theme oracles (CC BY 4.0, credited). The old word lists had no known source, so they are gone; the same `--seed` now gives different words.
 - NOTICE and the SRD data files (`_meta.license_attribution`, written by `build_srd.py`) carry the official SRD 5.1 and SRD 5.2.1 attribution statements word for word. New `THIRD_PARTY.md` lists every outside source, its required credit, licence and files.
-- Versions may carry a pre-release tag (`2.0.0-alpha.1`): `bump_version.py`, the version lockstep test, `campaign_version.py` and `/dne update --check` order them as semver does (`2.0.0-alpha.2` < `2.0.0-alpha.10` < `2.0.0`).
+- Versions may carry a pre-release tag (`2.0.0-alpha`): `bump_version.py`, the version lockstep test, `campaign_version.py` and `/dne update --check` order them as semver does (`2.0.0-alpha` < `2.0.0-alpha.1` < `2.0.0-alpha.10` < `2.0.0`).
+
+### Notes
+- **Alpha.** Numbers marked *(default)* in the rules are our starting values, not tested at many tables; expect them to change before 2.0.0. Wuxia, LitRPG, analog horror and competition are marked **early**: their rules are our own design with the least play behind them.
+- Braid's rules and every module are written in our own words. Mechanics borrowed from other games are credited in `THIRD_PARTY.md`; Braid claims compatibility with no other game.
+- Not yet: a Braid sidebar on the display (harm, stress and tokens show on the clocks panel only); automatic token refill (the GM sends `pool refill`); a dial page for every preset dial (the page fills only `modules`).
 
 ## [1.8.6] — 2026-11-25 — Nothing left out of the log
 
