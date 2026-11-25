@@ -8,6 +8,15 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [2.0.0-alpha.1] — 2026-11-26 — Unrolled Engine 2.0 groundwork
+
+First pre-release of the Unrolled Engine 2.0 line (play in any genre). 5e rules resolve exactly as in 1.8.6 (pinned by `tests/test_d20_golden.py`).
+
+### Changed
+- `oracle.py scene` (`/dne oracle scene`) draws its two words from the Ironsworn Action and Theme oracles (CC BY 4.0, credited). The old word lists had no known source, so they are gone; the same `--seed` now gives different words.
+- NOTICE and the SRD data files (`_meta.license_attribution`, written by `build_srd.py`) carry the official SRD 5.1 and SRD 5.2.1 attribution statements word for word. New `THIRD_PARTY.md` lists every outside source, its required credit, licence and files.
+- Versions may carry a pre-release tag (`2.0.0-alpha.1`): `bump_version.py`, the version lockstep test, `campaign_version.py` and `/dne update --check` order them as semver does (`2.0.0-alpha.2` < `2.0.0-alpha.10` < `2.0.0`).
+
 ## [1.8.6] — 2026-11-25 — Nothing left out of the log
 
 ### Fixed

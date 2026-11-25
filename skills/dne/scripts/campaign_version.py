@@ -33,14 +33,21 @@ FILE = "dne-version.json"
 def engine_version() -> str:
     """The running engine's version, from the SKILL.md picker prefix ("vX.Y.Z ·")."""
     text = (skill_root() / "SKILL.md").read_text(encoding="utf-8")
-    m = re.search(r"\bv(\d+\.\d+(?:\.\d+)?) ·", text)
+    m = re.search(r"\bv(\d+\.\d+(?:\.\d+)?(?:-[0-9A-Za-z.]+)?) ·", text)
     if not m:
         raise ValueError("cannot find the engine version in SKILL.md")
     return m.group(1)
 
 
 def vkey(v: str | None) -> tuple:
-    return tuple(int(x) for x in v.split(".")) if v else (0,)
+    """Semver sort key: 2.0.0-alpha.2 < 2.0.0-alpha.10 < 2.0.0-beta < 2.0.0."""
+    if not v:
+        return (0,)
+    core, _, pre = v.partition("-")
+    nums = tuple(int(x) for x in core.split("."))
+    # numeric pre-release parts compare as numbers and sort before word parts
+    ids = tuple((0, int(p), "") if p.isdigit() else (1, 0, p) for p in pre.split(".")) if pre else ()
+    return nums + (0,) * (3 - len(nums)) + ((0, ids) if pre else (1, ()))
 
 
 def changelog_since(old: str | None, new: str) -> list[str]:
@@ -50,7 +57,7 @@ def changelog_since(old: str | None, new: str) -> list[str]:
         return []
     out, take, in_added = [], False, False
     for line in path.read_text(encoding="utf-8").splitlines():
-        head = re.match(r"## \[(\d+\.\d+(?:\.\d+)?)\](.*)", line)
+        head = re.match(r"## \[(\d+\.\d+(?:\.\d+)?(?:-[0-9A-Za-z.]+)?)\](.*)", line)
         if head:
             ver = head.group(1)
             take = vkey(old) < vkey(ver) <= vkey(new)

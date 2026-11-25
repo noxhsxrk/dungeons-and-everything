@@ -976,7 +976,7 @@ Ironsworn-shaped **yes/no** oracle. Likelihood ∈ {`sure-thing`, `likely`, `50/
 Mythic **Random Event Focus** (d100). Returns a direction label (`new NPC`, `NPC action`, `move toward thread`, `PC negative`, etc.) — interpret it against the campaign's current threads, NPCs, and locations. Use when a scene needs an unexpected turn.
 
 ### `/dne oracle scene [--seed S]`
-Two-word **scene-meaning** generator (action verb + subject noun, One Page Solo Engine). Use as a spark when narration runs dry or an event focus rolls. Interpret loosely.
+Two-word **scene-meaning** generator (action verb + subject noun, from the Ironsworn Action and Theme oracles, CC BY 4.0). Use as a spark when narration runs dry or an event focus rolls. Interpret loosely.
 
 ---
 

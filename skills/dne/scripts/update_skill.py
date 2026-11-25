@@ -23,6 +23,7 @@ import sys
 import urllib.request
 
 from paths import skill_root as _skill_root
+from campaign_version import vkey
 
 # Canonical VERSION on the published marketplace branch — used to tell a plugin
 # install whether it's behind. 404s gracefully before the org transfer lands.
@@ -112,11 +113,10 @@ def _fetch_remote_version(timeout: float = 4.0):
 
 
 def _ver_tuple(v: str):
-    out = []
-    for part in v.split("."):
-        digits = "".join(ch for ch in part if ch.isdigit())
-        out.append(int(digits) if digits else 0)
-    return tuple(out)
+    try:
+        return vkey(v)
+    except ValueError:  # "unknown" or a garbled VERSION sorts below everything
+        return (0,)
 
 
 def _is_newer(remote: str, local: str) -> bool:

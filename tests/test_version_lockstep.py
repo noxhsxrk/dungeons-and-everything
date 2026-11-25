@@ -33,7 +33,7 @@ class VersionLockstep(unittest.TestCase):
 
     def test_skill_picker_prefix_matches_version(self):
         text = (ROOT / "skills" / "dne" / "SKILL.md").read_text(encoding="utf-8")
-        m = re.search(r'description:\s*"?v(\d+\.\d+(?:\.\d+)?)\s*·', text)
+        m = re.search(r'description:\s*"?v(\d+\.\d+(?:\.\d+)?(?:-[0-9A-Za-z.]+)?)\s*·', text)
         self.assertIsNotNone(m, "SKILL.md description has no 'vX.Y.Z ·' prefix")
         self.assertEqual(m.group(1), _version())
 

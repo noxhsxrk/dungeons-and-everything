@@ -12,7 +12,12 @@ table a transparent, rollable backbone for improvised play.
 References:
   - Mythic GME 2e (Word Mill Games): chaos factor + Random Event Focus.
   - Ironsworn (Shawn Tomkin, CC-BY-4.0): yes/no oracle shape.
-  - One Page Solo Engine: random scene-meaning word pairs.
+  - Ironsworn SRD: the Action and Theme oracle words used for scene meaning.
+    This work is based on Ironsworn (found at www.ironswornrpg.com), created
+    by Shawn Tomkin, and licensed for our use under the Creative Commons
+    Attribution 4.0 International License
+    (https://creativecommons.org/licenses/by/4.0/).
+    Dungeons & Everything is not an official Ironsworn product.
 
 Rolls use stdlib `random` so results are seedable for tests. `scripts/dice.py`
 is available if you want physical-dice routing for the underlying d100, but the
@@ -160,54 +165,45 @@ def random_event_focus(rng: "random.Random | None" = None) -> "tuple[int, str]":
     return roll, "current context"
 
 
-# ── scene-meaning word pairs (One Page Solo Engine) ──────────────────────────
+# ── scene-meaning word pairs (Ironsworn Action and Theme oracles) ───────────
+# Both lists are the Ironsworn SRD tables, in d100 order (1-100), lower-cased.
+# Credit (CC BY 4.0): see the module docstring and THIRD_PARTY.md.
 
 _ACTIONS = [
-    "abandon", "agree", "ambush", "approach", "arrive", "assist", "attach",
-    "attain", "attract", "betray", "bind", "block", "break", "buy", "carry",
-    "celebrate", "change", "command", "communicate", "conceal", "conclude",
-    "construct", "contest", "create", "darken", "decay", "decrease", "defeat",
-    "depart", "deprive", "destroy", "discover", "disturb", "dominate",
-    "encourage", "endure", "energize", "equip", "expose", "fail", "fight",
-    "flee", "forget", "forgive", "free", "gather", "give", "gladden",
-    "guard", "guide", "harm", "heal", "hide", "hinder", "honour", "imitate",
-    "increase", "inquire", "judge", "kill", "lead", "leave", "lighten",
-    "love", "manipulate", "negate", "obey", "offer", "open", "oppose",
-    "overcome", "pacify", "persecute", "praise", "preserve", "prevent",
-    "pretend", "promise", "punish", "pursue", "reduce", "refuse", "release",
-    "remember", "remove", "repulse", "reveal", "ruin", "save", "scheme",
-    "seize", "share", "soothe", "spy", "start", "steal", "stop",
-    "succeed", "suspect", "swear", "take", "threaten", "transform", "trick",
-    "trust", "uncover", "undermine", "unify", "use", "venture",
-    "violate", "wait", "warn", "weaken", "win", "wish", "wound", "yield",
+    "scheme", "clash", "weaken", "initiate", "create", "swear", "avenge",
+    "guard", "defeat", "control", "break", "risk", "surrender", "inspect",
+    "raid", "evade", "assault", "deflect", "threaten", "attack", "leave",
+    "preserve", "manipulate", "remove", "eliminate", "withdraw", "abandon",
+    "investigate", "hold", "focus", "uncover", "breach", "aid", "uphold",
+    "falter", "suppress", "hunt", "share", "destroy", "avoid", "reject",
+    "demand", "explore", "bolster", "seize", "mourn", "reveal", "gather",
+    "defy", "transform", "persevere", "serve", "begin", "move",
+    "coordinate", "resist", "await", "impress", "take", "oppose",
+    "capture", "overwhelm", "challenge", "acquire", "protect", "finish",
+    "strengthen", "restore", "advance", "command", "refuse", "find",
+    "deliver", "hide", "fortify", "betray", "secure", "arrive", "affect",
+    "change", "defend", "debate", "support", "follow", "construct",
+    "locate", "endure", "release", "lose", "reduce", "escalate",
+    "distract", "journey", "escort", "learn", "communicate", "depart",
+    "search", "charge", "summon",
 ]
 _SUBJECTS = [
-    "advice", "agreement", "animal", "armament", "art", "attention",
-    "balance", "battle", "beauty", "benefit", "blood", "body", "bond",
-    "book", "burden", "ceremony", "chaos", "child", "clothing", "code",
-    "community", "competition", "conflict", "creation", "crime",
-    "danger", "darkness", "death", "decision", "deed", "destiny", "device",
-    "dialogue", "disaster", "disease", "doorway", "dream", "duty", "edge",
-    "element", "emotion", "energy", "enemy", "entrance", "expectation",
-    "expedition", "eye", "factor", "family", "famine", "fate", "fear",
-    "festival", "fire", "fortune", "freedom", "friend", "garden", "gift",
-    "gold", "good", "government", "health", "history", "home", "honour",
-    "hope", "humour", "idea", "illusion", "image", "industry", "injustice",
-    "intelligence", "investment", "joy", "justice", "key", "knowledge",
-    "labour", "land", "language", "law", "lie", "life", "light", "luck",
-    "magic", "marriage", "maze", "memory", "message", "messenger", "metal",
-    "military", "mind", "mistake", "money", "music", "nature", "object",
-    "oddity", "opposition", "outsider", "passage", "path", "peace", "people",
-    "personality", "place", "plot", "ploy", "portent", "possessions",
-    "poverty", "power", "project", "protection", "reality", "religion",
-    "reputation", "resource", "rumour", "ruse", "sacrifice", "secret",
-    "shadow", "shelter", "ship", "shore", "sign", "skill", "spirit",
-    "stalemate", "structure", "success", "suffering", "surprise", "symbol",
-    "task", "tension", "test", "thought", "time", "title", "tool",
-    "transformation", "trap", "travel", "treasure", "trial", "trick",
-    "truce", "truth", "unity", "value", "vehicle", "victory", "virtue",
-    "void", "vow", "war", "warning", "way", "weapon", "weather", "wisdom",
-    "wish", "world", "wound", "youth",
+    "risk", "ability", "price", "ally", "battle", "safety", "survival",
+    "weapon", "wound", "shelter", "leader", "fear", "time", "duty",
+    "secret", "innocence", "renown", "direction", "death", "honor",
+    "labor", "solution", "tool", "balance", "love", "barrier", "creation",
+    "decay", "trade", "bond", "hope", "superstition", "peace", "deception",
+    "history", "world", "vow", "protection", "nature", "opinion", "burden",
+    "vengeance", "opportunity", "faction", "danger", "corruption",
+    "freedom", "debt", "hate", "possession", "stranger", "passage", "land",
+    "creature", "disease", "advantage", "blood", "language", "rumor",
+    "weakness", "greed", "family", "resource", "structure", "dream",
+    "community", "war", "portent", "prize", "destiny", "momentum", "power",
+    "memory", "ruin", "mysticism", "rival", "problem", "idea", "revenge",
+    "health", "fellowship", "enemy", "religion", "spirit", "fame",
+    "desolation", "strength", "knowledge", "truth", "quest", "pride",
+    "loss", "law", "path", "warning", "relationship", "wealth", "home",
+    "strategy", "supply",
 ]
 
 

@@ -1,6 +1,6 @@
 {
   "name": "dne",
-  "version": "1.8.6",
+  "version": "2.0.0-alpha.1",
   "description": "Dungeons & Everything — a Game Master for persistent tabletop campaigns in any world the players describe (sci-fi, post-apocalyptic, horror, fantasy, anything). The AI builds the world's infrastructure — origins, classes, powers, gear, monsters — on top of D&D 5e rules. Campaign/character management, combat, NPCs, dice, an optional live display companion, and full session state across sessions. Provides the `dne` skill.",
   "author": {
     "name": "noxhsxrk",

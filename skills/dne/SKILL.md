@@ -1,6 +1,6 @@
 ---
 name: dne
-description: "v1.8.6 · Dungeons & Everything — Game Master for persistent campaigns in ANY world the players describe (sci-fi, post-apocalyptic, horror, cyberpunk, fantasy…), run on D&D 5e rules. Builds each world's infrastructure — origins, classes, powers, gear, monsters — into a per-campaign World Kit. Handles campaign creation/loading, character management, combat tracking, NPC generation, autonomous companions, dice rolling, ruleset lookup (2014 & 2024), deterministic economy/rest, per-turn rollback, auto-lorebook, private whispers, codex UI, role-aware enemy tactics, biome encounter generation, entropy/tension meter, world geography/travel, on-demand 2D tactical battlemap, and structured event ledger."
+description: "v2.0.0-alpha.1 · Dungeons & Everything — Game Master for persistent campaigns in ANY world the players describe (sci-fi, post-apocalyptic, horror, cyberpunk, fantasy…), run on D&D 5e rules. Builds each world's infrastructure — origins, classes, powers, gear, monsters — into a per-campaign World Kit. Handles campaign creation/loading, character management, combat tracking, NPC generation, autonomous companions, dice rolling, ruleset lookup (2014 & 2024), deterministic economy/rest, per-turn rollback, auto-lorebook, private whispers, codex UI, role-aware enemy tactics, biome encounter generation, entropy/tension meter, world geography/travel, on-demand 2D tactical battlemap, and structured event ledger."
 tools: Read, Write, Edit, Glob, Bash, AskUserQuestion
 ---
 

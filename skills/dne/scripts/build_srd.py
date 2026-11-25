@@ -2101,16 +2101,24 @@ def cmd_build(skip_fvtt: bool = False,
     counts = {k: len(v) for k, v in categories.items()}
     total  = sum(counts.values())
 
+    # The SRDs' own attribution statements, word for word: Wizards asks for no
+    # other attribution to it (SRD 5.1 and 5.2.1, legal page). See THIRD_PARTY.md.
     license_attribution = [
-        "Includes content from D&D 5e SRD 5.1 (CC-BY-4.0) — "
-        "Wizards of the Coast.",
+        "This work includes material taken from the System Reference Document 5.1 "
+        "(\u201cSRD 5.1\u201d) by Wizards of the Coast LLC and available at "
+        "https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is "
+        "licensed under the Creative Commons Attribution 4.0 International License "
+        "available at https://creativecommons.org/licenses/by/4.0/legalcode.",
     ]
     if ruleset == RULESET_2024:
-        license_attribution.append(
-            "Includes content from D&D 5e SRD 5.2 (2024) (CC-BY-4.0) — "
-            "Wizards of the Coast, via foundryvtt/dnd5e (MIT) and "
-            "5e-bits/5e-database."
-        )
+        license_attribution += [
+            "This work includes material from the System Reference Document 5.2.1 "
+            "(\u201cSRD 5.2.1\u201d) by Wizards of the Coast LLC, available at "
+            "https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative "
+            "Commons Attribution 4.0 International License, available at "
+            "https://creativecommons.org/licenses/by/4.0/legalcode.",
+            "2024 rules data reached us via foundryvtt/dnd5e (MIT) and 5e-bits/5e-database.",
+        ]
 
     dataset = {
         "_meta": {

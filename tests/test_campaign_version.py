@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import pathlib
 import sys
+import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from test_playtest_round6 import SCRIPTS, _Camp  # noqa: E402
@@ -91,3 +92,14 @@ class CampaignVersionTests(_Camp):
     def test_snapshot_tracks_the_file(self):
         import turn_snapshot
         self.assertIn("dne-version.json", turn_snapshot.CAMPAIGN_FILES)
+
+
+class VersionOrderTests(unittest.TestCase):
+    def test_pre_releases_sort_as_semver(self):
+        import campaign_version
+        import update_skill
+        order = ["1.8.6", "2.0.0-alpha.1", "2.0.0-alpha.2", "2.0.0-alpha.10", "2.0.0-beta", "2.0.0", "2.0.1"]
+        self.assertEqual(sorted(reversed(order), key=campaign_version.vkey), order)
+        self.assertTrue(update_skill._is_newer("2.0.0", "2.0.0-alpha.9"))
+        self.assertFalse(update_skill._is_newer("2.0.0-alpha.9", "2.0.0"))
+        self.assertTrue(update_skill._is_newer("1.8.6", "unknown"))

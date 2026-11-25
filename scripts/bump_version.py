@@ -27,7 +27,7 @@ import re
 import subprocess
 import sys
 
-SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
+SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$")
 
 
 def _repo_root() -> pathlib.Path:
@@ -90,7 +90,7 @@ def bump_skill_description(root, old, new, dry):
     # The picker prefix is "vMAJOR.MINOR.PATCH ·" — the full release shows in the
     # slash-command picker so the exact running version is visible at a glance.
     p = root / "skills" / "dne" / "SKILL.md"
-    out, n = re.subn(r'(description:\s*"?)v\d+\.\d+(?:\.\d+)?(\s*·)',
+    out, n = re.subn(r'(description:\s*"?)v\d+\.\d+(?:\.\d+)?(?:-[0-9A-Za-z.]+)?(\s*·)',
                      rf'\g<1>v{new}\g<2>', _read(p))
     if n != 1:
         raise BumpError(f"SKILL.md: expected 1 'vX.Y[.Z] ·' prefix, found {n}")

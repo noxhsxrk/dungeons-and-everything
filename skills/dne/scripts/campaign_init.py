@@ -98,8 +98,8 @@ def check(seed) -> list:
         _err(errors, "campaign", "a folder name: lowercase letters, digits, - or _")
     elif paths.find_campaign(name).exists():
         _err(errors, "campaign", f"a campaign called {name!r} already exists: choose another name (it is left as it is)")
-    if str(seed.get("ruleset", "2014")) not in ("2014", "2024"):
-        _err(errors, "ruleset", "2014 or 2024")
+    if str(seed.get("ruleset", "2014")) not in paths.VALID_RULESETS:
+        _err(errors, "ruleset", " or ".join(paths.VALID_RULESETS))
 
     flags = seed.get("flags") or {}
     if not isinstance(flags, dict) or not all(isinstance(k, str) and isinstance(v, (str, int, bool)) for k, v in flags.items()):
