@@ -1823,8 +1823,9 @@ def stats():
         # ruleset field. Wrapped in try/except so a missing paths import or
         # malformed state.md never breaks the stats endpoint.
         try:
-            from paths import campaign_ruleset as _campaign_ruleset
-            _rs = _campaign_ruleset(str(data["campaign"]).strip())
+            from paths import campaign_ruleset as _campaign_ruleset, campaign_system as _campaign_system
+            _name = str(data["campaign"]).strip()
+            _rs = _campaign_ruleset(_name) if _campaign_system(_name) == "d20" else ""   # Braid: no 5e badge
             with _stats_lock:
                 _current_stats["ruleset"] = _rs
             current = dict(_current_stats)

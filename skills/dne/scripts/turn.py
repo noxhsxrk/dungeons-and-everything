@@ -108,7 +108,10 @@ def _roll(ctx: Ctx, intent: dict) -> dict:
     with roll_mode: auto the engine rolls. Either way the roll happens once: sending the turn
     again, or resuming after a crash, returns the same result.
     Braid (System: core): a check is {"spec": "2d6+1"} with no DC, graded on the five-step ladder; any other spec is
-    a plain roll (damage, a table). Story mode: {"likelihood": "likely"} (or a dc) asks the oracle instead of dice."""
+    a plain roll (damage, a table). Story mode: {"likelihood": "likely"} (or a dc) asks the oracle instead of dice.
+    Braid core also reads "approach" (conditions on the actor apply), "push": true (+1, marks 1 stress) and
+    "help": "<name>" (+1 if that character has a bond with the actor). Afterwards a token steps the result up:
+    {"action": "pool", "owner": "Mira", "id": "tokens", "step_up": true} (see mechanics.py)."""
     import dice
     import resolve as checks
     system = paths.campaign_system(ctx.campaign)
@@ -149,6 +152,14 @@ def _check(ctx: Ctx, intent: dict, system: str) -> dict:
     """A Braid check through `roll`: 2d6 + modifier (core) or the oracle (story), graded by resolve.py."""
     import resolve as checks
     spec, actor = intent.get("spec") or checks.CORE_DICE, str(intent.get("actor") or "Party")
+    edge = {"mod": 0, "notes": []}
+    if intent.get("action") == "roll":            # conditions, a push, help (mechanics.py); a progress roll has none
+        import mechanics
+        edge = mechanics.edges(ctx, intent, system, actor)
+        if edge.get("error"):
+            return {"status": "done", "elapsed_minutes": 0, "data": {"error": edge["error"]}}
+        if edge["mod"]:
+            spec = f"{checks.CORE_DICE}{checks.dice_for(system, spec)[2] + edge['mod']:+d}"
     label = intent.get("label") or "a roll"
     if system == "core" and ctx.flag("roll_mode", "players") == "players" and "roll" not in ctx.answers:
         return {"status": "waiting_for_player",
@@ -156,10 +167,16 @@ def _check(ctx: Ctx, intent: dict, system: str) -> dict:
                               "text": f"{actor}: roll {label} — {checks.shown(system, spec)}"}]}
     num, sides, mod = checks.dice_for(system, spec)
     rolled = [int(ctx.answers["roll"]["value"])] if "roll" in ctx.answers else ctx.roll("roll", sides, num)
-    graded = checks.resolve(system, spec, None, rolled, likelihood=str(intent.get("likelihood") or "50/50"),
-                            chaos=checks.chaos(ctx.campaign, system))
+    likelihood, chaos = str(intent.get("likelihood") or "50/50"), checks.chaos(ctx.campaign, system)
+    graded = checks.resolve(system, spec, None, rolled, likelihood=likelihood, chaos=chaos)
     data = {"actor": actor, "dice": rolled, "modifier": mod, "total": graded["total"], "label": intent.get("label", ""),
-            "degree": graded["degree"], "passed": graded["passed"]}
+            "degree": graded["degree"], "passed": graded["passed"], "spec": spec}   # spec: a token can step it up later
+    if system == "story":
+        data.update(likelihood=likelihood, chaos=chaos)
+    if edge["notes"]:
+        data["edges"] = edge["notes"]
+    if intent.get("action") == "roll" and intent.get("push"):
+        data["stress_crossed"] = mechanics.push(ctx, actor)
     said = f"{graded['total']}, {graded['degree']}" if system == "core" else f"the oracle says {graded['degree']}"
     return {"status": "done", "elapsed_minutes": 0, "data": data,
             "visible_events": [{"type": "roll", "recipient": "party", "text": f"{actor} rolls {label}: {said}"}]}
@@ -399,9 +416,11 @@ def _run(campaign: str, turn_id: str) -> dict:
         wdb.apply_staged(campaign)
         if out.get("refresh") == "clocks" and paths.session_flag(campaign, "display", "none") != "none":
             try:                                  # like the map: the clocks on the display are state, pushed whole
+                import mechanics
                 import story
                 subprocess.run([sys.executable, str(HERE.parent / "display" / "push_stats.py"), "--clocks-json",
-                                json.dumps(story.clocks(campaign), ensure_ascii=False)], capture_output=True, timeout=15)
+                                json.dumps(story.clocks(campaign) + mechanics.board(campaign), ensure_ascii=False)],
+                               capture_output=True, timeout=15)
             except Exception:
                 pass
         if out.get("refresh") == "battlemap" and paths.session_flag(campaign, "display", "none") != "none":
@@ -586,6 +605,9 @@ def world_block(campaign: str, db, turn_id: str, record: dict) -> str:
         bits = [f"day {s.get('day', 0)}"] + ([f"down: {', '.join(down)}"] if down else []) \
             + ([f"rota: {', '.join(s['rota'])}"] if s.get("rota") else []) + ([f"pacts: {', '.join(s['pacts'])}"] if s.get("pacts") else [])
         lines.append(f"- **{s.get('name', k)}:** " + "; ".join(bits))
+    import mechanics
+    if mechanics.summary(db):
+        lines.append(mechanics.summary(db))
     acts = ", ".join(a["action"] or "?" for a in record["actions"])
     lines.append(f"- **Last engine turn:** {turn_id}: {acts}" + (f"; events {', '.join(record['events'][:8])}" if record["events"] else ""))
     lines.append(BLOCK[1])
@@ -761,7 +783,7 @@ def main() -> int:
 
 def _load_modules() -> None:
     """Engine modules register their handlers on import (rest, travel, trade, …)."""
-    for name in ("scene_context", "scheduler", "journey", "trade", "knowledge", "routine", "stakes", "table", "skirmish", "upkeep", "story", "community", "rules"):
+    for name in ("scene_context", "scheduler", "journey", "trade", "knowledge", "routine", "stakes", "table", "skirmish", "upkeep", "story", "community", "rules", "mechanics"):
         try:
             __import__(name)
         except ImportError:

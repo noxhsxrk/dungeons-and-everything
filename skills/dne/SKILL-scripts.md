@@ -740,6 +740,9 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/story.py -c <campaign> tone <tone> # note a 
 ```
 Runs for every campaign; its lines reach the GM through the `[[GM note]]`. Display additions: `send.py --handout <kind> [--title T]`, `send.py --npc N [--voice V]`, `send.py --tone T`, `push_stats.py --clock NAME FILLED SIZE | --clock-remove NAME | --clocks-json '[…]'`. Engine actions: `flashback`, `bargain`, `place_rule`, `clock`. `turn.py -c <campaign> metrics` prints playtest numbers; `turn.py … log` / `replay` record and replay a session's engine turns.
 
+### Mechanics (Braid building blocks) — `scripts/mechanics.py`
+Engine actions, any system, meant for `core`/`story`: `track` (numbered track per owner, e.g. stress, harm, composure; thresholds fire on crossing and can roll a table), `pool` (points refilled by `{"action": "pool", "refill": "scene|session|rest|day"}`, which also clears conditions with that `clears`; usage dice d12→d4→gone on a 1–2; `step_up: true` spends a token to move the actor's last check one step up), `condition` (−N to listed approaches until it clears), `bond` (shared value 0–5, points per side), `progress` (10 boxes by rank; `roll: true` is a normal check with the boxes as modifier), `table_roll`. On a Braid `roll`: `"approach"` (conditions apply), `"push": true` (+1, marks 1 stress), `"help": "<name>"` (+1 with a bond). Full manual: `turn.py -c <campaign> help <action>`. Tracks, pools and progress show in the display's clock panel and in state.md's engine block.
+
 ### World Engine Migration — `scripts/world_migrate.py`
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_init.py --seed <seed.json | -> [--check]   # a new campaign from one checked seed (/dne new, world engine path)
