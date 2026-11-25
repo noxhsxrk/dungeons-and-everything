@@ -1,5 +1,5 @@
 # Campaign: <name>
-**Created:** <date>  **Last session:** —  **Session count:** 0  **Ruleset:** 2014
+**Created:** <date>  **Last session:** —  **Session count:** 0  **Ruleset:** 2014  **System:** d20
 **World Kit:** <worldkit.json | none — classic SRD fantasy>  **Party size:** <N>  **Starting level:** <N>
 
 ## Current Situation

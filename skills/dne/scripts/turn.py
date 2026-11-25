@@ -106,8 +106,20 @@ def _roll(ctx: Ctx, intent: dict) -> dict:
     {"actor": "Mira", "action": "roll", "spec": "1d20+5", "dc": 13, "label": "Stealth"}
     With roll_mode: players the turn waits for that player's d20 (the number before bonuses);
     with roll_mode: auto the engine rolls. Either way the roll happens once: sending the turn
-    again, or resuming after a crash, returns the same result."""
+    again, or resuming after a crash, returns the same result.
+    Braid (System: core): a check is {"spec": "2d6+1"} with no DC, graded on the five-step ladder; any other spec is
+    a plain roll (damage, a table). Story mode: {"likelihood": "likely"} (or a dc) asks the oracle instead of dice."""
     import dice
+    import resolve as checks
+    system = paths.campaign_system(ctx.campaign)
+    if system != "d20":
+        err = checks.spec_error(system, intent.get("spec")) if intent.get("dc") is not None else None
+        if err:
+            return {"status": "done", "elapsed_minutes": 0, "data": {"error": err}}
+        num, sides, *_ = dice.parse_notation(str(intent.get("spec") or checks.CORE_DICE))
+        is_check = (num, sides) == (2, 6) if system == "core" else intent.get("dc") is not None or bool(intent.get("likelihood"))
+        if is_check:
+            return _check(ctx, intent, system)
     num, sides, mod, *_ = dice.parse_notation(str(intent.get("spec", "1d20")))
     actor = str(intent.get("actor") or "Party")
     if ctx.flag("roll_mode", "players") == "players" and "roll" not in ctx.answers:
@@ -123,12 +135,33 @@ def _roll(ctx: Ctx, intent: dict) -> dict:
     total = sum(raw) + mod
     data = {"actor": actor, "dice": raw, "modifier": mod, "total": total, "label": intent.get("label", "")}
     if intent.get("dc") is not None:
+        graded = checks.resolve(system, intent.get("spec", "1d20"), intent["dc"], raw)
         data["dc"] = int(intent["dc"])
-        data["degree"] = dice.degree(raw[0], total, int(intent["dc"])) if (num, sides) == (1, 20) else None
-        data["passed"] = total >= int(intent["dc"])
+        data["degree"] = graded["degree"] if (num, sides) == (1, 20) else None
+        data["passed"] = graded["passed"]
     return {"status": "done", "elapsed_minutes": 0, "data": data,
             "visible_events": [{"type": "roll", "recipient": "party",
                                 "text": f"{actor} rolls {data['label'] or intent.get('spec', '')}: {total}"}]}
+
+
+def _check(ctx: Ctx, intent: dict, system: str) -> dict:
+    """A Braid check through `roll`: 2d6 + modifier (core) or the oracle (story), graded by resolve.py."""
+    import resolve as checks
+    spec, actor = intent.get("spec") or checks.CORE_DICE, str(intent.get("actor") or "Party")
+    label = intent.get("label") or "a roll"
+    if system == "core" and ctx.flag("roll_mode", "players") == "players" and "roll" not in ctx.answers:
+        return {"status": "waiting_for_player",
+                "requests": [{"key": "roll", "kind": "roll", "expected": actor,
+                              "text": f"{actor}: roll {label} — {checks.shown(system, spec)}"}]}
+    num, sides, mod = checks.dice_for(system, spec)
+    rolled = [int(ctx.answers["roll"]["value"])] if "roll" in ctx.answers else ctx.roll("roll", sides, num)
+    graded = checks.resolve(system, spec, None, rolled, likelihood=str(intent.get("likelihood") or "50/50"),
+                            chaos=checks.chaos(ctx.campaign))
+    data = {"actor": actor, "dice": rolled, "modifier": mod, "total": graded["total"], "label": intent.get("label", ""),
+            "degree": graded["degree"], "passed": graded["passed"]}
+    said = f"{graded['total']}, {graded['degree']}" if system == "core" else f"the oracle says {graded['degree']}"
+    return {"status": "done", "elapsed_minutes": 0, "data": data,
+            "visible_events": [{"type": "roll", "recipient": "party", "text": f"{actor} rolls {label}: {said}"}]}
 
 
 # ── store helpers ─────────────────────────────────────────────────────────────

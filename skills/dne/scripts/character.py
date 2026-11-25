@@ -1180,6 +1180,8 @@ if __name__ == "__main__":
 
     cmd = sys.argv[1]
     args = sys.argv[2:]
+    from paths import refuse_unless_d20
+    refuse_unless_d20(args, "character.py")
 
     if cmd in ("--help", "-h"):
         print(__doc__)

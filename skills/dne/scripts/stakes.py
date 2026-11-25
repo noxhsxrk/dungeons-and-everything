@@ -145,8 +145,10 @@ def _judge(ctx, intent: dict) -> dict:
     A plan with no `risk` succeeds without a roll (and still counts for `reward`). A roll needs both `risk` and
     `if_fails`: say what could go wrong and what changes if it does. `opens` is what a failure lets the players do
     that they could not before. On "success at a cost" the turn stops: the player is told the `cost` and chooses
-    accept or refuse. Do not choose for them."""
-    import dice
+    accept or refuse. Do not choose for them.
+    Braid (System: core): "roll": {"spec": "2d6+1", "label": "Athletics"}, no DC. Story mode: no dice, the oracle answers
+    ("likelihood": "likely" optional)."""
+    import resolve as checks
     world = _world(ctx)
     sid = str(intent.get("situation") or "")
     actor, plan = str(intent.get("actor") or "Party"), str(intent.get("plan", ""))
@@ -170,29 +172,37 @@ def _judge(ctx, intent: dict) -> dict:
     if not roll or not intent.get("if_fails"):
         return {"status": "done", "elapsed_minutes": 0,
                 "data": {"error": "a risky plan needs `roll` and `if_fails`: say what could go wrong and what changes if it does"}}
-    num, sides, mod, *_ = dice.parse_notation(str(roll.get("spec", "1d20")))
+    system = paths.campaign_system(ctx.campaign)
+    err = checks.spec_error(system, roll.get("spec"))
+    if err:
+        return {"status": "done", "elapsed_minutes": 0, "data": {"error": err}}
+    num, sides, mod = checks.dice_for(system, roll.get("spec"))
     dc = int(roll.get("dc", 10))
     if "cost" in ctx.answers:
         took = str(ctx.answers["cost"]["value"]).strip().lower().startswith(("a", "y"))
         return close("success_at_a_cost" if took else "failure",
                      **({"cost": intent.get("cost", "")} if took else {"if_fails": intent["if_fails"], "opens": intent.get("opens", "")}))
-    if ctx.flag("roll_mode", "players") == "players" and "roll" not in ctx.answers:
-        shown = f" (DC {dc})" if ctx.flag("show_dc", "on") == "on" else ""
+    if system != "story" and ctx.flag("roll_mode", "players") == "players" and "roll" not in ctx.answers:
+        shown = f" (DC {dc})" if system == "d20" and ctx.flag("show_dc", "on") == "on" else ""
+        asked = roll.get("spec", "1d20") if system == "d20" else checks.shown(system, roll.get("spec"))
         return {"status": "waiting_for_player",
                 "requests": [{"key": "roll", "kind": "roll", "expected": actor,
-                              "text": f"{actor}: roll {roll.get('label') or 'for it'} — {roll.get('spec', '1d20')}{shown}. "
+                              "text": f"{actor}: roll {roll.get('label') or 'for it'} — {asked}{shown}. "
                                       f"At stake: {intent['risk']}"}]}
-    raw = int(ctx.answers["roll"]["value"]) if "roll" in ctx.answers else ctx.roll("roll", sides, num)[0]
-    total = raw + mod
-    degree = dice.degree(raw, total, dc) if ctx.flag("degrees", "on") == "on" or ctx.flag("success_at_cost", "on") == "on" \
-        else ("success" if total >= dc else "failure")
+    got = [int(ctx.answers["roll"]["value"])] if "roll" in ctx.answers else ctx.roll("roll", sides, num)
+    graded = checks.resolve(system, roll.get("spec"), dc, got[:1] if system == "d20" else got,   # d20 reads one die, as before 2.0
+                            likelihood=str(roll.get("likelihood") or "50/50"), chaos=checks.chaos(ctx.campaign))
+    raw, total = graded["raw"], graded["total"]
+    degree = graded["degree"] if ctx.flag("degrees", "on") == "on" or ctx.flag("success_at_cost", "on") == "on" \
+        else ("success" if graded["passed"] else "failure")
     if degree == "success at a cost" and ctx.flag("success_at_cost", "on") != "on":
         degree = "failure"
-    rolled = {"dice": raw, "total": total, "dc": dc, "degree": degree}
+    rolled = {"dice": raw, "total": total, **({"dc": dc} if system == "d20" else {}), "degree": degree}
+    against = {"d20": f"{total} against {dc}", "core": f"{total} on 2d6"}.get(system, "the oracle says yes, but")
     if degree == "success at a cost":
         return {"status": "waiting_for_player", "data": rolled,
                 "requests": [{"key": "cost", "kind": "decision", "expected": actor,
-                              "text": f"{actor}: {total} against {dc} — it works, at a price: "
+                              "text": f"{actor}: {against} — it works, at a price: "
                                       f"{intent.get('cost') or 'something is lost'}. Accept the price? (accept / refuse)"}]}
     if degree in ("success", "critical success"):
         return close("success", **rolled)
@@ -210,6 +220,10 @@ def _reward(ctx, intent: dict) -> dict:
     and the award ledger are written."""
     import journey
     import xp
+    why = paths.not_d20(ctx.campaign, "reward (5e XP tables)", "Braid advancement arrives with the Braid rules; "
+                        "until then record the milestone in session-log.md.")
+    if why:
+        return {"status": "done", "elapsed_minutes": 0, "data": {"awarded": False, "error": why}}
     world = _world(ctx)
     eid = str(intent.get("encounter") or "")
     if not eid:

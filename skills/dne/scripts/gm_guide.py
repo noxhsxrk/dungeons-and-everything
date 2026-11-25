@@ -74,9 +74,15 @@ def session_start(campaign: str) -> list[str]:
         "A skill you read earlier in this conversation may be out of date: read them again.",
         f"Read from disk now, not from memory: state.md, world.md, npcs.md and characters/*.md in {camp}. "
         "Fill the sidebar from those files.",
+        f"{_py('migrate_system.py')} {campaign} --check   (exit 1: an old 5e save; run it with --system d20 --yes)",
         f"{_py('migrate_ruleset.py')} {campaign} --check",
         f"{_py('campaign_version.py')} -c {campaign} check",
     ]
+    try:
+        if paths.campaign_system(campaign) != "d20":
+            steps.remove(f"{_py('migrate_ruleset.py')} {campaign} --check")   # a 5e choice: Braid has no ruleset
+    except ValueError as exc:
+        steps.insert(0, f"FIX state.md before play: {exc}")
     try:
         import save_check
         gaps = save_check.missing_sessions(camp)

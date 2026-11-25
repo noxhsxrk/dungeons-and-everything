@@ -396,22 +396,39 @@ def _register() -> None:
         return scheduler.World(ctx.campaign, ctx.db)
 
     def _rolled(ctx, intent: dict, key: str, text: str, advantage: bool = False):
-        """Shared roll step: a request to the player, or the engine's dice. Returns (waiting-result, None) or (None, data)."""
-        import dice
+        """Shared roll step: a request to the player, or the engine's dice. Returns (waiting-result, None) or (None, data).
+
+        Braid (core): 2d6 + modifier, no DC; Braid has no advantage, so a bargain's edge is +1 instead.
+        Story: the oracle answers, nobody rolls; a bargain's edge moves the answer one step up."""
+        import resolve as checks
         roll = intent.get("roll") or {}
-        num, sides, mod, *_ = dice.parse_notation(str(roll.get("spec", "1d20")))
+        system = paths.campaign_system(ctx.campaign)
+        err = checks.spec_error(system, roll.get("spec"))
+        if err:
+            return {"status": "done", "elapsed_minutes": 0, "data": {"error": err}}, None
+        num, sides, mod = checks.dice_for(system, roll.get("spec"))
+        spec = f"{checks.CORE_DICE}{mod + 1:+d}" if advantage and system == "core" else roll.get("spec")
         actor = str(intent.get("actor") or "Party")
-        if ctx.flag("roll_mode", "players") == "players" and key not in ctx.answers:
-            twice = " Roll twice and send the higher." if advantage else ""
+        if system != "story" and ctx.flag("roll_mode", "players") == "players" and key not in ctx.answers:
+            twice = " Roll twice and send the higher." if advantage and system == "d20" else ""
+            asked = roll.get("spec", "1d20") if system == "d20" else checks.shown(system, spec)
             return {"status": "waiting_for_player",
                     "requests": [{"key": key, "kind": "roll", "expected": actor,
-                                  "text": f"{actor}: {text} — {roll.get('spec', '1d20')}.{twice}"}]}, None
+                                  "text": f"{actor}: {text} — {asked}.{twice}"}]}, None
         if key in ctx.answers:
-            raw = int(ctx.answers[key]["value"])
+            got = [int(ctx.answers[key]["value"])]
+        elif system == "d20":
+            got = [max(ctx.roll(key, sides, 2 if advantage else 1))]
         else:
-            raw = max(ctx.roll(key, sides, 2 if advantage else 1))
-        total, dc = raw + mod, int(roll.get("dc", 10))
-        return None, {"dice": raw, "total": total, "dc": dc, "passed": total >= dc, "advantage": advantage}
+            got = ctx.roll(key, sides, num)
+        dc = int(roll.get("dc", 10))
+        graded = checks.resolve(system, spec, dc, got, step_up=int(advantage and system == "story"),
+                                likelihood=str(roll.get("likelihood") or "50/50"), chaos=checks.chaos(ctx.campaign))
+        if system == "d20":
+            return None, {"dice": graded["raw"], "total": graded["total"], "dc": dc, "passed": graded["passed"],
+                          "advantage": advantage}
+        return None, {"dice": graded["raw"], "total": graded["total"], "degree": graded["degree"],
+                      "passed": graded["passed"], "advantage": advantage}
 
     @turn.handler("flashback")
     def _flashback(ctx, intent: dict) -> dict:

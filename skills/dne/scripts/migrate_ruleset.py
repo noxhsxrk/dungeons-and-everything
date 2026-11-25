@@ -41,6 +41,7 @@ from paths import (  # noqa: E402
     DEFAULT_RULESET,
     VALID_RULESETS,
     campaign_ruleset,
+    campaign_system,
     find_campaign,
 )
 from utf8io import read_text, TextDecodeError  # noqa: E402
@@ -106,6 +107,14 @@ def cmd_check(campaign: str) -> int:
     text = state.read_text(encoding="utf-8", errors="replace")
     if _has_ruleset_field(text):
         print("migrated")
+        return 0
+    try:
+        system = campaign_system(campaign)
+    except ValueError as exc:
+        print(f"[migrate_ruleset] {exc}", file=sys.stderr)
+        return 2
+    if system != "d20":                       # Ruleset 2014/2024 is a 5e choice: Braid has none to stamp
+        print(f"not-applicable (system: {system})")
         return 0
     print("needs-migration")
     return 1

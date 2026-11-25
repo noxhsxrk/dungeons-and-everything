@@ -554,6 +554,9 @@ def main() -> None:
     p_led.add_argument("--limit", type=int, default=15)
 
     args = parser.parse_args()
+    if args.cmd in ("rest", "treat", "treasure"):
+        from paths import refuse_unless_d20
+        refuse_unless_d20(["-c", args.campaign], f"economy.py {args.cmd}")
     if args.cmd == "rest" and args.char.lower() == "all" and any(
         a.split("=", 1)[0] in ("--heal", "--hit-dice") for a in sys.argv[1:]
     ):

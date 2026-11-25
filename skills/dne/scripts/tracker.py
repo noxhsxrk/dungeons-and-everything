@@ -1200,6 +1200,9 @@ def main() -> None:
                      help="Also reset death saves (never a dead character's)")
 
     args = p.parse_args()
+    if args.cmd in ("rest", "concentrate", "saves", "check", "enemy"):
+        from paths import refuse_unless_d20
+        refuse_unless_d20(["-c", args.campaign], f"tracker.py {args.cmd}")
 
     if args.cmd == "effect":
         cmd_effect(args.campaign, args.action, args.entity,

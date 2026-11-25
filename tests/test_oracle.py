@@ -89,11 +89,11 @@ class EventFocusTests(unittest.TestCase):
         self.assertTrue(1 <= roll <= 100)
 
     def test_low_roll_is_remote(self):
-        # Seed whose first randint(1,100) is <=5 maps to "remote event".
+        # Seed whose first randint(1,100) is <=5 maps to "news from afar".
         for s in range(2000):
             roll, label = oracle.random_event_focus(rng=random.Random(s))
             if roll <= 5:
-                self.assertEqual(label, "remote event")
+                self.assertEqual(label, "news from afar")
                 return
         self.fail("no roll <=5 found")
 

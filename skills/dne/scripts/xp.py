@@ -526,6 +526,8 @@ def cmd_award(args: argparse.Namespace) -> None:
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 def main() -> None:
+    from paths import refuse_unless_d20
+    refuse_unless_d20(sys.argv[1:], "xp.py")
     parser = argparse.ArgumentParser(
         description="XP calculation and award for D&D 5e encounters.",
         formatter_class=argparse.RawDescriptionHelpFormatter,

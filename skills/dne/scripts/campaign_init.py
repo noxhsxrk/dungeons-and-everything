@@ -13,7 +13,7 @@ never touched.
 Seed, version 1 (only `seed_version` and `campaign` are required; each system's data is needed only when that
 system is on):
 
-  {"seed_version": 1, "campaign": "hollow", "ruleset": "2014", "party_size": 3, "starting_level": 1,
+  {"seed_version": 1, "campaign": "hollow", "system": "d20", "ruleset": "2014", "party_size": 3, "starting_level": 1,
    "flags": {"display": "none", "roll_mode": "players", "engine": "full", "world_engine": "on", "survival": "off"},
    "calendar": {"date": "1 Thaw 412", "time": "morning", "months": ["Thaw", "Bloom"], "month_length": 30,
                 "day_names": [...], "gregorian": false},
@@ -26,6 +26,10 @@ system is on):
               {"action": "settlement", "at": "The Ford", "template": "hollow-9"},
               {"action": "route", "between": ["The Ford", "Market"], "access": "toll", "owner": "Tollmen"},
               {"action": "schedule", "in_minutes": 2880, "text": "The rider reaches the ford."} ]}
+
+`system` is d20 (5e, the default; `ruleset` picks 2014 or 2024), core (Braid) or story (Braid without dice).
+Braid's checks are engine actions, so a core or story campaign always runs with `world_engine: on` (and so needs a
+calendar); it has no `ruleset`.
 
 Every problem comes back as {"path": "setup[2].at", "error": "…"}: the place in the seed to fix.
 """
@@ -86,11 +90,28 @@ def warnings(seed) -> list:
     return out
 
 
+def _with_system(seed):
+    """The seed as it will be built: a core or story campaign runs on the world engine, so its flag is set on.
+    An explicit `world_engine: off` is left for check() to report."""
+    if not isinstance(seed, dict) or str(seed.get("system", "d20")) not in ("core", "story"):
+        return seed
+    flags = seed.get("flags") if isinstance(seed.get("flags"), dict) else {}
+    if "world_engine" in flags:
+        return seed
+    return {**seed, "flags": {**flags, "world_engine": "on"}}
+
+
 def check(seed) -> list:
     """Every problem in the seed, with where it is. Nothing is written."""
     errors: list = []
     if not isinstance(seed, dict):
         return [{"path": "", "error": "the seed must be a JSON object"}]
+    seed = _with_system(seed)
+    system = str(seed.get("system", "d20"))
+    if system not in paths.SYSTEMS:
+        _err(errors, "system", " or ".join(paths.SYSTEMS) + " (d20 = 5e, core = Braid, story = Braid without dice)")
+    elif system != "d20" and str((seed.get("flags") or {}).get("world_engine")) != "on":
+        _err(errors, "flags.world_engine", f"a {system} campaign runs on the world engine: leave it out or set it on")
     if seed.get("seed_version") != SEED_VERSION:
         _err(errors, "seed_version", f"must be {SEED_VERSION} (this engine reads version {SEED_VERSION})")
     name = seed.get("campaign")
@@ -225,6 +246,7 @@ def build(seed: dict) -> dict:
     errors = check(seed)
     if errors:
         return {"ok": False, "errors": errors}
+    seed = _with_system(seed)
     name = seed["campaign"]
     root = paths._root()
     stage_root = root / f".dne-init-{name}"
@@ -244,7 +266,8 @@ def build(seed: dict) -> dict:
             text = (tdir / t).read_text(encoding="utf-8")
             text = text.replace("<campaign-name>", name).replace("<date>", today).replace("# Campaign: <name>", f"# Campaign: {name}")
             if t == "state.md":
-                text = text.replace("**Ruleset:** 2014", f"**Ruleset:** {seed.get('ruleset', '2014')}")
+                text = text.replace("**Ruleset:** 2014  **System:** d20", f"**System:** {seed['system']}"
+                                    if seed.get("system", "d20") != "d20" else f"**Ruleset:** {seed.get('ruleset', '2014')}  **System:** d20")
                 text = text.replace("**Party size:** <N>", f"**Party size:** {seed.get('party_size', '<N>')}")
                 text = text.replace("**Starting level:** <N>", f"**Starting level:** {seed.get('starting_level', '<N>')}")
                 if seed.get("worldkit") is not None:

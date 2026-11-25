@@ -861,6 +861,8 @@ def _parse_value_flag(flags_with_args, name):
 
 def main() -> None:
     raw = sys.argv[1:]
+    if _paths is not None:
+        _paths.refuse_unless_d20(raw, "lookup.py")
 
     # Pull out value-bearing flags first so the positional parser doesn't see them
     campaign_arg, raw = _parse_value_flag(raw, "--campaign")

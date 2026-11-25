@@ -385,6 +385,8 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(1)
+    from paths import refuse_unless_d20
+    refuse_unless_d20(sys.argv[2:], "combat.py")
 
     cmd = sys.argv[1]
 

@@ -220,6 +220,8 @@ def generate_encounter(
 
 
 def main() -> None:
+    from paths import refuse_unless_d20
+    refuse_unless_d20(sys.argv[1:], "encounter_gen.py")
     parser = argparse.ArgumentParser(description="Biome-aware 5e CR encounter generator.")
     parser.add_argument("--biome", default="forest")
     parser.add_argument("-c", "--campaign")

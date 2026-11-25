@@ -553,7 +553,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/session_recap.py diff-files before.json afte
 
 ## Oracle — `scripts/oracle.py`
 
-Dice-driven solo/improv oracles (Mythic chaos factor, Ironsworn yes/no, Random Event Focus, scene-meaning word pairs). Keeps pacing transparent and rollable instead of invented. Rolls are stdlib-random and seedable (`--seed N`). The chaos factor persists in `state.md → ## Session Flags` as `chaos_factor: N`. Zero LLM calls.
+Dice-driven solo/improv oracles (chaos factor, Ironsworn-shaped yes/no, event focus, scene-meaning word pairs). Keeps pacing transparent and rollable instead of invented. Rolls are stdlib-random and seedable (`--seed N`). The chaos factor persists in `state.md → ## Session Flags` as `chaos_factor: N`. Zero LLM calls.
 
 ```bash
 CAMP=my-campaign
@@ -567,7 +567,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/oracle.py chaos adjust --campaign $CAMP --pc
 python3 ${CLAUDE_SKILL_DIR}/scripts/oracle.py ask --likelihood likely --campaign $CAMP
 # → "NO-BUT  (d100=82, likelihood=likely, chaos=8)"
 
-# Random Event Focus (d100 → direction label)
+# Event focus (d100 → direction label)
 python3 ${CLAUDE_SKILL_DIR}/scripts/oracle.py event
 
 # Scene-meaning word pair (action / subject)

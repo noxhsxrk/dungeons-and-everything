@@ -10,7 +10,8 @@ explicit commands stops the model from inventing its own pacing and gives the
 table a transparent, rollable backbone for improvised play.
 
 References:
-  - Mythic GME 2e (Word Mill Games): chaos factor + Random Event Focus.
+  - Chaos factor and event focus: mechanic inspired by solo-oracle tools;
+    wording our own (labels, descriptions and code).
   - Ironsworn (Shawn Tomkin, CC-BY-4.0): yes/no oracle shape.
   - Ironsworn SRD: the Action and Theme oracle words used for scene meaning.
     This work is based on Ironsworn (found at www.ironswornrpg.com), created
@@ -44,7 +45,7 @@ except ImportError:  # pragma: no cover
     find_campaign = None  # type: ignore
 
 
-# ── chaos factor (Mythic-style, 1-9) ─────────────────────────────────────────
+# ── chaos factor (1-9) ─────────────────────────────────────────────────────
 
 CHAOS_MIN, CHAOS_MAX, CHAOS_DEFAULT = 1, 9, 5
 _CHAOS_FLAG_RE = re.compile(r"^(\s*[-*]?\s*)chaos_factor:\s*([0-9]+)\s*$",
@@ -56,8 +57,8 @@ def clamp_chaos(n: int) -> int:
 
 
 def adjust_chaos(factor: int, pc_proactive: bool) -> int:
-    """Standard Mythic move: PC achieved scene goal → -1 (more in control);
-    PC was reactive / failed → +1 (world pushes back). Clamped to [1, 9]."""
+    """PC achieved the scene goal → -1 (more in control); PC was reactive or
+    failed → +1 (the world pushes back). Clamped to [1, 9]."""
     return clamp_chaos(factor + (-1 if pc_proactive else 1))
 
 
@@ -119,9 +120,14 @@ def yes_no(likelihood: str = "50/50", chaos: int = CHAOS_DEFAULT,
     '-but' (qualified).
     """
     rng = rng or random.Random()
+    roll = rng.randint(1, 100)
+    return verdict(roll, likelihood, chaos), roll
+
+
+def verdict(roll: int, likelihood: str = "50/50", chaos: int = CHAOS_DEFAULT) -> str:
+    """The yes/no verdict for a d100 already rolled (resolve.py rolls it through the engine, so a retry repeats)."""
     base = _LIKELIHOODS.get(likelihood, 50)
     target = max(5, min(95, base + (chaos - CHAOS_DEFAULT) * 2))
-    roll = rng.randint(1, 100)
     is_yes = roll <= target
 
     diff = abs(roll - target)
@@ -133,36 +139,48 @@ def yes_no(likelihood: str = "50/50", chaos: int = CHAOS_DEFAULT,
     else:
         modifier = ""
 
-    return ("yes" if is_yes else "no") + modifier, roll
+    return ("yes" if is_yes else "no") + modifier
 
 
-# ── Random Event Focus (Mythic d100) ─────────────────────────────────────────
+# ── event focus (d100 → where the unexpected lands) ──────────────────────────
+# Our own labels. Read each as a direction, not a script:
+#   news from afar      something happens out of sight and word of it reaches the party
+#   an odd sign         a thing that does not fit yet: leave it unexplained for now
+#   a stranger arrives  someone new walks into the story
+#   someone makes a move  a person already in the story acts on what they want
+#   a new trouble       a problem the party did not have a moment ago
+#   a lead opens        one open goal gets easier or closer
+#   a setback           one open goal gets harder or further away
+#   a loose end ties off  something open settles, for good or ill
+#   bad luck            the party (or one of them) loses something
+#   a lucky break       the party (or one of them) gains something
+#   the scene sharpens  what is already here gets more intense
 
 _FOCUS_TABLE = [
-    (5, "remote event"),
-    (10, "ambiguous event"),
-    (20, "new NPC"),
-    (35, "NPC action"),
-    (45, "introduce thread"),
-    (55, "move toward thread"),
-    (65, "move away from thread"),
-    (70, "close thread"),
-    (80, "PC negative"),
-    (85, "PC positive"),
-    (95, "ambiguous event"),
-    (100, "current context"),
+    (5, "news from afar"),
+    (10, "an odd sign"),
+    (20, "a stranger arrives"),
+    (35, "someone makes a move"),
+    (45, "a new trouble"),
+    (55, "a lead opens"),
+    (65, "a setback"),
+    (70, "a loose end ties off"),
+    (80, "bad luck"),
+    (85, "a lucky break"),
+    (95, "an odd sign"),
+    (100, "the scene sharpens"),
 ]
 
 
 def random_event_focus(rng: "random.Random | None" = None) -> "tuple[int, str]":
-    """Mythic Random Event Focus. Returns (roll, focus_label). Treat the label
-    as a *direction* to interpret against current threads, NPCs, and places."""
+    """Event focus. Returns (roll, focus_label). Treat the label as a
+    *direction* to interpret against current threads, NPCs, and places."""
     rng = rng or random.Random()
     roll = rng.randint(1, 100)
     for threshold, label in _FOCUS_TABLE:
         if roll <= threshold:
             return roll, label
-    return roll, "current context"
+    return roll, "the scene sharpens"
 
 
 # ── scene-meaning word pairs (Ironsworn Action and Theme oracles) ───────────
@@ -209,7 +227,7 @@ _SUBJECTS = [
 
 def scene_meaning(rng: "random.Random | None" = None) -> "tuple[str, str]":
     """Two-word generator: (action_verb, subject_noun). Feed to the narration
-    when a scene runs dry or a Random Event Focus rolls."""
+    when a scene runs dry or an event focus rolls."""
     rng = rng or random.Random()
     return rng.choice(_ACTIONS), rng.choice(_SUBJECTS)
 
@@ -307,7 +325,7 @@ def main() -> int:
     sp.add_argument("--seed", type=int, help="seed the d100 (reproducible)")
     sp.set_defaults(func=cmd_ask)
 
-    sp = sub.add_parser("event", help="Mythic Random Event Focus (d100)")
+    sp = sub.add_parser("event", help="event focus: where the unexpected lands (d100)")
     sp.add_argument("--seed", type=int)
     sp.set_defaults(func=cmd_event)
 

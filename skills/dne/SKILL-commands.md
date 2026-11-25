@@ -149,12 +149,21 @@ Then `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_init.py --seed - --check` wit
    - If autorun **no** → continue without autorun; DM drives turns manually.
    - **Physical dice server check (only if installed).** Skip this step unless the optional dice server is set up: probe with `test -d ~/.dne-dice || test "$DNE_DICE_PHYSICAL" = "1"` and short-circuit out if the test fails. When it passes, run `curl -sf http://localhost:7777/health` (timeout 1s). If it returns OK, fetch the LAN IP with `python3 -c "import socket; s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.connect(('8.8.8.8', 80)); print(s.getsockname()[0]); s.close()"` and announce to the table: *"Dice server is up. Each player, open `http://<ip>:7777/?player=<your-pc-name>` on your phone (lowercase name, hyphens for spaces — same name I'll use when calling for rolls) and tap **consecrate** before we begin. NPC and DM rolls auto-resolve here."* Then list the PC short-names from `characters/` so players know what to type. If the server is unreachable, skip silently — `dice.py` falls back to local random.
 
-2. **Backwards-compat: ruleset migration check.** Before reading state.md, run:
+2. **Backwards-compat: system, then ruleset migration check.** Before reading state.md, run:
+
+   ```bash
+   python3 ${CLAUDE_SKILL_DIR}/scripts/migrate_system.py <campaign-name> --check
+   ```
+
+   Exit `1` (`needs-migration`) means a save from before 2.0, which is always a 5e campaign: stamp it without asking,
+   `python3 ${CLAUDE_SKILL_DIR}/scripts/migrate_system.py <campaign-name> --system d20 --yes` (backs up state.md first).
+   Exit `2`: state.md is missing, stop as below. Then:
 
    ```bash
    python3 ${CLAUDE_SKILL_DIR}/scripts/migrate_ruleset.py <campaign-name> --check
    ```
 
+   - `not-applicable (system: core|story)` (exit `0`) → a Braid campaign has no 5e ruleset: skip the ruleset steps here and in step 3.
    - Exit code `0` (`migrated`) → proceed to step 3.
    - Exit code `1` (`needs-migration`) → this is a legacy campaign predating the ruleset field. Surface to DM exactly once: *"Campaign predates ruleset versioning. Stamp as **2014** (recommended for legacy campaigns) or **2024**? state.md will be backed up to `state.md.backup-pre-ruleset-<timestamp>` before any write. [2014/2024/skip]"*. On answer, run:
 
@@ -961,19 +970,19 @@ Apply previously-extracted proposals (from either the Haiku or deterministic pas
 Dice-driven oracles for improvised play — they keep pacing transparent and rollable instead of letting the DM invent every beat. All subcommands invoke `python3 ${CLAUDE_SKILL_DIR}/scripts/oracle.py <subcommand>`. Rolls are stdlib-random and seedable (`--seed N`) for reproducibility. Zero LLM calls.
 
 ### `/dne oracle chaos [--campaign N]`
-Show the campaign's current **chaos factor** (Mythic-style, 1–9). 1 = the PCs are firmly in control; 9 = the world is spinning out from under them. Stored in `state.md → ## Session Flags` as `chaos_factor: N` (default 5).
+Show the campaign's current **chaos factor** (1–9). 1 = the PCs are firmly in control; 9 = the world is spinning out from under them. Stored in `state.md → ## Session Flags` as `chaos_factor: N` (default 5).
 
 ### `/dne oracle chaos set --campaign N --value V`
 Set the chaos factor to V (clamped 1–9) and persist it to `state.md`.
 
 ### `/dne oracle chaos adjust --campaign N (--pc-won | --pc-lost)`
-Move the factor one step the standard Mythic direction: `--pc-won` (PC achieved the scene goal) → −1; `--pc-lost` (PC was reactive or failed) → +1. Adjust once per scene.
+Move the factor one step: `--pc-won` (PC achieved the scene goal) → −1; `--pc-lost` (PC was reactive or failed) → +1. Adjust once per scene.
 
 ### `/dne oracle ask [--likelihood L] [--campaign N | --chaos C] [--seed S]`
 Ironsworn-shaped **yes/no** oracle. Likelihood ∈ {`sure-thing`, `likely`, `50/50`, `unlikely`, `no-way`} (default `50/50`); the chaos factor (read from the campaign, or `--chaos`) shifts the odds. Returns a verdict — `yes`/`no` optionally suffixed `-and` (extreme, on doubles) or `-but` (qualified, near the threshold) — plus the d100. Use when the fiction poses a question the prep doesn't answer.
 
 ### `/dne oracle event [--seed S]`
-Mythic **Random Event Focus** (d100). Returns a direction label (`new NPC`, `NPC action`, `move toward thread`, `PC negative`, etc.) — interpret it against the campaign's current threads, NPCs, and locations. Use when a scene needs an unexpected turn.
+**Event focus** (d100): where the unexpected lands. Returns a direction label (`a stranger arrives`, `someone makes a move`, `a lead opens`, `bad luck`, etc.; the full list and what each means is in `oracle.py`) — interpret it against the campaign's current threads, NPCs, and locations. Use when a scene needs an unexpected turn.
 
 ### `/dne oracle scene [--seed S]`
 Two-word **scene-meaning** generator (action verb + subject noun, from the Ironsworn Action and Theme oracles, CC BY 4.0). Use as a spark when narration runs dry or an event focus rolls. Interpret loosely.

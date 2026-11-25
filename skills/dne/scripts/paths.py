@@ -257,6 +257,64 @@ def campaign_ruleset(name: str) -> str:
     return val if val in VALID_RULESETS else DEFAULT_RULESET
 
 
+# A campaign's rules system, on the same header: "**System:** core".
+# d20 = 5e (Ruleset 2014/2024 is a d20 sub-option); core = Braid, our 2d6 rules;
+# story = Braid without dice (the oracle answers). No field = d20: every save
+# from before 2.0 is a 5e campaign.
+SYSTEMS = ("d20", "core", "story")
+DEFAULT_SYSTEM = "d20"
+SYSTEM_NAMES = {"d20": "5e (d20)", "core": "Braid", "story": "Braid story mode (no dice)"}
+_SYSTEM_PAT = _re.compile(r"\*\*System:\*\*\s*([^\s*|]+)", _re.IGNORECASE)
+
+
+def campaign_system(name: str) -> str:
+    """'d20', 'core' or 'story'. Missing state.md or field = d20; an unknown value is an error, never a guess.
+
+    Only the header (the lines before the first `## ` section) is read, so a note that quotes the field
+    elsewhere in state.md cannot change the rules of a live save."""
+    try:
+        text = (find_campaign(name) / "state.md").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return DEFAULT_SYSTEM
+    m = _SYSTEM_PAT.search(_re.split(r"(?m)^## ", text, maxsplit=1)[0])
+    if not m:
+        return DEFAULT_SYSTEM
+    val = m.group(1).strip().lower()
+    if val not in SYSTEMS:
+        raise ValueError(f"campaign {name!r}: state.md says **System:** {m.group(1)!r}, which is not a system. "
+                         f"Use one of {', '.join(SYSTEMS)} (d20 = 5e, core = Braid, story = Braid without dice).")
+    return val
+
+
+def not_d20(name: str, what: str, instead: str = "") -> "str | None":
+    """Why `what` (a 5e-only script or rule) refuses this campaign, or None when the campaign is d20."""
+    system = campaign_system(name)
+    if system == DEFAULT_SYSTEM:
+        return None
+    return (f"{what} is 5e (d20) rules, and campaign {name!r} runs on {SYSTEM_NAMES[system]} (**System:** {system}). "
+            "Nothing was changed. " + (instead or "Use the engine instead: the `roll` and `judge` actions "
+                                       f"(turn.py -c {name} resolve) make every check in this system."))
+
+
+def refuse_unless_d20(argv: list, what: str) -> None:
+    """CLI gate for the 5e-only scripts: when -c/--campaign names a non-d20 campaign, say why and exit 2."""
+    name = None
+    for i, a in enumerate(argv):
+        if a in ("-c", "--campaign") and i + 1 < len(argv):
+            name = argv[i + 1]
+        elif a.startswith("--campaign="):
+            name = a.split("=", 1)[1]
+    if not name:
+        return
+    try:
+        why = not_d20(name, what)
+    except ValueError as exc:
+        why = str(exc)
+    if why:
+        print(f"{what}: {why}", file=sys.stderr)
+        sys.exit(2)
+
+
 def srd_path(ruleset=None):
     """Return path to the SRD JSON for the given ruleset.
 
@@ -279,6 +337,9 @@ if __name__ == "__main__":
     if len(sys.argv) >= 3 and sys.argv[1] == "campaign-ruleset":
         print(campaign_ruleset(sys.argv[2]))
         sys.exit(0)
+    if len(sys.argv) >= 3 and sys.argv[1] == "campaign-system":
+        print(campaign_system(sys.argv[2]))
+        sys.exit(0)
     if len(sys.argv) >= 2 and sys.argv[1] == "srd-path":
         rs = sys.argv[2] if len(sys.argv) >= 3 else None
         print(srd_path(rs))
@@ -292,6 +353,7 @@ if __name__ == "__main__":
     print(
         "usage:\n"
         "  python3 paths.py campaign-ruleset <campaign-name>\n"
+        "  python3 paths.py campaign-system <campaign-name>\n"
         "  python3 paths.py srd-path [2014|2024]\n"
         "  python3 paths.py runtime-dir\n"
         "  python3 paths.py campaign-dir <campaign-name>",

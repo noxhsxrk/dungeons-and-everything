@@ -76,6 +76,13 @@ is SRD material, credited above. `dnd5e_srd_2024.json` names both projects in
 - **Changes:** words lower-cased; nothing else.
 - **Checked:** 2026-11-26, against the Ironsworn SRD text from https://www.ironswornrpg.com.
 
+## Oracle chaos factor and event focus (no third-party text)
+
+`skills/dne/scripts/oracle.py`'s chaos factor and event focus: mechanic inspired by solo-oracle tools;
+wording our own. The event-focus labels and their descriptions were rewritten in our own words on
+2026-11-26 (they had been credited to a CC BY-NC source, which cannot ship in AGPL code). Nothing
+here needs a credit line in NOTICE.
+
 ## Reference only (no content shipped)
 
 These were read for research only. None of their text, tables or names ship here, and none may be

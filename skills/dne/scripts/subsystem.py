@@ -7,7 +7,7 @@ import sys
 import tempfile
 
 from dice import degree
-from paths import find_campaign
+from paths import campaign_system, find_campaign
 
 
 POINTS = {
@@ -45,7 +45,7 @@ def main() -> None:
     outcome = check.add_mutually_exclusive_group(required=True)
     outcome.add_argument("--degree", help="critical-success, success, success-at-a-cost, failure, critical-failure")
     outcome.add_argument("--total", type=int)
-    check.add_argument("--dc", type=int)
+    check.add_argument("--dc", type=int, help="5e only: Braid grades the 2d6 total with no DC")
     check.add_argument("--natural", type=int, metavar="1–20")
 
     sub.add_parser("status", help="List challenges and remaining checks")
@@ -63,6 +63,12 @@ def main() -> None:
                 result = "success at a cost"
             if result not in POINTS:
                 check.error(f"unknown degree {args.degree!r}")
+        elif campaign_system(args.campaign) != "d20":
+            # Braid grades the 2d6 total on its own ladder; there is no DC. Story mode has no total.
+            if campaign_system(args.campaign) == "story" or args.dc is not None or args.natural is not None:
+                check.error("this campaign has no DC: pass the 2d6 total alone (Braid) or --degree (story mode)")
+            import resolve
+            result = resolve.resolve("core", "2d6", None, [args.total])["degree"]
         else:
             if args.dc is None:
                 check.error("--total requires --dc")
