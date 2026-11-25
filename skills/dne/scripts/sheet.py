@@ -3,7 +3,7 @@
 sheet.py — Braid character sheets (System: core / story): create, check, show, XP and advances.
 
     sheet.py -c <campaign> new --name "Mira Vale" --concept "..." --drive "..." --flaw "..."
-                               --approaches "wits=2,finesse=1,heart=1,force=0,grit=-1" --labels "Smuggler,Ex-navy pilot"
+                               --approaches "wits=2,finesse=1,heart=1,force=0,grit=-1" --labels "Smuggler,Ex-navy pilot"  (";" between labels that hold commas)
                                [--gear "a,b"] [--bonds "Theo: owes her his life"] [--player P]
         Writes characters/<name>.md from templates/sheets/core.md. The approaches must be +2 +1 +1 0 -1 in any
         order; 2-3 labels.
@@ -217,7 +217,7 @@ def cmd_new(campaign: str, a) -> int:
     if set(given) != set(APPROACHES) or sorted(given.values()) != sorted(RULES["start_array"]):
         print(f"sheet.py: give each of {', '.join(APPROACHES)} one of +2 +1 +1 0 -1 (got {a.approaches})", file=sys.stderr)
         return 1
-    labels = [x.strip() for x in a.labels.split(",") if x.strip()]
+    labels = [x.strip() for x in a.labels.split(";" if ";" in a.labels else ",") if x.strip()]   # ";" when a label has commas
     lo, hi = RULES["labels_at_start"]
     if not lo <= len(labels) <= hi:
         print(f"sheet.py: a new character has {lo}-{hi} labels (got {len(labels)})", file=sys.stderr)

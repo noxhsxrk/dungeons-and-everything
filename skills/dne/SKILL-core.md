@@ -40,7 +40,18 @@ prints each action's manual). Python keeps every number; you decide what it mean
   a label or a difficulty, send the whole modifier as a spec and keep the approach for its conditions
   (`"spec": "2d6+3", "approach": "wits"` = Wits +2 and a label). `judge`, `flashback`, `bargain` and `search` take
   the same `approach`, `push` and `help` (in the intent or its `roll`). With `roll_mode: players` the player sends the
-  two dice added together.
+  two dice added together; `turn.py answer` refuses a number those dice cannot make (2–12) and keeps the question
+  open. A label the engine can check: `"use_label": "<label on the sheet>"` adds its +1; against a threat 4–5 foe
+  (a `foe` record) `"against": "<name>"` applies the −1 (leave it out once the PCs found an edge).
+- **Refused:** when the engine will not do an action (a d20 spec, no token to spend, a missing bond) that result
+  has `"status": "refused"` and `data.error`, and the turn lists it under `refused`. Read it, fix the intent and send
+  it again; nothing of the refused action happened.
+- **Flashback:** `{"action": "flashback", "actor": "Mira", "claim": "…", "roll": {"approach": "finesse"}}` costs
+  1 stress, which the engine marks (`"cost": "token"` spends a token instead); on 7–9 name the cost it came with.
+- **Language:** the engine's own words to the players (a search's "Only you notice…", "You reach…", the dice
+  request) are English. At a table playing in another language, re-voice them in your narration.
+- **Time:** a roll or a clock takes no in-world time (a `search` takes its `minutes`). Move the clock yourself (`{"action": "wait",
+  "minutes": …}` or `travel`) when the fiction spends hours: before a job's engagement roll, after a night's watch.
 
 ## 2. Characters (the sheet)
 
@@ -93,7 +104,8 @@ does; you ask for the roll that matters; enemies never roll — they act through
   distressing or a horrifying moment.
 - **Engine:** `{"action": "track", "owner": "Mira", "id": "harm", "mark": 2, "why": "the guard's club"}`. The reply
   says what was crossed (Wounded, Badly hurt, Taken out); the conditions come and go with the track by themselves.
-  `fight` may hold the objective and the zones; there is no HP and no `damage` in Braid.
+  `fight` may hold the objective and the zones; there is no HP and no `damage` in Braid. The `when_down: choices`
+  dial a genre preset writes means exactly the harm 4 row above: there are no death saves.
 - **Recovery** *(default)*: a night's rest (`wait`) clears 2 stress and 1 harm if the harm is below 2. Wounded or
   worse needs care: someone treats it (a roll, usually Wits or Heart with a fitting label) and each day of rest then
   clears 1 harm; a critical success on the treatment clears 1 at once. Send the recovery as `track` marks down
@@ -126,7 +138,8 @@ when a roll against it misses. Named enemies also get a motive and a weakness.
 - **XP** *(default)*: 1 when the character acts on their drive and it costs them (once a session); 1 when their flaw
   makes real trouble (once a session); 1 for the first miss of a session that taught them something; 2 for each
   milestone — the party finished something that mattered (you name it). Mark it with
-  `sheet.py -c <campaign> xp "<PC>" --why "<what they did>" --event <id>`; one id is paid once, so a retry is safe.
+  `sheet.py -c <campaign> xp "<PC>" --why "<what they did>" --event <id>` (1 XP; a milestone adds `--mark 2`); one
+  id is paid once, so a retry is safe (it prints "already marked" and exits 1: nothing changed).
   Ask at session end which of these happened; the players answer, not you.
 - **Every 5 XP buys one advance**, written by `sheet.py -c <campaign> advance "<PC>"` with one of:
   - `--raise <approach>`: +1 to one approach, never above +3;
@@ -173,7 +186,10 @@ proves) or another player's character.
 
 Braid without dice, for tables that want only the story. Same sheet, same tracks, same ladder; checks ask the
 oracle instead: `{"action": "roll", "actor": "Mira", "likelihood": "likely"}` (likelihood from the situation and
-the approach: a +2 approach where it fits makes it likely). yes-and = critical success, yes = success, yes-but =
+the approach: a +2 approach where it fits makes it likely). A `roll` with no likelihood still asks the oracle: its
+`approach` sets the odds (+2 or more likely, −1 or less unlikely), otherwise 50/50; nobody is ever asked for dice.
+The reply's `answer` is the oracle's word and `chaos` its chaos factor (1–9, state.md; higher makes extreme answers
+more common). yes-and = critical success, yes = success, yes-but =
 success at a cost, no and no-but = failure, no-and = critical failure. There is no push or help: a token spent after
 the answer moves it one step up, and helping is narrated and earns the helper's bond a mark. Harm, stress, XP and
 advances work as above (an advance's `--raise` makes that approach count as one step more likely).
@@ -194,3 +210,7 @@ own engine actions (each one's manual: `turn.py help <action>`): `fright` (compo
 `loop`, `roles`, `realm`, `status` (status_window), `memories`. `clues` works through `case`/`search`/`tell`/
 `accuse`, `usage_die` through `upkeep`/`use`, `contest` through `subsystem.py start --race|--countdown`; `panic`
 has no action of its own (thresholds on `stress`).
+A Braid `search` replies with `check` (total, degree, a push's stress) and turns up at most 1 hidden clue on a
+success at a cost, 2 on a success, 3 on a critical: search again for the rest. Score a contest check with
+`subsystem.py check --side <side> --degree "<the check's final degree>"`, after any token step-up. A module that
+sets its own token maximum or gain (seasons: up to 5) replaces the core numbers in §1.

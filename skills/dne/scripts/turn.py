@@ -337,6 +337,10 @@ def begin(campaign: str, text: str, input_id: "str | None" = None, source: str =
     with wdb.reader(campaign) as db:
         turn = db.execute("SELECT * FROM turns WHERE turn_id=?", (turn_id,)).fetchone()
         view = _turn_view(db, turn, input_id=input_id, resumed=resumed, answered=answered)
+    if resumed and view.get("waiting") and paths.campaign_system(campaign) != "d20":
+        view["note"] = (f"this input joined {turn_id}, which still waits for: "
+                        + "; ".join(w["question"] or w["request_id"] for w in view["waiting"])
+                        + ". Answer it (`turn.py answer`) before anything new happens.")
     try:                                          # what the GM needs to know to run this turn
         import scene_context
         view["context"] = scene_context.build(campaign, text)

@@ -212,6 +212,26 @@ class BuiltWorld(unittest.TestCase):
         self.assertIn("Composure 8/10", out)
         self.assertIn("Tokens 2/3", out)
 
+    def test_labels_with_commas_split_on_semicolons(self):
+        self.assertTrue(self.build()["ok"])
+        argv = list(MIRA)
+        argv[argv.index("--labels") + 1] = "Baker: pies, tarts and scones; Ex-navy pilot"
+        self.assertEqual(self.py("sheet.py", "-c", "monsoon", *argv)[0], 0)
+        out = self.py("sheet.py", "-c", "monsoon", "show", "Mira Vale")[1]
+        self.assertIn("Labels: Baker: pies, tarts and scones; Ex-navy pilot", out)
+
+
+
+class JoinedTurn(EngineCase):
+    FLAGS = "- display: none\n- roll_mode: players\n- world_engine: on\n"
+
+    def test_begin_says_when_it_joins_a_turn_that_still_waits(self):
+        stamp(self.camp, "core")
+        self.do("x", {"actor": "Mira", "action": "roll", "spec": "2d6", "label": "rally"})
+        self.assertFalse(self.turn.finish("oldworld", "ok").get("finished", True))
+        view = self.turn.begin("oldworld", "something else entirely")
+        self.assertIn("still waits for", view["note"])
+
 
 if __name__ == "__main__":
     unittest.main()

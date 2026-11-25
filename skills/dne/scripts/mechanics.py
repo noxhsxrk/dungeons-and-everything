@@ -175,8 +175,9 @@ def change_track(ctx, owner: str, tid: str, *, mark: int = 0, set_to=None, why: 
 def _track(ctx, intent: dict) -> dict:
     """track — a numbered track on a character (or "party"): stress, harm, composure, doom, supply, …
 
-    {"action": "track", "owner": "Mira", "id": "composure", "min": 0, "max": 99, "set": 60,
-     "thresholds": [{"at": 30, "dir": "down", "note": "a lasting fear", "table": "fears"}, {"at": 0, "dir": "down"}]}
+    {"action": "track", "owner": "Mira", "id": "resolve", "min": 0, "max": 10, "set": 10,
+     "thresholds": [{"at": 3, "dir": "down", "note": "a lasting fear", "table": "fears"}, {"at": 0, "dir": "down"}]}
+    (a module's own track, such as composure, comes from `modules apply`: do not define it by hand)
     {"action": "track", "owner": "Mira", "id": "stress", "mark": 2, "why": "the thing in the cellar"}   (mark -1 heals)
     {"action": "track", "owner": "Mira", "id": "stress"}          read it; {"remove": true} drops it
     New tracks run 0-6 unless min/max say otherwise. Same owner + id = the same track, whichever module uses it.
@@ -244,7 +245,7 @@ def _step_up(ctx, rec: dict, intent: dict) -> dict:
     return _done({"owner": rec["owner"], "id": rec["id"], "value": rec["value"], "check": aid, "actor": actor,
                   "was": data["degree"], "degree": graded["degree"], "passed": graded["passed"]},
                  refresh="clocks", visible_events=[{"type": "roll", "recipient": "party",
-                                                    "text": f"{actor} spends {cost} {rec['id']}: {graded['degree']}"}])
+                                                    "text": f"{actor} spends {cost} {rec['id'].removesuffix('s') if cost == 1 else rec['id']}: {graded['degree']}"}])
 
 
 def _cadence(ctx, cadence: str) -> dict:
