@@ -8,7 +8,7 @@ turn continues where it stopped) → FINISH (the narration goes out, once). STAT
 up a turn that a crash, a new session or a context compaction interrupted.
 
     turn.py -c <campaign> begin  --text "<what the table said>" [--input-id ID]
-    turn.py -c <campaign> resolve --intents '[{"actor": "Mira", "action": "roll", "spec": "1d20+5", "dc": 13}]'
+    turn.py -c <campaign> resolve --intents '[{"actor": "Mira", "action": "roll", "approach": "wits"}]'   (5e: "spec": "1d20+5", "dc": 13)
     turn.py -c <campaign> answer --request req-4-1 --value 14
     turn.py -c <campaign> status | resume
     turn.py -c <campaign> finish  < narration.txt
@@ -103,8 +103,9 @@ def _ask(ctx: Ctx, intent: dict) -> dict:
 def _roll(ctx: Ctx, intent: dict) -> dict:
     """roll — one roll for one character.
 
-    {"actor": "Mira", "action": "roll", "spec": "1d20+5", "dc": 13, "label": "Stealth"}
-    With roll_mode: players the turn waits for that player's d20 (the number before bonuses);
+    Braid: {"actor": "Mira", "action": "roll", "approach": "finesse", "label": "slip past the guard"}
+    5e:    {"actor": "Mira", "action": "roll", "spec": "1d20+5", "dc": 13, "label": "Stealth"}
+    With roll_mode: players the turn waits for that player's dice (5e: the d20 before bonuses; Braid: both d6 added);
     with roll_mode: auto the engine rolls. Either way the roll happens once: sending the turn
     again, or resuming after a crash, returns the same result.
     Braid (System: core): a check is {"spec": "2d6+1"} with no DC, graded on the five-step ladder; any other spec is
@@ -122,17 +123,21 @@ def _roll(ctx: Ctx, intent: dict) -> dict:
         err = checks.spec_error(system, intent.get("spec")) if intent.get("dc") is not None or sides == 20 else None
         if err:
             return {"status": "done", "elapsed_minutes": 0, "data": {"error": err}}
-        is_check = (num, sides) == (2, 6) if system == "core" else intent.get("dc") is not None or bool(intent.get("likelihood"))
+        # Story never asks for dice: a check (no spec, an approach, a likelihood, a dc or a d20) asks the oracle.
+        is_check = (num, sides) == (2, 6) if system == "core" else (
+            intent.get("dc") is not None or bool(intent.get("likelihood")) or bool(intent.get("approach"))
+            or not intent.get("spec") or sides == 20)
         if is_check:
             return _check(ctx, intent, system)
     num, sides, mod, *_ = dice.parse_notation(str(intent.get("spec", "1d20")))
     actor = str(intent.get("actor") or "Party")
-    if ctx.flag("roll_mode", "players") == "players" and "roll" not in ctx.answers:
+    if system != "story" and ctx.flag("roll_mode", "players") == "players" and "roll" not in ctx.answers:
         label = intent.get("label") or "a roll"
         dc = f" (DC {intent['dc']})" if intent.get("dc") is not None and ctx.flag("show_dc", "on") == "on" else ""
         return {"status": "waiting_for_player",
                 "requests": [{"key": "roll", "kind": "roll", "expected": actor,
-                              "text": f"{actor}: roll {label} — {intent.get('spec', '1d20')}{dc}"}]}
+                              "text": f"{actor}: roll {label} — {intent.get('spec', '1d20')}{dc}",
+                              **({"dice": f"{num}d{sides}"} if system != "d20" else {})}]}
     if "roll" in ctx.answers:
         raw = [int(ctx.answers["roll"]["value"])]
     else:
@@ -164,16 +169,17 @@ def _check(ctx: Ctx, intent: dict, system: str) -> dict:
     label = intent.get("label") or "a roll"
     if system == "core" and ctx.flag("roll_mode", "players") == "players" and "roll" not in ctx.answers:
         return {"status": "waiting_for_player",
-                "requests": [{"key": "roll", "kind": "roll", "expected": actor,
+                "requests": [{"key": "roll", "kind": "roll", "expected": actor, "dice": checks.CORE_DICE,
                               "text": f"{actor}: roll {label} — {checks.shown(system, spec)}"}]}
     num, sides, mod = checks.dice_for(system, spec)
     rolled = [int(ctx.answers["roll"]["value"])] if "roll" in ctx.answers else ctx.roll("roll", sides, num)
-    likelihood, chaos = str(intent.get("likelihood") or "50/50"), checks.chaos(ctx.campaign, system)
+    likelihood, chaos = str(intent.get("likelihood") or _odds(ctx, intent, actor, system)), checks.chaos(ctx.campaign, system)
     graded = checks.resolve(system, spec, None, rolled, likelihood=likelihood, chaos=chaos)
     data = {"actor": actor, "dice": rolled, "modifier": mod, "total": graded["total"], "label": intent.get("label", ""),
             "degree": graded["degree"], "passed": graded["passed"], "spec": spec}   # spec: a token can step it up later
     if system == "story":
-        data.update(likelihood=likelihood, chaos=chaos)
+        import oracle
+        data.update(likelihood=likelihood, chaos=chaos, answer=oracle.verdict(rolled[0], likelihood, chaos))
     if edge["notes"]:
         data["edges"] = edge["notes"]
     if edge["push"]:
@@ -181,6 +187,22 @@ def _check(ctx: Ctx, intent: dict, system: str) -> dict:
     said = f"{graded['total']}, {graded['degree']}" if system == "core" else f"the oracle says {graded['degree']}"
     return {"status": "done", "elapsed_minutes": 0, "data": data,
             "visible_events": [{"type": "roll", "recipient": "party", "text": f"{actor} rolls {label}: {said}"}]}
+
+
+def _odds(ctx: Ctx, intent: dict, actor: str, system: str) -> str:
+    """Story mode with no likelihood: the approach on the sheet sets the odds (+2 or more likely, -1 or less unlikely)."""
+    if system != "story" or not intent.get("approach"):
+        return "50/50"
+    import sheet
+    base = sheet.approach(ctx.campaign, actor, intent["approach"]) or 0
+    return "likely" if base >= 2 else "unlikely" if base <= -1 else "50/50"
+
+
+def _dice_range(dice_spec: str) -> "tuple[int, int]":
+    """The lowest and highest sum a player can send for `dice_spec` ("2d6" → 2..12)."""
+    import dice
+    num, sides, *_ = dice.parse_notation(dice_spec)
+    return num, num * sides
 
 
 # ── store helpers ─────────────────────────────────────────────────────────────
@@ -373,6 +395,7 @@ def resolve(campaign: str, intents: list, turn_id: "str | None" = None) -> dict:
 def _run(campaign: str, turn_id: str) -> dict:
     """Run this turn's pending actions in order until one waits. Safe to call again at any point."""
     results, status = [], ""
+    braid = paths.campaign_system(campaign) != "d20"
     while True:
         with wdb.writer(campaign) as db:
             if _open_requests(db, turn_id):
@@ -384,6 +407,8 @@ def _run(campaign: str, turn_id: str) -> dict:
             intent = json.loads(act["intent"])
             ctx = Ctx(campaign, db, turn_id, act["action_id"])
             out = HANDLERS[intent["action"]](ctx, intent) or {}
+            if braid and out.get("status", "done") == "done" and isinstance(out.get("data"), dict) and out["data"].get("error"):
+                out["status"] = "refused"         # Braid: a refusal must not read as done (the action is still closed)
             status = out.get("status", "done")
             if status == "waiting_for_player":
                 for req in out.get("requests") or []:
@@ -391,7 +416,8 @@ def _run(campaign: str, turn_id: str) -> dict:
                     request_id = f"req-{turn_id.split('-')[1]}-{act['seq']}-{req.get('key', 'choice')}"
                     db.execute("INSERT OR IGNORE INTO requests VALUES (?,?,?,?,?,?,?,?,?)",
                                (request_id, turn_id, act["action_id"], req.get("kind", "decision"), req.get("expected", "party"),
-                                json.dumps({"key": req.get("key", "choice"), "text": req.get("text", "")}, ensure_ascii=False),
+                                json.dumps({"key": req.get("key", "choice"), "text": req.get("text", ""),
+                                            **({"dice": req["dice"]} if req.get("dice") else {})}, ensure_ascii=False),
                                 "open", "", _epoch()))
                     _queue(db, turn_id, request_id, req.get("text", ""), req.get("audience", "party"), "question")
                 # Time that passed before the question still passed: its file changes are applied now.
@@ -443,6 +469,9 @@ def _run(campaign: str, turn_id: str) -> dict:
     view["action_id"] = last.get("action_id")
     view["elapsed_minutes"] = sum(int(r.get("elapsed_minutes") or 0) for r in results)
     view["visible_events"] = [e for r in results for e in (r.get("visible_events") or [])]
+    refused = [{"action_id": r["action_id"], "error": r["data"]["error"]} for r in results if r.get("status") == "refused"]
+    if refused:
+        view["refused"] = refused
     return view
 
 
@@ -467,6 +496,12 @@ def answer(campaign: str, request_id: str, value, _view: bool = True) -> dict:
                     "reason": "asked before an undo: that timeline is gone, ask again if you still need it"}
         if req["status"] != "open":
             return {"request_id": request_id, "stale": True, "reason": f"request is {req['status']}"}
+        dice_spec = json.loads(req["question"]).get("dice")
+        if dice_spec:                             # a Braid roll: refuse a sum those dice cannot make, keep the question open
+            lo, hi = _dice_range(dice_spec)
+            if not str(value).strip().lstrip("-").isdigit() or not lo <= int(value) <= hi:
+                return {"request_id": request_id, "status": "refused", "turn_id": req["turn_id"],
+                        "error": f"{value!r} is not a {dice_spec} roll: send the dice added together, {lo} to {hi}"}
         db.execute("UPDATE requests SET status='answered', answer=? WHERE request_id=?",
                    (json.dumps({"value": value}, ensure_ascii=False), request_id))
         db.execute("UPDATE actions SET status='pending' WHERE action_id=?", (req["action_id"],))

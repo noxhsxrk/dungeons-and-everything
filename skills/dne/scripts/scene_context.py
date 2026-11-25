@@ -220,6 +220,10 @@ def build(campaign: str, text: str = "", audience: str = "dm", budget: int = 180
         "heard_here": _heard_here(campaign, here) if audience == "dm" else [],
         "rules": {k: v for k in RULE_FLAGS if (v := paths.session_flag(campaign, k, ""))},
     }
+    if paths.campaign_system(campaign) != "d20":   # Braid dials the GM rules by (5e has none of them)
+        import modules
+        view["rules"].update({k: v for k in ("claims", "storyteller") if (v := paths.session_flag(campaign, k, ""))})
+        view["rules"]["modules"] = ", ".join(modules.enabled(campaign)) or "(none)"
     used = len(json.dumps(view, ensure_ascii=False))
     view["relations"], view["lore"], view["cut"] = "", "", []
     if audience == "dm":                           # relationships and lore hold secrets: the GM only

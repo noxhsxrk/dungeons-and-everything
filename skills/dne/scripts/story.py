@@ -439,6 +439,7 @@ def _register() -> None:
             asked = roll.get("spec", "1d20") if system == "d20" else checks.shown(system, spec)
             return {"status": "waiting_for_player",
                     "requests": [{"key": key, "kind": "roll", "expected": actor,
+                              **({"dice": checks.CORE_DICE} if system == "core" else {}),
                                   "text": f"{actor}: {text} — {asked}.{twice}"}]}, None
         if key in ctx.answers:
             got = [int(ctx.answers[key]["value"])]
@@ -461,31 +462,54 @@ def _register() -> None:
     def _flashback(ctx, intent: dict) -> dict:
         """flashback — a player says what their character already did to prepare, and it is resolved now.
 
-        {"actor": "Mira", "action": "flashback", "claim": "Last night I swapped the cellar key with the gardener's.",
-         "cost": "a Hero Point", "roll": {"spec": "1d20+4", "dc": 13, "label": "Sleight of Hand"}}
+        Braid: {"actor": "Mira", "action": "flashback", "claim": "Last night I swapped the cellar key with the gardener's.",
+         "roll": {"approach": "finesse", "label": "the key swap"}}   costs 1 stress, marked by the engine
+         ("cost": "token" spends 1 token instead; refused if they have none)
+        5e:    {"actor": "Mira", "action": "flashback", "claim": "…", "cost": "a Hero Point",
+         "roll": {"spec": "1d20+4", "dc": 13, "label": "Sleight of Hand"}}
         Skip the planning scene: cut to the job, and let preparation be told when it is needed. The claim must be
-        something the character could have done and that nothing already told rules out. It costs what the table uses
-        (a Hero Point, coin, a favour: say which in `cost`), then a roll decides if it went as described. One per
-        character per scene is plenty."""
+        something the character could have done and that nothing already told rules out. Under 5e it costs what the
+        table uses (a Hero Point, coin, a favour: say which in `cost`), then a roll decides if it went as described.
+        One per character per scene is plenty."""
         world = world_of(ctx)
         actor = str(intent.get("actor") or "Party")
+        braid = paths.campaign_system(ctx.campaign) != "d20"
+        token = braid and "token" in str(intent.get("cost", "")).lower()
+        if token:
+            import mechanics
+            import world_db as wdb
+            pool = wdb.get(ctx.db, "pool", mechanics._key(actor, "tokens"))
+            if not pool or int(pool.get("value") or 0) < 1:
+                return {"status": "done", "elapsed_minutes": 0,
+                        "data": {"error": f"{actor} has no token for this flashback: pay 1 stress instead (leave out `cost`)"}}
         waiting, rolled = (None, {"passed": True}) if not intent.get("roll") else \
             _rolled(ctx, intent, "roll", f"flashback: {intent.get('roll', {}).get('label') or 'did it work?'}")
         if waiting:
             return waiting
-        record = {"by": actor, "claim": str(intent.get("claim", "")), "cost": str(intent.get("cost", "")),
+        cost = str(intent.get("cost", ""))
+        if braid:                                # Braid's price is fixed, and the engine pays it
+            import mechanics
+            if token:
+                turn.HANDLERS["pool"](ctx, {"action": "pool", "owner": actor, "id": "tokens", "spend": 1, "why": "flashback"})
+                cost = "1 token"
+            else:
+                mechanics.change_track(ctx, actor, "stress", mark=1, why="flashback")
+                cost = "1 stress"
+        record = {"by": actor, "claim": str(intent.get("claim", "")), "cost": cost,
                   "worked": bool(rolled["passed"]), "minute": world.minute}
         world.put("flashback", ctx.action_id, record)
-        return {"status": "done", "elapsed_minutes": 0,
-                "data": {**record, **rolled, "note": "It happened as told." if record["worked"] else
-                         "It was tried and something about it went wrong: say what, and let that be the new problem."}}
+        note = "It happened as told." if record["worked"] else \
+            "It was tried and something about it went wrong: say what, and let that be the new problem."
+        if rolled.get("degree") == "success at a cost":
+            note = "It happened, at a cost: name it now (a complication, harm or stress)."
+        return {"status": "done", "elapsed_minutes": 0, "data": {**record, **rolled, "note": note}}
 
     @turn.handler("bargain")
     def _bargain(ctx, intent: dict) -> dict:
         """bargain — a devil's bargain, offered before the roll.
 
         {"actor": "Mira", "action": "bargain", "offer": "the guard will remember your face",
-         "roll": {"spec": "1d20+5", "dc": 15, "label": "Deception"}}
+         "roll": {"approach": "heart", "label": "Deception"}}     (5e: {"spec": "1d20+5", "dc": 15, …})
         The player is asked first: take advantage on this roll, and `offer` happens whatever the dice say. If they
         accept, the roll is made with advantage and the price is certain; if they refuse, it is an ordinary roll.
         Name a price that makes the story more interesting, not just harder."""

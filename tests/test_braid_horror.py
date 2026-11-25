@@ -358,12 +358,15 @@ class CosmicHorror(BraidCampaign):
                 place = todo.pop(0)
                 known.add(place)
                 actor = who[len(known) % 2]
-                r = self.turn_with(f"[{actor}]: I search {place}",
-                                   {"action": "search", "actor": actor, "case": case["id"], "where": place,
-                                    "roll": {"approach": "wits"}}, answers=["10"])
-                d = self.data(r)
-                self.assertTrue(d["roll_helped"])
-                found |= {f["id"] for f in d["found"]}
+                before = None
+                while before != found:                    # PR 10: one search turns up 2-3 hidden clues; search again
+                    before = set(found)
+                    r = self.turn_with(f"[{actor}]: I search {place}",
+                                       {"action": "search", "actor": actor, "case": case["id"], "where": place,
+                                        "roll": {"approach": "wits"}}, answers=["10"])
+                    d = self.data(r)
+                    self.assertTrue(d["roll_helped"])
+                    found |= {f["id"] for f in d["found"]}
                 for place_named in re.findall(r"This points to (.+?)\.\)", " ".join(f["text"] for f in d["found"])):
                     if place_named not in known and place_named not in todo:
                         todo.append(place_named)

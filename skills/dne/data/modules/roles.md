@@ -20,4 +20,8 @@ anyone else: that is what makes the betrayal fair.
   "<the seal the player kept>"}`. The table sees the deal, the salt and whether it matches the seal. Anyone can
   check it: sha256 of `{"deal":{...},"salt":"..."}` (keys sorted, no spaces).
   - If `verified` is false, say so plainly. The game's truth was broken; do not narrate around it.
-- A new deal is refused until the old one is revealed.
+- A new deal is refused until the old one is revealed, and after a reveal it needs `"new": true`: a deal is
+  started on purpose, never by accident. With the loop module on, reveal only when the loop breaks or the story
+  ends (a revealed deal stays revealed across resets).
+- **One player:** the only player character is always dealt `loyal`, so a solo hunt for the traitor never ends
+  with "it was you". Send `"pc_may_draw": true` only if the player asked to maybe be the traitor.

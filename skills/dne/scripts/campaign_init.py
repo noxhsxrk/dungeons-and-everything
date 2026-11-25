@@ -140,6 +140,10 @@ def check(seed) -> list:
         _err(errors, "calendar", "the world engine needs a calendar: time only passes through it")
     if cal is not None and (not isinstance(cal, dict) or not str(cal.get("date", "")).strip()):
         _err(errors, "calendar.date", "the starting in-world date, e.g. \"1 Thaw 412\"")
+    elif cal is not None and not any("," in str(m) for m in (cal.get("months") or []) + (cal.get("day_names") or [])):
+        bad = _calendar_error(cal)
+        if bad:
+            _err(errors, "calendar", bad)
 
     kit = seed.get("worldkit")
     if kit is not None:
@@ -240,6 +244,31 @@ def check(seed) -> list:
     return errors
 
 
+def _calendar_args(name: str, cal: dict) -> list:
+    args = ["-c", name, "init", "--date", str(cal["date"]), "--time", str(cal.get("time", "morning"))]
+    if cal.get("gregorian"):
+        args.append("--gregorian")
+    if cal.get("months"):
+        args += ["--months", ",".join(cal["months"])]
+    if cal.get("month_length"):
+        args += ["--month-length", str(cal["month_length"])]
+    if cal.get("day_names"):
+        args += ["--day-names", ",".join(cal["day_names"])]
+    if cal.get("lang"):
+        args += ["--lang", str(cal["lang"])]
+    return args
+
+
+def _calendar_error(cal: dict) -> "str | None":
+    """Run calendar.py init on a throwaway folder: --check must refuse what the build would (a date, a time label)."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / "campaigns" / "probe").mkdir(parents=True)
+        env = {**os.environ, "DNE_CAMPAIGN_ROOT": tmp, "DNE_RUNTIME_DIR": str(Path(tmp) / "rt"), "PYTHONIOENCODING": "utf-8"}
+        code, out = _run(env, "calendar.py", *_calendar_args("probe", cal))
+    return out.removeprefix("Error: ") if code else None
+
+
 def _run(env: dict, script: str, *args: str) -> "tuple[int, str]":
     r = subprocess.run([sys.executable, str(HERE / script), *args], capture_output=True, text=True, encoding="utf-8",
                        errors="replace", env=env)
@@ -281,6 +310,14 @@ def build(seed: dict) -> dict:
                     text = text.replace("<worldkit.json | none — classic SRD fantasy>", "none")
                     text = text.replace(f"  **Starting level:** {seed.get('starting_level', '<N>')}", "")
                     text = re.sub(r"<Origin/Race> <Class> <Level> \| HP X/X \| AC X", "<concept> | harm X/4 | stress X/6", text)
+                    # 5e table rules (death saves, DCs, hero points) mean nothing under Braid
+                    text = re.sub(r"^- (success_at_cost|degrees|hero_points|when_down|show_dc): \S+\n", "", text, flags=re.M)
+                    text = text.replace("`Prone — Derribado`, `Short Rest — Descanso corto`",
+                                        "`Stress — Estrés`, `Taken out — Fuera de combate`")
+            if t == "world.md" and seed.get("system", "d20") != "d20":
+                text = text.replace("Mechanically these are 5e spells from worldkit.json (or the SRD).",
+                                    "Under Braid there are no spells: a power is a label, a move or a module's track "
+                                    "(SKILL-core.md).")
             if t == "npcs-full.md" and seed.get("system", "d20") != "d20":   # the entry pattern, in Braid's stat line
                 text = text.replace("**CR/Level:**", "**Threat:**").replace(
                     "- **HP:** | **AC:** | **Attack:** | **Notable abilities:**", "- **Harm:** | **Deals:** | **Moves:**")
@@ -308,18 +345,7 @@ def build(seed: dict) -> dict:
             steps.append("map")
         cal = seed.get("calendar")
         if cal:
-            args = ["-c", name, "init", "--date", str(cal["date"]), "--time", str(cal.get("time", "morning"))]
-            if cal.get("gregorian"):
-                args.append("--gregorian")
-            if cal.get("months"):
-                args += ["--months", ",".join(cal["months"])]
-            if cal.get("month_length"):
-                args += ["--month-length", str(cal["month_length"])]
-            if cal.get("day_names"):
-                args += ["--day-names", ",".join(cal["day_names"])]
-            if cal.get("lang"):
-                args += ["--lang", str(cal["lang"])]
-            code, out = _run(env, "calendar.py", *args)
+            code, out = _run(env, "calendar.py", *_calendar_args(name, cal))
             (fail.append({"path": "calendar", "error": out}) if code else steps.append("calendar"))
         for i, f in enumerate(seed.get("factions") or []):
             if fail:
@@ -381,6 +407,12 @@ def build(seed: dict) -> dict:
             return {"ok": False, "errors": [{"path": "campaign", "error": f"{name!r} appeared while building: left as it is"}]}
         os.replace(camp, dest)
         notes = warnings(seed)
+        try:                                      # the new world is the one in play: its session starts now (save_check)
+            (paths.runtime_dir() / "active-campaign.json").write_text(json.dumps(
+                {"name": name, "since": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+                 "xp": {}}), encoding="utf-8")
+        except OSError:
+            pass
         for n in seed.get("npcs") or []:          # the registry lives at the real root, so this comes after the move
             code, out = _run({**os.environ, "PYTHONIOENCODING": "utf-8"}, "name_registry.py", "add", "--name", n["name"],
                              "--type", "npc", "--campaign", name, "--session", "0")

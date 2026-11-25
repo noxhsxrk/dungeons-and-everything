@@ -20,6 +20,13 @@ What a player says is true stays true. Write each thing as a fact:
   pinned value, and `check` fails if anything later changes it.
 - Any other text is kept as a fact. You must not contradict it when you write.
 
+**Pin every genre-defining ask.** The skeleton does not read prose: "a murder mystery" or "the Mayor's harvest
+vault" does nothing unless you pin it (`mystery.crime=a killing`, `heist.target=...`, `cozy.season=...`).
+`story_gen.py axes mystery,heist` lists every axis and its values, so you can pick the value closest to what the
+players said. A pin may also be your own words. The only prose `check` catches is a fact that quotes another
+value of an axis word for word ("it was a theft" when the skeleton rolled "a killing"): it then fails and names
+the pin to add. A paraphrase is not caught.
+
 ## 2. Skeleton: the script rolls
 
 ```
@@ -47,6 +54,15 @@ story_gen.py -c <camp> skeleton --genre war,mystery,horror [--seed N]
     after another. Play them in order. Do not jump to the top step.
   - **heist:** a plan with the target, two defences, the insider and what goes wrong.
   - **romance:** obstacles. One comes from a character, one from circumstance.
+- **Setting genres keep their era.** wuxia, fantasy and historical leave out values that do not fit them (radios,
+  guns, recordings, data…) in every genre in play; `axes` shows what each leaves out. A pin still wins.
+- **In a campaign (`-c`).** A mystery's places become the campaign's map places (the party's place first, where
+  the trail starts) and its suspects get the names of NPCs in npcs.md, as far as there are enough of each. Places
+  the map lacks keep their generated names: add them to the map, or rename them with
+  `story_gen.py -c <camp> name "<old place>" "<map place>"`. Name a suspect with `name s2 "<NPC name>"`; the name
+  is on the suspect record, so `accuse` shows it to you. Run `skeleton` after the map and NPCs exist.
+- **Re-rolling.** Rolling a new skeleton over one you never fleshed takes the old one out of the history, so a
+  discarded roll does not weigh on later stories. Seed the pins first, then re-roll.
 - **Replaying.** The output records `seed` and `history_at`. `skeleton --seed N --history-at K` replays it
   exactly and records nothing.
 
@@ -55,8 +71,10 @@ clue proves. If the players' seed facts forced something, it is already in the s
 
 ## 3. Flesh: you write five, the script picks
 
-Do this for every piece of prose that matters: the premise, each suspect's name and manner, each clue's text,
-the horror's first sign, the insider.
+Do this for the prose that matters most: the premise, each core clue (`obvious: true`), the horror's first sign,
+the insider. Hidden clues are cheaper: write 1 to 5 candidates for each, or run
+`story_gen.py -c <camp> fill`, which gives every hidden clue you have not written a plain English line that does its
+job ("Something here shows how it was done: …"). For a table in another language, write them yourself.
 
 ```
 story_gen.py -c <camp> flesh --slot premise
@@ -68,12 +86,16 @@ This prints the givens, the facts and a `do_not_use` list (the genre's clichés 
 story_gen.py -c <camp> flesh --slot premise --candidates '[{"text": "...", "p": 0.06}, ... five ...]'
 ```
 
-- **Clue slots.** With `--slot clue:<id>` the pick also becomes that clue's `text` in the case.
-- **Write exactly 5 candidates.** Give each a probability of at most 0.10, meaning each is one you would rarely
-  write. Write from the unlikely tail, not the obvious middle.
-- **Dropped candidates.** The script drops any that use a cliché or are close to a recent pick.
+- **Clue slots.** With `--slot clue:<id>` the pick also becomes that clue's `text` in the case. The brief shows
+  the clue's `job`: where it is, what it proves, where it points, whether it is core, and the suspects. **Every
+  candidate must still prove what the clue proves and point where it leads: vary the detail, not the job.** The
+  "(This points to …)" line is added by `search`; do not write it.
+- **Write 5 candidates** (1 to 5 for a hidden clue). Give each a probability of at most 0.10, meaning each is one
+  you would rarely write. Write from the unlikely tail, not the obvious middle.
+- **Dropped candidates.** The script drops any that use a cliché or are close to a recent pick. The cliché list is
+  English: it never matches text in another language, so keep clear of the `do_not_use` ideas yourself.
 - **The pick.** It chooses one of the rest by its own rng, weighted by your probabilities. Use the one it picked,
-  even if you liked another better. If all five are dropped, it refuses: write five new ones.
+  even if you liked another better. If every one is dropped, it refuses: write new ones.
 
 ## 4. Check: before anything is played
 
@@ -100,7 +122,8 @@ clues is never thrown away: fix the listed problems by hand.
 - **horror and the other ladder genres:** at least 3 steps that rise one after another;
 - **romance:** an obstacle that comes from a character, not only from luck;
 - **heist:** a target, 2 or more defences, an insider and the thing that goes wrong;
-- **every genre:** no empty axis, and no seed fact contradicted.
+- **every genre:** no empty axis, no pinned seed fact contradicted, and no prose fact that quotes another value
+  of an axis.
 
 Exit code 0 means ready to play, 1 means problems are listed, 2 means bad input.
 

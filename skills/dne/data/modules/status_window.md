@@ -5,7 +5,8 @@ number into one.
   track and condition with what it saw last, and sends the table one line per change:
   `[System] Mira — harm: 1/4 → 2/4`, `[System] Mira — Wounded: gained (-1)`. Read them out as they are, in the
   system's voice if you like (dry, cheerful, a little cruel). Do not add numbers they do not have.
-  - The first time a module is switched on the script only takes note; announcements start with the next change.
+  - The first time a module is switched on, and on every `modules apply`, the script only takes note;
+    announcements start with the next change.
 - **The status window.** When a player asks to see it: `{"action": "status", "show": "Mira"}`. It lists Mira's
   numbers and achievements from the store, nothing else.
 - **Achievements.** The first critical success and the first critical failure of each character earn one by

@@ -199,10 +199,13 @@ def _set_date(cal: dict, date_str: str) -> None:
     if not months:
         months = GREGORIAN_MONTHS[:] if parts[1].lower() in [m.lower() for m in GREGORIAN_MONTHS] else [parts[1]]
         cal["months"] = months
+    names = [m.lower() for m in months]
+    if cal.get("gregorian") and parts[1].lower() not in names:   # local month names shown, English accepted too
+        names = [m.lower() for m in GREGORIAN_MONTHS]
     try:
-        month = [m.lower() for m in months].index(parts[1].lower()) + 1
+        month = names.index(parts[1].lower()) + 1
     except ValueError:
-        raise ValueError(f"Unknown month: {parts[1]}") from None
+        raise ValueError(f"Unknown month: {parts[1]}. Accepted: {', '.join(months)}") from None
     if cal.get("gregorian"):
         date(year, month, day)
     elif year < 1 or not 1 <= day <= _month_length(cal):
@@ -210,11 +213,16 @@ def _set_date(cal: dict, date_str: str) -> None:
     cal.update(day=day, month=month, year=year)
 
 
+#: Other words the docs and tables use for a time of day.
+TIME_ALIASES = {"dusk": "evening", "noon": "midday", "sunrise": "dawn", "sunset": "evening"}
+
+
 def _time_hour(label: str) -> int:
     for labels in TIME_LABELS.values():           # accept the table's own words too ("กลางคืน")
         label = next((en for en, local in labels.items() if local == label.strip()), label)
+    label = TIME_ALIASES.get(label.strip().lower(), label)
     if label.lower() not in HOURS_PER_TIME:
-        raise ValueError(f"Unknown time label: {label}. Valid labels: {', '.join(HOURS_PER_TIME)}")
+        raise ValueError(f"Unknown time label: {label}. Valid labels: {', '.join([*HOURS_PER_TIME, *TIME_ALIASES])}")
     return HOURS_PER_TIME[label.lower()]
 
 

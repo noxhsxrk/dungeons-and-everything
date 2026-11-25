@@ -480,13 +480,13 @@ def _progress(ctx, intent: dict) -> dict:
 
 def edged(ctx, intent: dict, system: str, actor: str, spec) -> dict:
     """The one step every Braid check (roll, judge, flashback, bargain, search) takes before its dice: the actor's
-    conditions, a push and help, read from the intent or its `roll` dict ({"approach", "push", "help"}). With no
-    spec, a core check takes 2d6 + the approach on the actor's sheet. Returns {"spec", "mod", "notes", "push"} or
+    conditions, a push, help, a sheet label ("use_label": +1) and a dangerous foe ("against": threat 4-5 is -1), read
+    from the intent or its `roll` dict. With no spec, a core check takes 2d6 + the approach on the actor's sheet. Returns {"spec", "mod", "notes", "push"} or
     {"error"}. A d20 check is returned untouched."""
     if system == "d20":
         return {"spec": spec, "mod": 0, "notes": [], "push": False}
     roll = intent.get("roll") if isinstance(intent.get("roll"), dict) else {}
-    asked = {k: roll.get(k, intent.get(k)) for k in ("approach", "push", "help")}
+    asked = {k: roll.get(k, intent.get(k)) for k in ("approach", "push", "help", "use_label", "against")}
     import resolve as checks
     if system == "core" and not spec and asked["approach"]:
         import sheet
@@ -507,9 +507,9 @@ def edges(ctx, intent: dict, system: str, actor: str) -> dict:
     """The modifier conditions, a push and help add to `actor`'s check ({"mod", "notes"} or {"error"}). Reads only:
     the push's stress is marked by `push()` once the roll is done (the handler runs again when a player's dice come)."""
     if system == "story":
-        if intent.get("push") or intent.get("help"):
-            return {"error": "story mode has no modifiers to push or help with: spend a token afterwards to step "
-                             "the answer up ({\"action\": \"pool\", \"id\": \"tokens\", \"step_up\": true})"}
+        if intent.get("push") or intent.get("help") or intent.get("use_label"):
+            return {"error": "story mode has no modifiers to push, help or add a label with: spend a token afterwards to "
+                             "step the answer up ({\"action\": \"pool\", \"id\": \"tokens\", \"step_up\": true})"}
         return {"mod": 0, "notes": []}
     mod, notes = 0, []
     for c in conditions_on(ctx.db, actor, intent.get("approach")):
@@ -528,6 +528,27 @@ def edges(ctx, intent: dict, system: str, actor: str) -> dict:
             return {"error": f"{helper} has no bond with {actor}: help needs one ({{\"action\": \"bond\", …}})"}
         mod += 1
         notes.append(f"{helper} helps +1 (and shares what goes wrong)")
+    wanted = str(intent.get("use_label") or "").strip()
+    if wanted:                                   # one label per roll, and only one the sheet holds
+        import sheet
+        try:
+            have = sheet.parse(sheet.find(ctx.campaign, actor).read_text(encoding="utf-8"))["labels"]
+        except (OSError, ValueError, LookupError):
+            have = []
+        name = next((x.split(":")[0].strip() for x in have
+                     if wanted.casefold() in (x.casefold(), x.split(":")[0].strip().casefold())), None)
+        if name is None:
+            return {"error": f"no label {wanted!r} on {actor}'s sheet" + (f": one of {', '.join(x.split(':')[0].strip() for x in have)}" if have else "")}
+        mod += 1
+        notes.append(f"label {name} +1")
+    foe_name = str(intent.get("against") or "").strip()
+    if foe_name:
+        foe = wdb.get(ctx.db, "foe", foe_name.casefold())
+        if not foe:
+            return {"error": f"no foe {foe_name!r} on record (bring it in with the `foe` action, or fold its -1 into the spec)"}
+        if int(foe["threat"]) >= 4:
+            mod -= 1
+            notes.append(f"against {foe['name']} (threat {foe['threat']}) -1")
     return {"mod": mod, "notes": notes}
 
 

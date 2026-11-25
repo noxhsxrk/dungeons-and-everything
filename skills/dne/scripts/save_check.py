@@ -14,7 +14,10 @@ Usage:
     save_check.py -c <campaign>            # run at the start and again at the end of /dne save
     save_check.py -c <campaign> --since "2026-11-23 14:00"   # override the session start
 
-Session start = when /dne load marked the campaign active (runtime marker), else 12 hours ago.
+Session start = when /dne load (or campaign_init.py) marked this campaign active (runtime marker), else 12 hours ago.
+A row ticks on the file time and, where a template could still be standing, on content: the template's own
+placeholders never count, and a state.md section the engine's snapshot shows unchanged since the session's first
+turn does not tick (the engine rewrites its own block of state.md every turn).
 """
 from __future__ import annotations
 
@@ -30,7 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from paths import find_campaign, runtime_dir  # noqa: E402
 
 
-def session_start(since: str | None) -> float:
+def session_start(since: str | None, campaign: str | None = None) -> float:
     if since:
         # no strptime: it imports the stdlib calendar, which scripts/calendar.py shadows
         m = re.fullmatch(r"\s*(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{2})\s*", since)
@@ -39,9 +42,32 @@ def session_start(since: str | None) -> float:
         return datetime(*map(int, m.groups())).timestamp()
     marker = runtime_dir() / "active-campaign.json"
     try:
+        named = json.loads(marker.read_text(encoding="utf-8")).get("name")
+        if campaign and named and named != campaign:      # another campaign's session: not this one's start
+            raise OSError
         return marker.stat().st_mtime
-    except OSError:
+    except (OSError, ValueError, AttributeError):
         return time.time() - 12 * 3600
+
+
+#: Template text that means a section was never written.
+PLACEHOLDERS = ("<Name> —", "<Origin/Race>", "<concept> |", "<Day, Month, Year", "*(none established)*")
+
+
+def _unwritten(section: str) -> bool:
+    return any(p in section for p in PLACEHOLDERS)
+
+
+def _unchanged_since(camp: Path, name: str, title: str, since: float, now: str) -> bool:
+    """True when the engine's first snapshot this session holds the same `## title` section: the GM did not write it.
+    No snapshot this session (no engine turns) → False; the file time decides alone."""
+    snaps = sorted(d for d in (camp / ".snapshots").glob("turn_*") if d.is_dir() and (_mtime(d) or 0) >= since)
+    for d in snaps:
+        try:
+            return _section((d / "campaign" / name).read_text(encoding="utf-8"), title) == _section(now, title)
+        except OSError:
+            continue
+    return False
 
 
 def _mtime(p: Path) -> float | None:
@@ -151,10 +177,20 @@ def checklist(campaign: str, since: float) -> list[tuple[bool, str]]:
                       "Recap, Key Events, XP, Loot, Open Threads. Every win, level-up, pact and item that matters "
                       "later also goes to state.md → ## Pinned Facts"))
     else:
-        items.append((done("session-log.md"), "session-log.md: this session's entry (events, rolls that changed things, open threads)"))
-    items.append((done("state.md"), "state.md: Current Situation (location, time, party HP/resources, Inspiration), "
-                                    "Recent Events, Active Quests, Open Threads"))
+        try:
+            log = (camp / "session-log.md").read_text(encoding="utf-8")
+        except OSError:
+            log = ""
+        items.append((done("session-log.md") and ("No sessions yet" not in log or bool(logged_sessions(camp))),
+                      "session-log.md: this session's entry (events, rolls that changed things, open threads)"))
     state = (camp / "state.md").read_text(encoding="utf-8") if (camp / "state.md").exists() else ""
+    braid = bool(re.search(r"\*\*System:\*\*\s*(core|story)\b", state.split("\n## ", 1)[0]))
+    situation = _section(state, "Current Situation")
+    items.append((done("state.md") and not _unwritten(situation)
+                  and not _unchanged_since(camp, "state.md", "Current Situation", since, state),
+                  "state.md: Current Situation (location, time, "
+                  + ("harm, stress, tokens and other tracks" if braid else "party HP/resources, Inspiration")
+                  + "), Recent Events, Active Quests, Open Threads"))
     flags = _section(state, "Live State Flags")
     text = session_text(camp)
     npcs = npc_index(camp)
@@ -185,12 +221,16 @@ def checklist(campaign: str, since: float) -> list[tuple[bool, str]]:
         items.append((not open_records and not growing, label))
     except Exception:
         pass
-    items.append(("Faction stances" in flags or "NPC dispositions" in flags,
+    items.append((("Faction stances" in flags or "NPC dispositions" in flags)
+                  and flags.count("*(none established)*") < 3
+                  and not _unchanged_since(camp, "state.md", "Live State Flags", since, state),
                   "state.md → Live State Flags: Cover, Faction stances, NPC dispositions present and current"))
     chars = sorted((camp / "characters").glob("*.md")) if (camp / "characters").is_dir() else []
     for c in chars:
         items.append((done(f"characters/{c.name}"),
-                      f"characters/{c.name}: HP, XP, slots/resources, inventory, money, conditions, bonds"))
+                      f"characters/{c.name}: " + ("XP (sheet.py xp), labels, gear, bonds, advances; harm and stress "
+                                                  "live in the engine" if braid else
+                                                  "HP, XP, slots/resources, inventory, money, conditions, bonds")))
     for name, what in (("calendar.json", "in-world time advanced (`calendar.py advance`)"),
                        ("factions.json", "faction numbers: `faction.py adjust` for what the party did to them"),
                        ("graph.json", "relationship edges opened/closed this session"),
@@ -208,7 +248,7 @@ def main() -> int:
     p.add_argument("--since", help='session start, "YYYY-MM-DD HH:MM" (default: when /dne load ran)')
     args = p.parse_args()
     try:
-        since = session_start(args.since)
+        since = session_start(args.since, args.campaign)
         items = checklist(args.campaign, since)
     except (OSError, ValueError) as exc:
         print(f"save_check.py: {exc}", file=sys.stderr)

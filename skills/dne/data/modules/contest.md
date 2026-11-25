@@ -11,8 +11,10 @@ usual check (the engine's `roll`), then the GM scores it with `subsystem.py`. Tw
     wins it); failure: the side that rolled −1; critical failure: −2 *(defaults)*.
   - The first side at 0 loses. The winner still owes a **concession** sized by what they lost on the way: none if
     untouched, small if they lost less than half, a real one if they lost half or more. The reply says which.
-- **Scoring a round:** `subsystem.py -c <campaign> check "The hearing" --side Theo --total 9` (the 2d6 total of the
-  roll), or `--degree success` in story mode. The NPC side scores when the GM's character acts: roll for them only if
+- **Scoring a round:** `subsystem.py -c <campaign> check "The hearing" --side Theo --degree "success at a cost"`:
+  copy the check's final `degree` from the engine reply (after a token step-up, the step-up's reply), never
+  re-grade it. `--total 9` (the 2d6 total) is the same only when no token was spent. The NPC side scores when the GM's character acts: roll for them only if
   the table agrees, otherwise let a player's miss be the NPC's point (it already is).
 - Every round must change the situation: describe each point as a moment the audience sees.
-- `subsystem.py -c <campaign> status` shows every contest; `end "<name>"` removes one.
+- `subsystem.py -c <campaign> status` shows every contest; `end "<name>"` removes one. A side that gives up
+  ends it: `end` the contest and narrate the concession it pays (sized as above, by what it lost).

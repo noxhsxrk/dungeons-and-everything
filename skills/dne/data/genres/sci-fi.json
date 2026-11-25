@@ -19,7 +19,7 @@
   "pacing": "mixed",
   "difficulty": "hard",
   "claims": "grounded",
-  "when_down": "saves"
+  "when_down": "choices"
  },
  "suggest": {
   "content": "standard"

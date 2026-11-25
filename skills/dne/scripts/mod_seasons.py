@@ -62,6 +62,8 @@ def _turn(ctx, cal: dict) -> "dict | None":
 
 
 def _events(turned: dict) -> list:
+    if not turned.get("was"):                     # the first season on record is where play starts: nothing turned
+        return [{"type": "season", "recipient": "dm", "text": f"Play starts in {turned['season']}: {turned['happening']}"}]
     return [{"type": "season", "recipient": "party", "text": f"The season turns: {turned['season']}."},
             {"type": "season", "recipient": "dm", "text": f"This season: {turned['happening']}"}]
 

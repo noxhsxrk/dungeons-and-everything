@@ -335,7 +335,12 @@ def srd_path(ruleset=None):
 # primarily an import surface.
 if __name__ == "__main__":
     if len(sys.argv) >= 3 and sys.argv[1] == "campaign-ruleset":
-        print(campaign_ruleset(sys.argv[2]))
+        try:
+            _system = campaign_system(sys.argv[2])
+        except ValueError:
+            _system = "d20"
+        # Braid has no 5e ruleset; the function still answers 2014 for the 5e code paths that call it.
+        print(campaign_ruleset(sys.argv[2]) if _system == "d20" else f"not-applicable (system: {_system})")
         sys.exit(0)
     if len(sys.argv) >= 3 and sys.argv[1] == "campaign-system":
         print(campaign_system(sys.argv[2]))

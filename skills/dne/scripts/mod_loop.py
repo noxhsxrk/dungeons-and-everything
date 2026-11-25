@@ -25,21 +25,23 @@ CARRY_TRACKS = ("party/loop_break", "party/loop_fatigue")
 FILES = ("calendar.json", "tracker.json", "world-map.json", "factions.json")
 
 
-def carried(kind: str, id: str) -> bool:
-    return kind in CARRY_KINDS or (kind == "track" and id in CARRY_TRACKS)
+def carried(kind: str, id: str, extra=()) -> bool:
+    """`extra`: track, pool or progress ids the GM chose to carry at `start` ("carry": ["realm", "tokens"])."""
+    return kind in CARRY_KINDS or (kind == "track" and id in CARRY_TRACKS) or \
+        (kind in ("track", "pool", "progress") and id.rsplit("/", 1)[-1] in extra)
 
 
-def capture(ctx) -> dict:
+def capture(ctx, extra=()) -> dict:
     """The seed: every event row, every record that is world, and the world files as they are now."""
     db, camp = ctx.db, paths.find_campaign(ctx.campaign)
     events = [dict(r) for r in db.execute("SELECT * FROM events ORDER BY event_id")]
     things = [[r["kind"], r["id"], r["data"]] for r in db.execute("SELECT kind, id, data FROM things ORDER BY kind, id")
-              if not carried(r["kind"], r["id"])]
+              if not carried(r["kind"], r["id"], extra)]
     files = {rel: (camp / rel).read_text(encoding="utf-8") for rel in FILES if (camp / rel).is_file()}
     return {"events": events, "things": things, "files": files}
 
 
-def restore(ctx, seed: dict) -> dict:
+def restore(ctx, seed: dict, extra=()) -> dict:
     """Put the seed back in the store; returns the files to write back (handlers never write files themselves)."""
     db = ctx.db
     db.execute("DELETE FROM events")
@@ -47,7 +49,7 @@ def restore(ctx, seed: dict) -> dict:
         cols = list(row)
         db.execute(f"INSERT INTO events ({', '.join(cols)}) VALUES ({', '.join('?' * len(cols))})", [row[c] for c in cols])
     for r in db.execute("SELECT kind, id FROM things").fetchall():
-        if not carried(r["kind"], r["id"]):
+        if not carried(r["kind"], r["id"], extra):
             db.execute("DELETE FROM things WHERE kind=? AND id=?", (r["kind"], r["id"]))
     db.executemany("INSERT INTO things VALUES (?, ?, ?)", [tuple(t) for t in seed["things"]])
     # shortcut: a world file made during the loop (absent from the seed) stays; none of FILES is new mid-story
@@ -70,6 +72,7 @@ def _loop(ctx, intent: dict) -> dict:
 
     {"action": "loop", "start": true}             the seed: the world as it stands now is the morning every loop
                                                   wakes to ("restart": true takes a new seed later)
+        "carry": ["realm", "tokens"] on start/restart: those track, pool or vow ids (any owner) also carry
     {"action": "loop", "reset": true, "why": "Mira fell from the tower"}   back to the seed: events, records and
         world files rewind; knowledge, anchors, loop_break and loop_fatigue stay. Each reset marks 1 fatigue; every
         3rd fatigue (default) the script crosses out one knowledge entry it picks. Refused once loop_break is full.
@@ -87,7 +90,8 @@ def _loop(ctx, intent: dict) -> dict:
     if intent.get("start") or intent.get("restart"):
         if rec["seed"] is not None and not intent.get("restart"):
             return mechanics._err("the loop already has its seed: send \"restart\": true to take a new one")
-        rec["seed"] = capture(ctx)
+        rec["carry"] = sorted({str(c).strip().casefold() for c in intent.get("carry") or [] if str(c).strip()})
+        rec["seed"] = capture(ctx, rec["carry"])
         rec["loop"] = max(rec["loop"], 1)
         events.append({"type": "loop", "recipient": "party", "text": f"The day is set. Loop {rec['loop']} begins."})
     elif intent.get("reset"):
@@ -96,7 +100,7 @@ def _loop(ctx, intent: dict) -> dict:
         brk = wdb.get(ctx.db, "track", "party/loop_break")
         if brk and brk["value"] >= brk["max"]:
             return mechanics._err("the loop is broken (loop_break is full): tomorrow comes, nothing resets")
-        writes = restore(ctx, rec["seed"])
+        writes = restore(ctx, rec["seed"], rec.get("carry") or ())
         rec["loop"] += 1
         fat = mechanics.change_track(ctx, "party", "loop_fatigue", mark=int(nums["fatigue_per_loop"]),
                                      why=str(intent.get("why") or "the day began again"))
@@ -107,7 +111,8 @@ def _loop(ctx, intent: dict) -> dict:
         events.append({"type": "loop", "recipient": "party",
                        "text": f"The day begins again: loop {rec['loop']}. Fatigue {fat['value']}/{fat['max']}."
                                + (f" Forgotten: {forgot}." if forgot else "")})
-        return mechanics._done(_view(rec, fatigue=fat["value"], forgot=forgot, carried=rec["anchors"]),
+        return mechanics._done(_view(rec, fatigue=fat["value"], forgot=forgot, carried=rec["anchors"],
+                                     carried_tracks=rec.get("carry") or []),
                                writes=writes, refresh="clocks", visible_events=events)
     for field, have, cap in (("learn", "knowledge", None), ("anchor", "anchors", int(nums["anchors"]))):
         text = str(intent.get(field) or "").strip()

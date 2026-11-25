@@ -19,7 +19,7 @@
   "pacing": "adventure",
   "difficulty": "standard",
   "claims": "declare",
-  "when_down": "saves"
+  "when_down": "choices"
  },
  "suggest": {
   "content": "standard"

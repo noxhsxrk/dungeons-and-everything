@@ -50,7 +50,9 @@ def _roles(ctx, intent: dict) -> dict:
         shuffle and deal: the named counts, everyone else "loyal" (no counts: 1 traitor per 4, default). The table is
         sent the seal (sha256); each player character is told their own role privately. Refused while a deal is
         unrevealed. The reply's data never shows the deal; the PCs' private messages pass through the turn's
-        `sent` list on their way out (the GM sees PC roles there, never the NPCs').
+        `sent` list on their way out (the GM sees PC roles there, never the NPCs'). With one player character, that PC
+        is always dealt "loyal" unless "pc_may_draw": true (the player asked to maybe be the traitor). After a
+        reveal, a new deal needs "new": true.
     {"action": "roles", "act": "Vos", "why": "the vote"}   what an NPC does now, drawn from its role's table
         (`<role>_acts` in the module, or send "options": [...]); refused for a player character
     {"action": "roles", "reveal": true, "expect": "<seal a player kept>"}   the end: the deal, and whether it
@@ -65,18 +67,25 @@ def _roles(ctx, intent: dict) -> dict:
     if "deal" in intent:
         if rec and not rec.get("revealed"):
             return mechanics._err("roles are already dealt and sealed: reveal them before a new deal")
+        if rec and not intent.get("new"):
+            return mechanics._err("the last deal was revealed: send \"new\": true to deal a new one on purpose")
         names = [str(n).strip() for n in intent["deal"] if str(n).strip()] if isinstance(intent["deal"], list) else []
         if len(set(n.casefold() for n in names)) != len(names) or len(names) < 2:
             return mechanics._err("deal: two or more different names")
         counts = intent.get("roles") or {"traitor": max(1, len(names) // int(mod["numbers"]["one_traitor_per"]))}
         pack = [str(r) for r, n in counts.items() for _ in range(int(n))]
-        if len(pack) > len(names):
-            return mechanics._err(f"{len(pack)} roles for {len(names)} names")
-        pack += [DEFAULT_ROLE] * (len(names) - len(pack))
+        # a solo player hunting the traitor must never turn out to be it, unless they asked for the chance
+        kept = [n for n in names if n.casefold() in pcs] if len(pcs) == 1 and not intent.get("pc_may_draw") else []
+        drawn = [n for n in names if n not in kept]
+        if len(pack) > len(drawn):
+            return mechanics._err(f"{len(pack)} roles for {len(drawn)} names" + (f" ({kept[0]}, the only player character, is "
+                                  "always loyal unless \"pc_may_draw\": true)" if kept else ""))
+        pack += [DEFAULT_ROLE] * (len(drawn) - len(pack))
         r = wdb.rng(ctx.db, f"{ctx.action_id}:deal")          # seeded: a retry or a replay deals the same
         r.shuffle(pack)
         salt = f"{r.getrandbits(128):032x}"
-        deal = dict(zip(names, pack))
+        deal = {**dict(zip(drawn, pack)), **{n: DEFAULT_ROLE for n in kept}}
+        deal = {n: deal[n] for n in names}
         rec = {"deal": deal, "salt": salt, "seal": seal(deal, salt), "message": f"{ctx.action_id}-m1",
                "revealed": False, "turn": ctx.turn_id}
         wdb.put(ctx.db, "roles", "deal", rec)

@@ -19,7 +19,7 @@
   "pacing": "adventure",
   "difficulty": "deadly",
   "claims": "grounded",
-  "when_down": "saves"
+  "when_down": "choices"
  },
  "suggest": {
   "content": "18"

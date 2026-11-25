@@ -5,9 +5,12 @@ Nobody here has harm or a hit count: trouble is a problem to solve together, nev
 - **When the season turns**, the script notices on its own (after any action that moves the calendar), rolls one
   happening from that season's table, and gives every character 1 token *(default)*. Build the next sessions
   around the happening; it is the season's question, not a threat.
-- `{"action": "season"}` reads the season and its happening (send it once at the start of play to set the first).
+- `{"action": "season"}` reads the season and its happening (send it once at the start of play to set the first:
+  that first read only notes where play starts, with no turn and no tokens).
 - **Tokens** (pool `tokens`, per character, up to 5 *(default)*; the same tokens that step a result up in story
-  mode):
+  mode). With seasons on, this module's tokens rule replaces the core one (max 5, gained as below, no session
+  refill). `modules apply` makes the pool; if it already existed, send `{"action": "pool", "owner": "Pell",
+  "id": "tokens", "max": 5}` once.
   - **gain 1** when the character puts themselves out for someone: gives up their afternoon, their place, a thing
     they love, or admits they were wrong: `{"action": "pool", "owner": "Pell", "id": "tokens", "gain": 1, "why": "…"}`.
   - **spend 1** to make a small good thing simply true (the cart is fixed by morning, the cat comes home), to ease

@@ -123,6 +123,11 @@ def engine_state(campaign: str, names: list) -> dict:
                         break
             out["conditions"] = [f"{c['name']} {int(c.get('mod') or 0):+d}" for c in wdb.all_of(db, "condition").values()
                                  if str(c.get("owner", "")).casefold() in keys]
+            # every other track and pool the engine holds for them (composure, tokens, realm, …)
+            out["other"] = [f"{r['id'].capitalize()} {r['value']}/{r.get('max', '?')}" for kind in ("track", "pool")
+                            for r in wdb.all_of(db, kind).values()
+                            if str(r.get("owner", "")).casefold() in keys and r.get("id") not in ("harm", "stress")
+                            and isinstance(r.get("value"), int)]
     except Exception:
         pass
     return out
@@ -266,6 +271,7 @@ def cmd_show(campaign: str, name: str) -> int:
     print("Approaches: " + ", ".join(f"{a.capitalize()} {s['approaches'].get(a, 0):+d}" for a in APPROACHES))
     print("Labels: " + "; ".join(s["labels"]))
     print(f"Harm {st['harm']['value']}/{st['harm']['max']} | Stress {st['stress']['value']}/{st['stress']['max']}"
+          + "".join(f" | {o}" for o in st.get("other", []))
           + (f" | Conditions: {', '.join(st['conditions'])}" if st["conditions"] else ""))
     for part in ("bonds", "gear", "moves"):
         if s[part]:

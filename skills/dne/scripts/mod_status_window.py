@@ -71,7 +71,8 @@ def _after(ctx, intent: dict, out: dict) -> None:
     if paths.campaign_system(ctx.campaign) == "d20" or "status_window" not in modules.enabled(ctx.campaign):
         return
     now, last = seen(ctx.db), wdb.get(ctx.db, "status_seen", "all")
-    lines = diff(last["seen"], now) if last else []
+    # switching modules on makes their tracks at once: noted, not announced (status_window.md)
+    lines = diff(last["seen"], now) if last and intent.get("action") != "modules" else []
     data = out.get("data") or {}
     firsts = modules.load("status_window")["tables"]
     table = f"first_{str(data.get('degree') or '').replace(' ', '_')}"

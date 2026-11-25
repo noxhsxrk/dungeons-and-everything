@@ -141,11 +141,12 @@ def _judge(ctx, intent: dict) -> dict:
                      "plan": "only the medicine comes in, through the mail hatch"}
     Still a risk:   {..., "risk": "the crate may not fit before the gate drops", "if_fails": "the crate is caught in the hatch",
                      "opens": "the party has to work the mechanism from inside", "cost": "the hatch door is torn off",
-                     "roll": {"spec": "1d20+5", "dc": 13, "label": "Athletics"}}
+                     "roll": {"approach": "force", "label": "Athletics"}}     (5e: {"spec": "1d20+5", "dc": 13, …})
     A plan with no `risk` succeeds without a roll (and still counts for `reward`). A roll needs both `risk` and
     `if_fails`: say what could go wrong and what changes if it does. `opens` is what a failure lets the players do
     that they could not before. On "success at a cost" the turn stops: the player is told the `cost` and chooses
-    accept or refuse. Do not choose for them.
+    accept or refuse. Do not choose for them. Accepting changes nothing by itself: send the cost as its own action
+    (`track` stress/harm, `pool`, a condition) in the same turn.
     Braid (System: core): "roll": {"spec": "2d6+1", "label": "Athletics"}, no DC; or {"approach": "finesse"} for 2d6 +
     the sheet's Finesse; "push": true and "help": "<name>" work as on `roll`. Story mode: no dice, the oracle answers
     ("likelihood": "likely" optional)."""
@@ -199,6 +200,7 @@ def _judge(ctx, intent: dict) -> dict:
         asked = roll.get("spec", "1d20") if system == "d20" else checks.shown(system, spec)
         return {"status": "waiting_for_player",
                 "requests": [{"key": "roll", "kind": "roll", "expected": actor,
+                              **({"dice": checks.CORE_DICE} if system == "core" else {}),
                               "text": f"{actor}: roll {roll.get('label') or 'for it'} — {asked}{shown}. "
                                       f"At stake: {intent['risk']}"}]}
     got = [int(ctx.answers["roll"]["value"])] if "roll" in ctx.answers else ctx.roll("roll", sides, num)

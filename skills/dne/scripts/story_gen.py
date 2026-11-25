@@ -13,16 +13,21 @@ Four steps (GM procedure: SKILL-storygen.md):
   check     run every genre's validator on the skeleton file; repair what can be repaired, re-roll what cannot.
 
 Usage:
+  story_gen.py axes     mystery,horror                          (every axis and its values: what `seed` can pin)
   story_gen.py seed     --file F "fact" ["mystery.motive=an old debt" ...]
   story_gen.py skeleton --file F --genre war,mystery,horror [--seed N] [--history-at K]
   story_gen.py flesh    --file F --slot premise                 (prints the brief and the ban list)
   story_gen.py flesh    --file F --slot premise --candidates '[{"text": "...", "p": 0.08}, ...]'
+  story_gen.py fill     --file F                                (plain text for every unwritten hidden clue)
+  story_gen.py name     --file F s1 "Lung Chuan"                (a suspect's name, or rename a case place)
   story_gen.py check    --file F
-  -c <campaign> instead of --file uses <campaign>/story-skeleton.json.
+  -c <campaign> instead of --file uses <campaign>/story-skeleton.json; a skeleton made with -c takes its case
+  places from the campaign map and its suspects' names from npcs.md.
 
 History: <campaign root>/story-history.jsonl, shared by every campaign. A skeleton line records the seed and
 how many history lines it was rolled against (`history_at`): `skeleton --seed N --history-at K` replays it
-exactly and records nothing.
+exactly and records nothing. Rolling a new skeleton over one that was never fleshed takes the old line back out
+(when nothing was recorded after it), so a discarded re-roll does not weigh on later stories.
 """
 
 import argparse
@@ -30,6 +35,7 @@ import difflib
 import json
 import os
 import random
+import re
 import sys
 from collections import Counter
 
@@ -76,6 +82,28 @@ def _entries(values: list) -> list:
     return out
 
 
+def _mentions(text: str, words: list) -> bool:
+    return any(w and re.search(rf"(?<!\w){re.escape(w)}(?!\w)", text, re.I) for w in words)
+
+
+def tables_for(genres: list) -> dict:
+    """Each genre's table with the values a setting genre in play rules out (radios in a wuxia siege) taken out.
+    A list the bans would empty is kept whole; a pinned value is never filtered."""
+    tables = {g: load_genre(g) for g in genres}
+    bans = [b for t in tables.values() for b in t.get("bans", [])]
+    if not bans:
+        return tables
+
+    def keep(values):
+        left = [e for e in values if not _mentions(e if isinstance(e, str) else e["v"], bans)]
+        return left or values
+    for t in tables.values():
+        for part in ("axes", "pools", "ladder"):
+            if part in t:
+                t[part] = {k: keep(v) for k, v in t[part].items()}
+    return tables
+
+
 def history_path():
     return paths._root() / "story-history.jsonl"   # resolved per call: tests move the root
 
@@ -99,6 +127,24 @@ def append_history(record: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "a", encoding="utf-8") as fh:
         fh.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+def drop_unused(old: dict) -> bool:
+    """Take `old`'s skeleton line back out of the history if it is still the last line: it was re-rolled before
+    anything was fleshed, so the table never used it. An older line stays (removing it would move every later
+    `history_at`)."""
+    path = history_path()
+    if not old.get("threads") or old.get("flesh") or not path.is_file():
+        return False
+    lines = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    try:
+        last = json.loads(lines[-1]) if lines else {}
+    except ValueError:
+        return False
+    if last.get("kind") != "skeleton" or (last.get("seed"), last.get("history_at")) != (old.get("seed"), old.get("history_at")):
+        return False
+    path.write_text("".join(ln + "\n" for ln in lines[:-1]), encoding="utf-8")
+    return True
 
 
 def _past_axes(history: list, gid: str) -> list:
@@ -207,8 +253,94 @@ def build_case(rng, axes: dict, table: dict, cid: str) -> dict:
     return case
 
 
+def rename_place(case: dict, old: str, new: str) -> None:
+    """One case place renamed everywhere: the places list, every clue's where and leads, and stand-in texts."""
+    case["places"] = [new if p == old else p for p in case["places"]]
+    for c in case["clues"]:
+        for key in ("where", "leads"):
+            if c.get(key) == old:
+                c[key] = new
+        if _placeholder(c.get("text", "")):
+            c["text"] = c["text"].replace(f" at {old}:", f" at {new}:")
+
+
+def name_suspect(case: dict, sid: str, name: str) -> None:
+    s = next((s for s in case.get("suspects") or [] if s["id"] == sid), None)
+    if s is None:
+        raise ValueError(f"no suspect {sid!r} (have: {', '.join(x['id'] for x in case.get('suspects') or [])})")
+    s["name"] = name
+    if sid == case.get("culprit"):
+        case["truth"] = re.sub(rf" \({re.escape(sid)}(, [^)]*)?\)", f" ({sid}, {name})", case["truth"], count=1)
+
+
+def link_case(case: dict, world: dict, seed) -> None:
+    """Put the case into the campaign: its places become map places (the party's place first, so the trail starts
+    where they are) and its suspects get the names of campaign NPCs, as far as there are enough of each."""
+    rng = random.Random(f"{seed}:link:{case.get('id')}")
+    places = [p for p in world.get("places") or [] if p not in case["places"]]
+    start = world.get("start")
+    rng.shuffle(places)
+    if start in places:
+        places.remove(start)
+        places.insert(0, start)
+    for old, new in list(zip(case["places"], places)):
+        rename_place(case, old, new)
+    npcs = list(world.get("npcs") or [])
+    rng.shuffle(npcs)
+    for s, name in zip(case["suspects"], npcs):
+        name_suspect(case, s["id"], name)
+
+
+def campaign_world(campaign: str) -> dict:
+    """Map place names (and where the party is) and NPC names of a campaign, for link_case."""
+    import npc
+    camp = paths.find_campaign(campaign)
+    try:
+        mp = json.loads((camp / "world-map.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        mp = {}
+    names = {k: str((v or {}).get("name") or k) for k, v in (mp.get("places") or {}).items()}
+    return {"places": list(names.values()), "start": names.get(mp.get("party_location") or ""),
+            "npcs": npc.index_names(camp)}
+
+
 def _placeholder(text: str) -> bool:
     return text.startswith("[clue ") and text.endswith("the GM writes it]")
+
+
+def _who(case: dict, sid: str) -> str:
+    s = next((s for s in case.get("suspects") or [] if s["id"] == sid), {})
+    return s.get("name") or s.get("role") or sid
+
+
+def clue_job(clue: dict, case: dict, axes: dict) -> str:
+    """What a clue must do, in one line: what it proves, where it leads, how it is found."""
+    proves = clue.get("proves", "")
+    job = {"who": f"must point to the culprit, {_who(case, case.get('culprit'))}",
+           "how": f"must show how it was done: {axes.get('method', '?')}",
+           "why": f"must show why: {axes.get('motive', '?')}",
+           "lead": "carries no answer; it only points onward"}.get(proves)
+    if proves.startswith("clears:"):
+        job = f"must clear {_who(case, proves[7:])}: show they could not have done it"
+    job = f"Found at {clue.get('where')}. It {job or 'proves ' + proves}"
+    if clue.get("leads"):
+        job += f", and points to {clue['leads']} (search adds \"(This points to {clue['leads']}.)\" itself)"
+    return job + (". Core clue: anyone who looks finds it, no roll, so it must be plain." if clue.get("obvious")
+                  else ". Hidden: found only on a good search.")
+
+
+def plain_text(clue: dict, case: dict, axes: dict) -> str:
+    """A plain stand-in that still does the clue's job, for a hidden clue the GM chose not to write."""
+    proves = clue.get("proves", "")
+    if proves == "who":
+        return f"Something here ties {_who(case, case.get('culprit'))} to it."
+    if proves == "how":
+        return f"Something here shows how it was done: {axes.get('method', '')}."
+    if proves == "why":
+        return f"Something here hints at why: {axes.get('motive', '')}."
+    if proves.startswith("clears:"):
+        return f"Something here shows {_who(case, proves[7:])} could not have done it."
+    return "A trace that leads elsewhere."
 
 
 def _add_clue(case: dict, proves: str, where: str, leads: str = "", obvious: bool = False) -> dict:
@@ -377,15 +509,40 @@ def check_thread(thread: dict, table: dict, seed) -> dict:
     return {"ok": not problems, "problems": problems, **extra}
 
 
+def _core(value: str) -> str:
+    return re.sub(r"^(a|an|the)\s+", "", value.strip(), flags=re.I)
+
+
+def prose_clashes(facts: list, thread: dict, table: dict, pins: dict) -> list:
+    """A free-text fact that quotes another value of one of this genre's axes ("a theft" when the skeleton rolled
+    "a killing"). shortcut: only whole quoted values (article dropped, 5+ letters) are seen; a paraphrase is not."""
+    out = []
+    for fact in facts:
+        if "=" in fact:
+            continue
+        for axis, values in table["axes"].items():
+            rolled = str(thread["axes"].get(axis, ""))
+            if axis in pins or _mentions(fact, [_core(rolled)]):
+                continue
+            for v, _w, _d in _entries(values):
+                if v != rolled and len(_core(v)) >= 5 and _mentions(fact, [_core(v)]):
+                    out.append(f"seed fact {fact!r} says {v!r} but {thread['genre']}.{axis} is {rolled!r}: "
+                               f"pin it with \"{thread['genre']}.{axis}={v}\" and roll the skeleton again")
+                    break
+    return out
+
+
 def check(skel: dict) -> dict:
     """Every thread's validator, plus the seed facts. Repairs in place; re-rolls a mystery it cannot repair,
     but only while its clue texts are still stand-ins: a written case is never thrown away, its problems are listed."""
     out, ok = {}, True
+    tables = tables_for([t["genre"] for t in skel["threads"]])
     for n, thread in enumerate(skel["threads"]):
-        table = load_genre(thread["genre"])
+        table = tables[thread["genre"]]
         pins = parse_pins(skel.get("facts") or [], thread["genre"], table)
         bad = [f"seed fact {a}={v} is contradicted ({thread['axes'].get(a)!r})"
                for a, v in pins.items() if thread["axes"].get(a) != v]
+        bad += prose_clashes(skel.get("facts") or [], thread, load_genre(thread["genre"]), pins)
         rep = check_thread(thread, table, skel["seed"])
         tries = 0
         written = [c for c in (thread.get("case") or {}).get("clues") or [] if not _placeholder(c.get("text", ""))]
@@ -393,6 +550,8 @@ def check(skel: dict) -> dict:
             tries += 1
             rng = random.Random(f"{skel['seed']}:reroll:{n}:{tries}")
             thread["case"] = build_case(rng, thread["axes"], table, thread["case"].get("id") or f"case-{skel['seed']}")
+            if skel.get("world"):
+                link_case(thread["case"], skel["world"], skel["seed"])
             rep = check_thread(thread, table, skel["seed"])
             rep["rerolled"] = tries
         rep["problems"] = bad + rep["problems"]
@@ -404,12 +563,13 @@ def check(skel: dict) -> dict:
 
 # ── the four steps ────────────────────────────────────────────────────────────
 
-def generate(genres: list, seed=None, facts=None, history_at=None, record=True) -> dict:
-    """Roll a skeleton for 1–5 genres. Same seed + same history_at → the same skeleton."""
+def generate(genres: list, seed=None, facts=None, history_at=None, record=True, world=None) -> dict:
+    """Roll a skeleton for 1–5 genres. Same seed + same history_at → the same skeleton.
+    `world` ({places, start, npcs}: campaign_world) puts a mystery's places and suspects into the campaign."""
     genres = [g.strip() for g in genres if g.strip()]
     if not 1 <= len(genres) <= 5 or len(set(genres)) != len(genres):
         raise ValueError("give 1 to 5 different genres")
-    tables = {g: load_genre(g) for g in genres}
+    tables = tables_for(genres)
     if seed is None:
         seed = random.SystemRandom().randrange(1, 2 ** 31)
     history = read_history(history_at)
@@ -436,13 +596,15 @@ def generate(genres: list, seed=None, facts=None, history_at=None, record=True) 
             thread["ladder"] = build_ladder(rng, table)
         if gid == "mystery":
             thread["case"] = build_case(rng, thread["axes"], table, f"case-{seed}")
+            if world:
+                link_case(thread["case"], world, seed)
         elif gid == "heist":
             thread["plan"] = build_heist(rng, thread["axes"], table)
         elif gid == "romance":
             thread["obstacles"] = build_romance(thread["axes"])
         threads.append(thread)
     skel = {"seed": seed, "history_at": history_at, "genres": genres, "drives": drives, "facts": facts,
-            "threads": threads, "flesh": {}}
+            "threads": threads, "flesh": {}, **({"world": world} if world else {})}
     skel["checked"] = check(skel)
     if record:
         append_history({"kind": "skeleton", "seed": seed, "history_at": history_at, "genres": genres,
@@ -466,7 +628,10 @@ def flesh(skel: dict, slot: str, candidates: list, record=True) -> dict:
                      if c["id"] == slot[5:]), None)
         if clue is None:
             raise ValueError(f"no clue {slot[5:]!r} in this skeleton")
-    if len(candidates) != 5:
+    if clue is not None and not clue.get("obvious"):    # a hidden clue: fewer candidates are enough
+        if not 1 <= len(candidates) <= 5:
+            raise ValueError(f"write 1 to 5 candidates for a hidden clue (got {len(candidates)})")
+    elif len(candidates) != 5:
         raise ValueError(f"write exactly 5 candidates (got {len(candidates)})")
     for c in candidates:
         p = c.get("p")
@@ -480,7 +645,7 @@ def flesh(skel: dict, slot: str, candidates: list, record=True) -> dict:
             (f"repeats: {r}" for r in picks if difflib.SequenceMatcher(None, text, r.casefold()).ratio() >= SIMILAR), None)
         (dropped.append({**c, "why": hit}) if hit else kept.append(c))
     if not kept:
-        raise ValueError("all 5 candidates are banned: write 5 new ones. " + "; ".join(d["why"] for d in dropped))
+        raise ValueError("every candidate is banned: write new ones. " + "; ".join(d["why"] for d in dropped))
     rng = random.Random(f"{skel['seed']}:flesh:{slot}")
     chosen = pick(rng, [(c, float(c["p"])) for c in kept])
     skel.setdefault("flesh", {})[slot] = {"text": chosen["text"], "p": chosen["p"], "dropped": dropped}
@@ -521,6 +686,8 @@ def main(argv=None) -> int:
     ap.add_argument("-c", "--campaign")
     ap.add_argument("--file")
     sub = ap.add_subparsers(dest="cmd", required=True)
+    x = sub.add_parser("axes", help="list each genre's axes and values (what seed can pin as genre.axis=value)")
+    x.add_argument("genres", help="comma list")
     s = sub.add_parser("seed")
     s.add_argument("facts", nargs="*")
     k = sub.add_parser("skeleton")
@@ -530,9 +697,19 @@ def main(argv=None) -> int:
     f = sub.add_parser("flesh")
     f.add_argument("--slot", required=True)
     f.add_argument("--candidates", help='JSON list of 5 {"text", "p"}; omit to print the brief')
+    sub.add_parser("fill", help="plain text for every hidden clue still unwritten")
+    n = sub.add_parser("name", help="name a suspect (s1) or rename a case place")
+    n.add_argument("target")
+    n.add_argument("new_name")
     sub.add_parser("check")
     args = ap.parse_args(argv)
     try:
+        if args.cmd == "axes":
+            for gid, table in tables_for(args.genres.split(",")).items():
+                print(f"## {gid} ({table['kind']})" + (f" — leaves out: {', '.join(table['bans'])}" if table.get("bans") else ""))
+                for axis, values in table["axes"].items():
+                    print(f"{gid}.{axis}: " + " | ".join(v for v, _w, _d in _entries(values)))
+            return 0
         path = _file(args)
         data = _load(path)
         if args.cmd == "seed":
@@ -541,22 +718,55 @@ def main(argv=None) -> int:
             print(json.dumps({"facts": data["facts"]}, ensure_ascii=False, indent=1))
             return 0
         if args.cmd == "skeleton":
+            if args.history_at is None:
+                drop_unused(data)
             skel = generate(args.genre.split(","), args.seed, data.get("facts"), args.history_at,
-                            record=args.history_at is None)
+                            record=args.history_at is None, world=campaign_world(args.campaign) if args.campaign else None)
             _save(path, skel)
             print(json.dumps(skel, ensure_ascii=False, indent=1))
             return 0 if skel["checked"]["ok"] else 1
         if not data.get("threads"):
             raise ValueError(f"no skeleton in {path}: run skeleton first")
+        mystery = next((t for t in data["threads"] if t["genre"] == "mystery"), None)
+        case = (mystery or {}).get("case") or {}
+        if args.cmd == "fill":
+            filled = []
+            for c in case.get("clues") or []:
+                if not c.get("obvious") and _placeholder(c.get("text", "")):
+                    c["text"] = plain_text(c, case, mystery["axes"])
+                    filled.append(c["id"])
+            _save(path, data)
+            print(json.dumps({"filled": filled, "still_unwritten": [c["id"] for c in case.get("clues") or []
+                                                                     if _placeholder(c.get("text", ""))]},
+                             ensure_ascii=False, indent=1))
+            return 0
+        if args.cmd == "name":
+            if not case:
+                raise ValueError("no mystery case in this skeleton")
+            if args.target in case["places"]:
+                rename_place(case, args.target, args.new_name)
+            else:
+                name_suspect(case, args.target, args.new_name)
+            _save(path, data)
+            print(json.dumps({"places": case["places"], "suspects": case["suspects"]}, ensure_ascii=False, indent=1))
+            return 0
         if args.cmd == "flesh":
             if args.candidates is None:
                 cliches, picks = banned(data, read_history())
-                print(json.dumps({"slot": args.slot, "seed": data["seed"], "drives": data["drives"],
-                                  "givens": {t["genre"]: t["axes"] for t in data["threads"]},
-                                  "facts": data.get("facts", []), "do_not_use": cliches + picks[-30:],
-                                  "write": 'exactly 5 candidates as JSON [{"text": "...", "p": 0.07}, ...]; '
-                                           "each p <= 0.10, from the unlikely tail; none may contradict the givens"},
-                                 ensure_ascii=False, indent=1))
+                clue = next((c for c in case.get("clues") or [] if f"clue:{c['id']}" == args.slot), None)
+                hidden = clue is not None and not clue.get("obvious")
+                brief = {"slot": args.slot, "seed": data["seed"], "drives": data["drives"],
+                         "givens": {t["genre"]: t["axes"] for t in data["threads"]},
+                         "facts": data.get("facts", []), "do_not_use": cliches + picks[-30:],
+                         "write": ("1 to 5" if hidden else "exactly 5") + ' candidates as JSON [{"text": "...", "p": 0.07}, ...]; '
+                                  "each p <= 0.10, from the unlikely tail; none may contradict the givens"}
+                if clue is not None:
+                    brief["clue"] = {k: clue.get(k) for k in ("where", "proves", "leads", "obvious")}
+                    brief["job"] = clue_job(clue, case, mystery["axes"]) + (
+                        " Every candidate must do this job: vary the detail, not the job.")
+                    brief["suspects"] = case.get("suspects")
+                    brief["culprit"] = case.get("culprit")
+                print(json.dumps(brief, ensure_ascii=False, indent=1))
                 return 0
             got = flesh(data, args.slot, json.loads(args.candidates))
             _save(path, data)

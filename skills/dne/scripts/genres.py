@@ -8,7 +8,7 @@ is Braid (`core`) unless the players ask for 5e.
 
   genres.py list                                         every preset: id, kind, name, modules ("early" marked)
   genres.py show <id>                                    one preset
-  genres.py combine <id,id,…> [--drives <id>] [--set k=v …]   the mix, every conflict, exit 1 when it cannot be played
+  genres.py combine <id,id,… | id id …> [--drives <id>] [--set k=v …]   the mix, every conflict, exit 1 when it cannot be played
   genres.py apply <id,id,…> [--drives <id>] [--set k=v …] --seed <seed.json | ->   write the flags into a new world's seed
   genres.py apply <id,id,…> [--drives <id>] [--set k=v …] -c <campaign>          print the Session Flags lines to write
 
@@ -88,7 +88,9 @@ def validate(gid: str) -> list:
 
 
 def _ids(text) -> list:
-    ids = [x.strip().casefold() for x in (text if isinstance(text, list) else str(text).split(",")) if x.strip()]
+    """Ids as "a,b", "a b" or ["a", "b,c"]."""
+    ids = [x.strip().casefold() for t in (text if isinstance(text, list) else [text]) for x in re.split(r"[,\s]+", str(t))
+           if x.strip()]
     if not 1 <= len(ids) <= MAX or len(set(ids)) != len(ids):
         raise ValueError(f"give 1 to {MAX} different genres (genres.py list)")
     return ids
@@ -100,7 +102,9 @@ def _sets(pairs) -> dict:
         k, sep, v = str(p).partition("=")
         if not sep or not k.strip():
             raise ValueError(f"--set {p!r}: key=value")
-        k, v = k.strip(), v.strip()
+        k, v = re.sub(r"^(dials|suggest)\.", "", k.strip()), v.strip()
+        if k not in DIALS and k not in SUGGEST and k != "modules":
+            raise ValueError(f"--set {k}: not a key this sets; one of {', '.join([*DIALS, *SUGGEST, 'modules'])}")
         if k in DIALS and v not in DIALS[k]:
             raise ValueError(f"--set {k}: {v!r} is not one of {', '.join(DIALS[k])}")
         out[k] = v
@@ -151,6 +155,9 @@ def combine(ids, drives=None, sets=None) -> dict:
             out["suggest"][k] = v
         else:
             out["dials"][k] = v
+    # what the table settled is no longer a conflict, and a module switched on is no longer one to add
+    out["conflicts"] = [c for c in out["conflicts"] if c["field"].split(".", 1)[1] not in sets]
+    out["optional"] = [m for m in out["optional"] if m not in out["modules"]]
     import modules
     errors, warnings = modules.problems(out["modules"])
     out["errors"] += errors
@@ -213,7 +220,7 @@ def main(argv=None) -> int:
     sub.add_parser("show").add_argument("id")
     for name in ("combine", "apply"):
         s = sub.add_parser(name)
-        s.add_argument("ids", help="1-5 genre ids, comma-separated, primary first")
+        s.add_argument("ids", nargs="+", help="1-5 genre ids, comma- or space-separated, primary first")
         s.add_argument("--drives", help="the plot genre that drives the story, when the mix has two or more")
         s.add_argument("--set", action="append", default=[], metavar="KEY=VALUE", help="the players' change")
         s.add_argument("--json", action="store_true")

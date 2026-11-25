@@ -71,10 +71,11 @@ def main() -> None:
     check = sub.add_parser("check", help="Score a check")
     check.add_argument("name")
     outcome = check.add_mutually_exclusive_group(required=True)
-    outcome.add_argument("--degree", help="critical-success, success, success-at-a-cost, failure, critical-failure")
+    outcome.add_argument("--degree", help="critical-success, success, success-at-a-cost, failure, critical-failure "
+                                          "(Braid: the check's final degree, after any token step-up)")
     outcome.add_argument("--total", type=int)
     check.add_argument("--dc", type=int, help="5e only: Braid grades the 2d6 total with no DC")
-    check.add_argument("--natural", type=int, metavar="1–20")
+    check.add_argument("--natural", type=int, metavar="1–20", help="5e only: the d20 face")
     check.add_argument("--side", help="a contest: the side that rolled")
 
     sub.add_parser("status", help="List challenges and remaining checks")
@@ -129,7 +130,10 @@ def main() -> None:
                 print("No active challenges.")
             for name, challenge in challenges.items():
                 left = challenge["checks_left"]
-                checks = "unlimited checks" if left is None else f"{left} checks left"
+                if challenge.get("mode"):
+                    checks = "no round limit" if left is None else f"{left} rounds left"
+                else:
+                    checks = "unlimited checks" if left is None else f"{left} checks left"
                 note = f" · {challenge['note']}" if challenge["note"] else ""
                 print(f"{summary(name, challenge)} · {checks}{note}")
             return

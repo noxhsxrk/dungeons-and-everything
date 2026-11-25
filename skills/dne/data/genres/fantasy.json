@@ -20,7 +20,7 @@
   "pacing": "adventure",
   "difficulty": "standard",
   "claims": "grounded",
-  "when_down": "saves"
+  "when_down": "choices"
  },
  "suggest": {
   "content": "standard"

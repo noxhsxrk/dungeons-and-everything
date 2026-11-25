@@ -207,24 +207,30 @@ def _skeleton_case(campaign: str, which) -> "dict | str":
             "check_seed": skel.get("seed")}
 
 
+#: Braid: hidden clues one search turns up, by the roll's degree (our defaults); the rest wait for another search.
+SEARCH_HIDDEN = {"success at a cost": 1, "success": 2, "critical success": 3}
+
+
 @turn.handler("search")
 def _search(ctx, intent: dict) -> dict:
     """search — a character looks for evidence in one place.
 
     {"actor": "Theo", "action": "search", "case": "missing-ledger", "where": "clerk's office", "minutes": 10,
-     "roll": {"spec": "1d20+3", "dc": 13, "label": "Investigation"}}
+     "roll": {"approach": "wits", "label": "Investigation"}}     (5e: {"spec": "1d20+3", "dc": 13, …})
     What is plainly there is found without a roll. The roll, if you ask for one, decides how long it takes (a failure
     takes twice as long) and whether the finer `detail` and the hidden clues turn up. Everything found is sent to that
     player alone and recorded as known to that character: sharing it is their decision (`tell`).
     Braid (System: core): "roll": {"spec": "2d6+1"} (or {"approach": "wits"}), no DC; 7 or more helps; push and help
-    as on `roll`. Story mode: the oracle answers."""
+    as on `roll`. Story mode: the oracle answers. Under Braid the reply carries `check` (total, degree, edges, the
+    push's stress) and one search turns up at most 1 hidden clue on a success at a cost, 2 on a success, 3 on a
+    critical: name the cost on a 7-9, and let them search again for the rest."""
     import resolve as checks
     world = _world(ctx)
     actor, where = str(intent.get("actor") or "Party"), str(intent.get("where", "")).casefold()
     case = world.get("case", str(intent.get("case", "")))
     if not case:
         return {"status": "done", "elapsed_minutes": 0, "data": {"error": f"no case {intent.get('case')!r}"}}
-    roll, good = intent.get("roll"), None
+    roll, good, check, hidden_cap = intent.get("roll"), None, None, None
     if roll:
         system = paths.campaign_system(ctx.campaign)
         err = checks.spec_error(system, roll.get("spec"))
@@ -242,18 +248,30 @@ def _search(ctx, intent: dict) -> dict:
             asked = roll.get("spec", "1d20") if system == "d20" else checks.shown(system, spec)
             return {"status": "waiting_for_player",
                     "requests": [{"key": "roll", "kind": "roll", "expected": actor,
+                              **({"dice": checks.CORE_DICE} if system == "core" else {}),
                                   "text": f"{actor}: roll {roll.get('label') or 'to search'} — {asked}"}]}
         got = [int(ctx.answers["roll"]["value"])] if "roll" in ctx.answers else ctx.roll("roll", sides, num)
-        good = checks.resolve(system, spec, int(roll.get("dc", 10)), got[:1] if system == "d20" else got,
-                              likelihood=str(roll.get("likelihood") or "50/50"), chaos=checks.chaos(ctx.campaign, system))["passed"]
+        graded = checks.resolve(system, spec, int(roll.get("dc", 10)), got[:1] if system == "d20" else got,
+                                likelihood=str(roll.get("likelihood") or "50/50"), chaos=checks.chaos(ctx.campaign, system))
+        good = graded["passed"]
+        if system != "d20":                       # Braid: the GM needs the reading, and one roll is not the whole room
+            check = {"total": graded["total"], "degree": graded["degree"], **({"edges": edge["notes"]} if edge["notes"] else {})}
+            hidden_cap = SEARCH_HIDDEN.get(graded["degree"], 0)
         if edge["push"]:
-            mechanics.push(ctx, actor)
+            crossed = mechanics.push(ctx, actor)
+            if check is not None:
+                check["stress"] = "+1 (pushed)" + "".join(f"; crossed {c['at']}: {c['note']}" for c in crossed)
     minutes = int(intent.get("minutes", 10)) * (2 if good is False else 1)
     passed = scheduler.advance(world, (world.minute or 0) + minutes) if world.minute is not None else {"elapsed_minutes": 0, "visible_events": []}
     found = []
     for clue in case["clues"]:
         if str(clue.get("where", "")).casefold() != where:
             continue
+        hidden = not clue.get("obvious", True)
+        if hidden and good and hidden_cap is not None and actor not in clue.get("found_by", []):
+            if hidden_cap <= 0:
+                continue                          # still there: another search (or a better roll) finds it
+            hidden_cap -= 1
         if clue.get("obvious", True) or good:
             text = clue["text"] + (f" {clue['detail']}" if good and clue.get("detail") else "")
             if clue.get("leads") and str(clue["leads"]).casefold() != where:     # the clue graph: where it points
@@ -267,7 +285,8 @@ def _search(ctx, intent: dict) -> dict:
     return {"status": "done", "elapsed_minutes": passed["elapsed_minutes"], "writes": world.writes(),
             "visible_events": passed["visible_events"],
             "messages": [{"to": actor, "text": f"Only you notice, searching {intent.get('where')}:\n{told}"}],
-            "data": {"actor": actor, "found": found, "took_minutes": minutes, "roll_helped": good}}
+            "data": {"actor": actor, "found": found, "took_minutes": minutes, "roll_helped": good,
+                     **({"check": check} if check is not None else {})}}
 
 
 @turn.handler("tell")

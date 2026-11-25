@@ -22,3 +22,5 @@ Plans are short. The crew picks **one plan** and supplies its **one detail**; ev
 - **Then cut straight to the first obstacle.** Never narrate the walk in. Put a clock on each defence and let the
   `position` rolls tick them.
 - Needs the position_effect module switched on too.
+- **Set the hour first.** Turns move no in-world time by themselves: before the engagement roll, `wait` to the
+  hour the job starts (`{"action": "wait", "hours": 9}`), so scheduled events and the calendar keep up.

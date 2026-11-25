@@ -1,6 +1,7 @@
 {
  "_about": "Historical and documentary: a real-feeling time and place, no magic, wounds that matter. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
  "kind": "setting",
+ "bans": ["radio", "radios", "tape", "tapes", "video", "voicemail", "recording", "recordings", "screen", "camera", "cameras", "data", "network"],
  "axes": {
   "era": [
    "a port city in the age of sail",

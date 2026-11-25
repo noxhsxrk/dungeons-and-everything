@@ -16,5 +16,5 @@ the deadline passed), **pressure** 0–6 (how close the enemy is), **morale** 0�
   - The unit rolls the usual check with its rating: `{"action": "war", "unit": "Third Lantern Company",
     "roll": "hold the bridge"}`; push and help as on any roll.
   - It takes harm like a foe: `{"action": "war", "unit": "Third Lantern Company", "hit": 1}`. At full harm it
-    breaks, and morale −1.
+    breaks, and morale −1. That −1 already counts its dead: do not also send `losses` for the same casualties.
 - **Read everything:** `{"action": "war"}`. Show the four tracks to the players; they are the commanders.

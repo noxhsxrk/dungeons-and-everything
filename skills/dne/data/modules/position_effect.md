@@ -14,10 +14,15 @@ Before any roll that could go wrong in an interesting way, say two things out lo
   - `consequence`: what this degree means at this position. Pick the concrete form: harm, a complication,
     a worse position, a lost chance, or less done.
   - `harm_if_hurt`: the harm to mark if you choose harm *(default)*: controlled 1, risky 2, desperate 3; one less
-    on a cost, one more on a critical failure (4 takes them out).
+    on a cost, one more on a critical failure (4 takes them out). **Against a foe** add `"against": "<foe>"`:
+    the harm starts from the larger of the position's number and the foe's `deals` (one rule, never both), and a
+    threat 4-5 foe gives the roll its −1 by itself.
   - `ticks`: what a hit does to a clock *(default)*: limited 1, standard 2, great 3, +1 on a critical; 0 on a miss.
     Name the clock in the action and it is ticked at once.
 - **The position carries**: leave `position` out and the last one named is used (an engagement roll sets the
-  first). Set it without a roll: `{"action": "position", "set": "desperate", "why": "the alarm is up"}`.
+  first). The stored position never moves by itself: a critical success names the easier one in `eases_to`,
+  and a miss that worsens it is yours too; `set` either when the fiction agrees. Set it without a roll: `{"action": "position", "set": "desperate", "why": "the alarm is up"}`.
 - The reading lands at once, so a token cannot step this roll up afterwards.
+- **Time does not pass on its own.** A roll takes no in-world time: before the job starts, `wait` to its hour
+  (`{"action": "wait", "hours": 9}`), and `wait` again when the fiction skips ahead.
 - **Story mode:** the oracle answers (controlled likely, risky 50/50, desperate unlikely); the reading is the same.

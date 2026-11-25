@@ -130,6 +130,8 @@ FLAGS = {"success_at_cost": "on", "degrees": "on", "hero_points": "off", "when_d
          "engine": "full", "npc_growth": "normal", "world_engine": "off",
          "sparks": "on", "style_guard": "on", "storyteller": "none",
          "lines": "(none)", "veils": "(none)"}
+#: 5e table rules (SKILL-table-rules.md) a Braid campaign does not carry: `check` and `audit` must agree on a new one.
+D20_FLAGS = ("success_at_cost", "degrees", "hero_points", "when_down", "show_dc")
 #: Character-sheet sections a non-caster may leave out.
 OPTIONAL_SHEET = {"Spell Slots", "Known Spells / Cantrips"}
 
@@ -170,15 +172,17 @@ def audit(campaign: str) -> list[str]:
             todo.append(f"{name}: add section `## {key}` (see templates/{name}; fill it from this world, don't invent canon)")
     state = (camp / "state.md").read_text(encoding="utf-8") if (camp / "state.md").exists() else ""
     flags = state.split("## Session Flags", 1)[1].split("\n## ", 1)[0] if "## Session Flags" in state else ""
-    for flag, default in FLAGS.items():
-        if not re.search(rf"^\s*-\s*{flag}\s*:", flags, re.M):
-            ask = " (ask the table)" if flag in ("content", "romance", "pacing", "lines", "veils", "hero_points", "when_down", "claims") else ""
-            todo.append(f"state.md Session Flags: add `- {flag}: {default}`{ask}")
     try:
         system = campaign_system(campaign)
     except ValueError:
         system = "d20"
     braid = system != "d20"
+    for flag, default in FLAGS.items():
+        if braid and flag in D20_FLAGS:
+            continue
+        if not re.search(rf"^\s*-\s*{flag}\s*:", flags, re.M):
+            ask = " (ask the table)" if flag in ("content", "romance", "pacing", "lines", "veils", "hero_points", "when_down", "claims") else ""
+            todo.append(f"state.md Session Flags: add `- {flag}: {default}`{ask}")
     sheet_tpl = tpl / ("sheets/core.md" if braid else "character-sheet.md")
     for sheet in sorted((camp / "characters").glob("*.md")) if (camp / "characters").is_dir() else []:
         gaps = [k for k in _missing(sheet_tpl, sheet) if k not in OPTIONAL_SHEET]
@@ -199,7 +203,7 @@ def audit(campaign: str) -> list[str]:
             todo += [f"worldkit.json: review warning: {w}" for w in worldkit.warnings(kit, system)]
             meta = kit.get("_meta", {})
             for field, what in (("tech_level", "0–12, what the world can build"),
-                                ("status_levels", "social ranks, lowest first")):
+                                ("status_levels", "social ranks, lowest first")) if not braid else ():
                 if field not in meta:
                     todo.append(f"worldkit.json: add `_meta.{field}` ({what})")
             for cls in kit.get("classes", []) if not braid else []:
@@ -207,7 +211,7 @@ def audit(campaign: str) -> list[str]:
                     if field not in cls:
                         todo.append(f"worldkit.json: class {cls.get('name')}: add `{field}` ({what})")
             for field, what in (("disadvantages", "4–8 disadvantages and quirks"),
-                                ("place_tags", "3–6 place tags in this world's voice")):
+                                ("place_tags", "3–6 place tags in this world's voice")) if not braid else ():
                 if not kit.get(field):
                     todo.append(f"worldkit.json: add `{field}` ({what})")
             bare = [m.get("name") for m in kit.get("monsters", []) if "morale" not in m] if not braid else []
@@ -216,16 +220,17 @@ def audit(campaign: str) -> list[str]:
             if not braid and not any("rarity" in r for cat in ("equipment", "spells") for r in kit.get(cat, [])):
                 todo.append("worldkit.json: mark special gear with `rarity`/`traits` (and `tl` where tech matters)")
     elif braid:
-        todo.append("worldkit.json: none; optional for Braid (labels, gear, threats: SKILL-core.md)")
+        pass                                      # optional for Braid (labels, gear, threats): not a gap
     else:
         todo.append("worldkit.json: none (classic SRD fantasy); nothing to add unless the table wants a World Kit")
     world = (camp / "world.md").read_text(encoding="utf-8") if (camp / "world.md").exists() else ""
-    if "## Factions" in world and not (camp / "factions.json").exists():
+    named = re.findall(r"^### (?!<Faction Name>)\S", world.split("## Factions", 1)[-1].split("\n## ", 1)[0], re.M)
+    if "## Factions" in world and not (camp / "factions.json").exists() and (named or not braid):
         todo.append("factions: track every faction in world.md `## Factions` with `faction.py add` "
                     "(Force/Wealth/Influence 1–5, current goal on a clock, rivals)")
     if not (camp / "calendar.json").exists():
         todo.append("calendar: `calendar.py init` from state.md's in-world date (faction turns run on it)")
-    if not (camp / "graph.json").exists():
+    if not (camp / "graph.json").exists() and not braid:     # Braid: the graph is optional (/dne graph init)
         todo.append("graph: none yet; run `/dne graph init <campaign>` (SKILL-commands.md)")
     return todo
 
