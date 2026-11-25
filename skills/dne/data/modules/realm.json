@@ -1,0 +1,29 @@
+{
+ "id": "realm",
+ "name": "Realms",
+ "use_when": "Use when characters cultivate power in stages, and each step up is a risk they choose to take.",
+ "genres": ["wuxia", "fantasy"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_realm",
+ "actions": ["realm", "condition"],
+ "tracks": [
+  {"id": "realm", "owner": "pc", "min": 0, "max": 8, "start": 0, "thresholds": []}
+ ],
+ "pools": [],
+ "tables": {
+  "realms": [
+   "Tempered Flesh",
+   "Gathered Breath",
+   "Settled Foundation",
+   "Bright Core",
+   "Inner Infant",
+   "Spirit Apart",
+   "Void Walker",
+   "Heaven's Threshold",
+   "Ascendant"
+  ]
+ },
+ "numbers": {"approach": "heart", "tribulation_approach": "grit", "harder_every": 3, "harder_max": 2,
+             "tribulation_every": 3, "waves_base": 2, "deviation_mod": -1, "harm_on_critical": 1, "harm_per_wave": 1}
+}

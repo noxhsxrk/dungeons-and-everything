@@ -1,0 +1,19 @@
+{
+ "id": "loop",
+ "name": "The Loop",
+ "use_when": "Use when the characters live the same day again and again, and only what they learn carries over.",
+ "genres": ["timeloop", "mystery", "horror"],
+ "requires": [],
+ "conflicts": [],
+ "script": "mod_loop",
+ "actions": ["loop", "track"],
+ "tracks": [
+  {"id": "loop_break", "owner": "party", "min": 0, "max": 10, "start": 0,
+   "thresholds": [{"at": 10, "dir": "up", "note": "The loop is broken: the next morning is a new day"}]},
+  {"id": "loop_fatigue", "owner": "party", "min": 0, "max": 12, "start": 0,
+   "thresholds": [{"at": 9, "dir": "up", "note": "Worn thin: the days blur, the characters snap at each other and doubt what they know"}]}
+ ],
+ "pools": [],
+ "tables": {},
+ "numbers": {"fatigue_per_loop": 1, "forget_every": 3, "anchors": 3}
+}
