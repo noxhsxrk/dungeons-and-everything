@@ -55,10 +55,12 @@ def shown(system: str, spec) -> str:
     return f"{CORE_DICE}{mod:+d} (send the two dice added together)" if mod else f"{CORE_DICE} (send the two dice added together)"
 
 
-def chaos(campaign: str) -> int:
-    """The campaign's oracle chaos factor (story checks lean on it)."""
+def chaos(campaign: str, system: str) -> int:
+    """The campaign's oracle chaos factor; only story checks read it (a d20 or core check never opens state.md here)."""
+    if system != "story":
+        return oracle.CHAOS_DEFAULT
     try:
-        return oracle.read_chaos((paths.find_campaign(campaign) / "state.md").read_text(encoding="utf-8"))
+        return oracle.read_chaos((paths.find_campaign(campaign) / "state.md").read_text(encoding="utf-8", errors="replace"))
     except OSError:
         return oracle.CHAOS_DEFAULT
 

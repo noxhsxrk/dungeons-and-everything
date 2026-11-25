@@ -177,7 +177,7 @@ def _search(ctx, intent: dict) -> dict:
                                   "text": f"{actor}: roll {roll.get('label') or 'to search'} — {asked}"}]}
         got = [int(ctx.answers["roll"]["value"])] if "roll" in ctx.answers else ctx.roll("roll", sides, num)
         good = checks.resolve(system, roll.get("spec"), int(roll.get("dc", 10)), got[:1] if system == "d20" else got,
-                              likelihood=str(roll.get("likelihood") or "50/50"), chaos=checks.chaos(ctx.campaign))["passed"]
+                              likelihood=str(roll.get("likelihood") or "50/50"), chaos=checks.chaos(ctx.campaign, system))["passed"]
     minutes = int(intent.get("minutes", 10)) * (2 if good is False else 1)
     passed = scheduler.advance(world, (world.minute or 0) + minutes) if world.minute is not None else {"elapsed_minutes": 0, "visible_events": []}
     found = []

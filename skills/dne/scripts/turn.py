@@ -113,10 +113,11 @@ def _roll(ctx: Ctx, intent: dict) -> dict:
     import resolve as checks
     system = paths.campaign_system(ctx.campaign)
     if system != "d20":
-        err = checks.spec_error(system, intent.get("spec")) if intent.get("dc") is not None else None
+        num, sides, *_ = dice.parse_notation(str(intent.get("spec") or checks.CORE_DICE))
+        # A DC, or a d20, means the GM meant a 5e check: Braid has neither. Other dice (damage, a table) roll as written.
+        err = checks.spec_error(system, intent.get("spec")) if intent.get("dc") is not None or sides == 20 else None
         if err:
             return {"status": "done", "elapsed_minutes": 0, "data": {"error": err}}
-        num, sides, *_ = dice.parse_notation(str(intent.get("spec") or checks.CORE_DICE))
         is_check = (num, sides) == (2, 6) if system == "core" else intent.get("dc") is not None or bool(intent.get("likelihood"))
         if is_check:
             return _check(ctx, intent, system)
@@ -156,7 +157,7 @@ def _check(ctx: Ctx, intent: dict, system: str) -> dict:
     num, sides, mod = checks.dice_for(system, spec)
     rolled = [int(ctx.answers["roll"]["value"])] if "roll" in ctx.answers else ctx.roll("roll", sides, num)
     graded = checks.resolve(system, spec, None, rolled, likelihood=str(intent.get("likelihood") or "50/50"),
-                            chaos=checks.chaos(ctx.campaign))
+                            chaos=checks.chaos(ctx.campaign, system))
     data = {"actor": actor, "dice": rolled, "modifier": mod, "total": graded["total"], "label": intent.get("label", ""),
             "degree": graded["degree"], "passed": graded["passed"]}
     said = f"{graded['total']}, {graded['degree']}" if system == "core" else f"the oracle says {graded['degree']}"

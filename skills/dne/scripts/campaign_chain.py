@@ -23,7 +23,7 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
-from paths import find_campaign, campaign_dir, campaign_ruleset
+from paths import find_campaign, campaign_dir, campaign_ruleset, not_d20
 from economy import _apply_rest_to_sheet
 
 CARRY_FILES = [
@@ -55,6 +55,10 @@ def chain_campaign(
     src = find_campaign(src_name)
     if not src.exists():
         raise FileNotFoundError(f"Source campaign not found: {src}")
+    why = not_d20(src_name, "campaign_chain.py (carries 5e sheets and applies a 5e long rest)",
+                  "Start the next chapter of a Braid campaign with /dne new.")
+    if why:
+        raise ValueError(why)
 
     dst = campaign_dir(dst_name)
     if dst.exists():

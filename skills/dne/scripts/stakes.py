@@ -169,10 +169,12 @@ def _judge(ctx, intent: dict) -> dict:
 
     if not intent.get("risk"):
         return close("success_no_roll", why="nothing in the plan can go wrong given the facts of the situation")
+    system = paths.campaign_system(ctx.campaign)
+    if system == "story" and intent.get("if_fails"):
+        roll = roll or {"likelihood": "50/50"}           # story mode: the oracle answers, no dice to name
     if not roll or not intent.get("if_fails"):
         return {"status": "done", "elapsed_minutes": 0,
                 "data": {"error": "a risky plan needs `roll` and `if_fails`: say what could go wrong and what changes if it does"}}
-    system = paths.campaign_system(ctx.campaign)
     err = checks.spec_error(system, roll.get("spec"))
     if err:
         return {"status": "done", "elapsed_minutes": 0, "data": {"error": err}}
@@ -191,7 +193,7 @@ def _judge(ctx, intent: dict) -> dict:
                                       f"At stake: {intent['risk']}"}]}
     got = [int(ctx.answers["roll"]["value"])] if "roll" in ctx.answers else ctx.roll("roll", sides, num)
     graded = checks.resolve(system, roll.get("spec"), dc, got[:1] if system == "d20" else got,   # d20 reads one die, as before 2.0
-                            likelihood=str(roll.get("likelihood") or "50/50"), chaos=checks.chaos(ctx.campaign))
+                            likelihood=str(roll.get("likelihood") or "50/50"), chaos=checks.chaos(ctx.campaign, system))
     raw, total = graded["raw"], graded["total"]
     degree = graded["degree"] if ctx.flag("degrees", "on") == "on" or ctx.flag("success_at_cost", "on") == "on" \
         else ("success" if graded["passed"] else "failure")

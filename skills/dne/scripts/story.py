@@ -423,7 +423,7 @@ def _register() -> None:
             got = ctx.roll(key, sides, num)
         dc = int(roll.get("dc", 10))
         graded = checks.resolve(system, spec, dc, got, step_up=int(advantage and system == "story"),
-                                likelihood=str(roll.get("likelihood") or "50/50"), chaos=checks.chaos(ctx.campaign))
+                                likelihood=str(roll.get("likelihood") or "50/50"), chaos=checks.chaos(ctx.campaign, system))
         if system == "d20":
             return None, {"dice": graded["raw"], "total": graded["total"], "dc": dc, "passed": graded["passed"],
                           "advantage": advantage}
@@ -465,9 +465,11 @@ def _register() -> None:
         world = world_of(ctx)
         actor = str(intent.get("actor") or "Party")
         if "deal" not in ctx.answers:
+            edge = {"d20": "advantage on this roll", "core": "+1 on this roll"}.get(
+                paths.campaign_system(ctx.campaign), "one step better from the oracle")
             return {"status": "waiting_for_player",
                     "requests": [{"key": "deal", "kind": "decision", "expected": actor,
-                                  "text": f"{actor}: a bargain. Take advantage on this roll, and whatever you roll, "
+                                  "text": f"{actor}: a bargain. Take {edge}, and whatever you roll, "
                                           f"{intent.get('offer', 'something goes wrong')}. Accept? (accept / refuse)"}]}
         took = str(ctx.answers["deal"]["value"]).strip().lower().startswith(("a", "y", "ร", "ต"))
         waiting, rolled = _rolled(ctx, intent, "roll", intent.get("roll", {}).get("label") or "the roll", advantage=took)

@@ -169,6 +169,23 @@ class CoreChecks(EngineCase):
         r = self.do("x", {"actor": "Mira", "action": "flashback", "claim": "c", "roll": {"spec": "1d20+5", "dc": 13}})
         self.assertIn("2d6", self.data(r)["error"])
 
+    def test_a_d20_roll_is_refused_but_damage_dice_roll(self):
+        r = self.do("x", {"actor": "Mira", "action": "roll", "spec": "1d20+5", "label": "Stealth"},
+                    {"actor": "Mira", "action": "roll", "spec": "1d8+2", "label": "damage"})
+        self.assertIn("2d6", r["results"][0]["data"]["error"])
+        self.assertNotIn("degree", r["results"][1]["data"])
+
+    def test_bargain_edge_is_plus_one(self):
+        self.flags("- display: none\n- roll_mode: players\n- world_engine: on\n")
+        r = self.do("x", {"actor": "Mira", "action": "bargain", "offer": "the guard remembers you",
+                          "roll": {"spec": "2d6+1", "label": "Deception"}})
+        self.assertIn("+1 on this roll", r["next_input"]["question"])
+        r = self.turn.answer("oldworld", r["next_input"]["request_id"], "accept")
+        self.assertIn("2d6+2", r["next_input"]["question"])
+        r = self.turn.answer("oldworld", r["next_input"]["request_id"], 7)
+        d = self.data(r)
+        self.assertEqual((d["total"], d["degree"], d["accepted"]), (9, "success at a cost", True))
+
     def test_5e_rest_and_reward_refuse(self):
         r = self.do("x", {"action": "rest", "type": "long"}, {"action": "reward", "encounter": "gate", "characters": ["Mira"]})
         self.assertIn("Braid", r["results"][0]["data"]["error"])
@@ -186,6 +203,18 @@ class StoryChecks(EngineCase):
         d = self.data(r)
         self.assertIn(d["degree"], LADDER)
         self.assertEqual(d["worked"], LADDER.index(d["degree"]) >= 2)
+        self.turn.finish("oldworld", "ok")
+        r = self.do("y", SITUATION, {"action": "judge", "situation": "gate", "actor": "Mira", "plan": "p", "risk": "r",
+                                     "if_fails": "f", "cost": "c"})
+        self.assertIn(self.data(r).get("degree") or r["next_input"]["kind"], LADDER + ("decision",))
+
+
+class D20BadByte(EngineCase):
+    def test_a_stray_byte_in_state_md_does_not_stop_a_d20_check(self):
+        state = self.camp / "state.md"
+        state.write_bytes(state.read_bytes().replace(b"## Active Quests", b"\xff\n## Active Quests"))
+        r = self.do("x", {"actor": "Mira", "action": "flashback", "claim": "c", "roll": {"spec": "1d20+2", "dc": 12}})
+        self.assertIn("worked", self.data(r))
 
 
 class D20RequestsUnchanged(EngineCase):
