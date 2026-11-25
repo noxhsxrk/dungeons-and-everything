@@ -289,7 +289,7 @@ class RealmStory(Pr6):
 
     def test_the_oracle_answers_a_breakthrough(self):
         seen = set()
-        for n in range(12):
+        for n in range(40):                                     # 12 "likely" tries all passed ~3% of runs
             r = self.turn_with(f"try {n}", {"action": "track", "owner": "Mira", "id": "realm", "set": 0, "why": f"{n}"},
                                {"action": "realm", "actor": "Mira", "breakthrough": True, "why": f"try {n}"})
             d = self.data(r)
