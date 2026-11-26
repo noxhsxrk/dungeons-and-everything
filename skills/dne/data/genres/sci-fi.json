@@ -38,6 +38,14 @@
   "frontier",
   "scarcity"
  ],
+ "fits": [
+  "first contact",
+  "aliens",
+  "hard science",
+  "a colony",
+  "a generation ship",
+  "post-apocalypse"
+ ],
  "checks": [
   "no empty story axis, and no seed fact contradicted"
  ]

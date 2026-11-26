@@ -14,6 +14,7 @@
   <p>
     <a href="#quick-start">Quick start</a> ·
     <a href="#any-genre">Any genre</a> ·
+    <a href="#mix-genres">Mix genres</a> ·
     <a href="#three-ways-to-play">Three ways to play</a> ·
     <a href="#what-the-engine-does">What the engine does</a> ·
     <a href="#play-together">Play together</a> ·
@@ -36,7 +37,7 @@ cd ~/dungeons-and-everything && python3 install.py     # sets up every AI agent 
 Then, in your agent (Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot, Cursor …):
 
 ```
-/dne new hollow-9          # describe the story, pick its genres and its rules
+/dne new hollow-9          # describe the story you want; the GM suggests how to run it
 /dne character new         # make a character for that world
 /dne load hollow-9         # play: type what your character does
 ```
@@ -49,36 +50,26 @@ Python 3.10+. For the TV and phone display: `pip3 install flask flask-cors numpy
 
 ## Any genre
 
-At `/dne new` you describe the story and pick one to five genres, the main one first. Each genre switches on the small rules it needs; the table can add or drop any of them.
+At `/dne new` you just describe the story you want, in your own words: *"a murder in a monsoon fishing village, and something in the fog"*, *"we're stuck in the same school day and one of us is lying"*, *"a quiet year running a noodle shop"*. The GM reads it and pitches back how it will run it, in plain words, and you change what you like. There is no menu to pick from.
 
-| Kind | Genre | What it switches on |
-|---|---|---|
-| **Plot** (what the story is about) | Mystery | clues placed so the case stays solvable; a budget of complications the GM may bring in |
-| | Heist | position and effect, one plan with one detail and then straight in, heat after a loud job |
-| | War | a war layer (time, pressure, morale and supply), position and effect, usage dice for what runs short |
-| | Competition / courtroom | contests: races, countdowns, concessions |
-| **Mood** (how it feels) | Cosmic horror | composure that frays; clues |
-| | Slasher | panic, a doom track, supplies that run out |
-| | Analog horror *(early)* | composure and doom, told through tapes and broadcasts |
-| | Romance / drama | strings one character holds on another, feelings that weigh on a roll until acted on |
-| | Cozy | seasons that turn with the calendar, strings with the neighbours |
-| | Comedy / gonzo | nameless mooks that come in groups |
-| **Setting** (where it happens) | Fantasy | vows on a progress track, usage dice for torches and rations |
-| | Hard sci-fi | usage dice for air, fuel and parts; vows |
-| | Space opera / cyberpunk | position and effect, heat, mooks |
-| | Wuxia / cultivation *(early)* | realms and tribulations, mooks, vows |
-| | LitRPG *(early)* | a status window that announces every change; mooks |
-| | Historical / docudrama | usage dice for what runs short |
-| **Frame** (how the story is built) | Time loop | the same day again: the engine rewinds the world, the characters remember |
-| | Traitor among us | secret roles dealt under a seal anyone can check at the end |
-
-**Mixing.** *Slasher + romance*, *heist + wuxia*, *mystery + time loop + cozy* all work. The first genre leads. When two genres disagree (a cozy pace inside a war), the engine names the clash and the table picks. Two plot genres at once ask which one drives the story.
+Behind that pitch the engine has 18 genre presets, each a bundle of small rules rather than a box your story has to fit: mystery, heist, war, competition, cosmic horror, slasher, analog horror, romance, cozy, comedy, fantasy, hard sci-fi, space opera, wuxia, LitRPG, historical, time loop and traitor among us. A story none of them fits runs on plain Braid with only the rules it needs (23 modules to pick from).
 
 **A different story every time.** The story generator rolls a skeleton (the crime, the victim, who did it, why, how, the twist, the red herring) from each genre's own lists and remembers past campaigns, so the hundredth murder is not the first one again. A mystery is checked before play: every place reachable, every conclusion backed by at least three clues in at least two places, and still solvable in 95% of 1000 trials that hide a third of the clues.
 
-**Who decides what is true.** The `claims` dial sets what a player's *"actually, there's a back door"* does: `grounded` (true only if the world supports it or a roll says so), `declare` (small details just become true, big ones cost a token) or `open` (the players co-write the world).
+**[The full guide: how to prompt for every genre, with examples →](ANY_GENRE.md)**
 
-The genres live in [`data/genres/`](skills/dne/data/genres/), the 23 modules in [`data/modules/`](skills/dne/data/modules/) (`modules.py list` shows them all).
+## Mix genres
+
+The best stories are rarely one thing. Describe two or three at once and the GM mixes up to five presets, every rule included:
+
+| Say | You get |
+|---|---|
+| *"Summer camp, 1986. Two counselors fall for each other while something picks off the campers."* | slasher + romance: panic, doom and dwindling supplies, plus strings and feelings between the leads |
+| *"We rob the Iron Sect's treasury during their tournament. One of us secretly works for them."* | heist + wuxia + traitor: one plan then straight in, heat, cultivation realms, and secret roles under a seal |
+| *"A quiet village where the lantern festival repeats every day, and every day someone is poisoned."* | mystery + time loop + cozy: clues that stay solvable, the loop, seasons and neighbours |
+| *"A mining crew finds something in the ice. The air is running out, and so are our minds."* | cosmic horror + hard sci-fi: composure, clues, usage dice for air and parts |
+
+The first genre leads the voice, pace and difficulty, so *slasher + romance* is a horror story with a love story inside, and *romance + slasher* is the other way round. Where two genres disagree, the GM asks you instead of choosing; two plot-driving stories (a heist and a murder) ask which one drives. More example mixes and how to write them: [Mixing genres](ANY_GENRE.md#mixing-genres).
 
 ## Three ways to play
 

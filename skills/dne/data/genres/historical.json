@@ -38,6 +38,14 @@
   "everyday life",
   "politics"
  ],
+ "fits": [
+  "documentary",
+  "a true story",
+  "a period drama",
+  "alternate history",
+  "a real war or era",
+  "a biography"
+ ],
  "checks": [
   "no empty story axis, and no seed fact contradicted"
  ]

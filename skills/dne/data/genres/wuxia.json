@@ -38,6 +38,14 @@
   "honour",
   "mountains"
  ],
+ "fits": [
+  "xianxia",
+  "kung fu",
+  "cultivation",
+  "martial sects",
+  "a revenge saga",
+  "jianghu"
+ ],
  "checks": [
   "no empty story axis, and no seed fact contradicted"
  ]

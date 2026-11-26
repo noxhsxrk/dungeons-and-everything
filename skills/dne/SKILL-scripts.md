@@ -754,7 +754,7 @@ The campaign's list is the Session Flag `- modules: a, b`. A module is `data/mod
 
 ### Genre presets — `scripts/genres.py`
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/scripts/genres.py list                                  # every preset (kind, modules, "early")
+python3 ${CLAUDE_SKILL_DIR}/scripts/genres.py list                                  # every preset (the stories it fits, modules, "early"): for the GM, never shown as a menu
 python3 ${CLAUDE_SKILL_DIR}/scripts/genres.py combine mystery,horror [--drives <plot id>] [--set key=value …]   # the mix + every conflict; exit 1 = cannot be played as is
 python3 ${CLAUDE_SKILL_DIR}/scripts/genres.py apply mystery,horror [--drives …] [--set …] --seed seed.json   # write modules, claims and dials into a new world's seed
 python3 ${CLAUDE_SKILL_DIR}/scripts/genres.py apply mystery,horror -c <campaign>     # print the Session Flags lines for an existing world

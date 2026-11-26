@@ -37,6 +37,14 @@
   "rivals",
   "crowds"
  ],
+ "fits": [
+  "sports",
+  "a tournament",
+  "a courtroom drama",
+  "a game show",
+  "a cooking or talent contest",
+  "an election race"
+ ],
  "checks": [
   "a ladder of 3+ steps that rise one after another",
   "no empty story axis, and no seed fact contradicted"

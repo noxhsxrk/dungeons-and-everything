@@ -38,6 +38,13 @@
   "loot",
   "players"
  ],
+ "fits": [
+  "isekai",
+  "trapped in a game",
+  "a dungeon tower",
+  "a system apocalypse",
+  "a game with levels and loot"
+ ],
  "checks": [
   "no empty story axis, and no seed fact contradicted"
  ]

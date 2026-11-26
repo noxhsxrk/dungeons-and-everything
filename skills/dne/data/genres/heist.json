@@ -39,6 +39,14 @@
   "vaults",
   "double-cross"
  ],
+ "fits": [
+  "a caper",
+  "a con",
+  "smuggling",
+  "a bank job",
+  "a prison break",
+  "organised crime"
+ ],
  "checks": [
   "a plan: the target, 2+ defences, an insider and the thing that goes wrong",
   "no empty story axis, and no seed fact contradicted"

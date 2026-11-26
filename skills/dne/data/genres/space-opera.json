@@ -39,6 +39,14 @@
   "crime",
   "chrome"
  ],
+ "fits": [
+  "cyberpunk",
+  "a megacity",
+  "starship crews",
+  "mecha",
+  "a galactic empire",
+  "space pirates"
+ ],
  "checks": [
   "no empty story axis, and no seed fact contradicted"
  ]

@@ -39,6 +39,14 @@
   "parody",
   "mishaps"
  ],
+ "fits": [
+  "sitcom",
+  "parody",
+  "satire",
+  "slapstick",
+  "office chaos",
+  "a road trip gone wrong"
+ ],
  "checks": [
   "a ladder of 3+ steps that rise one after another",
   "no empty story axis, and no seed fact contradicted"

@@ -36,6 +36,13 @@
   "fate",
   "secrets"
  ],
+ "fits": [
+  "groundhog day",
+  "a day that resets",
+  "time travel",
+  "fixing the past",
+  "a fate to break"
+ ],
  "checks": [
   "no empty story axis, and no seed fact contradicted"
  ]

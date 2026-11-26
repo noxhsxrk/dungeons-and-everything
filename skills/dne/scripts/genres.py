@@ -6,7 +6,7 @@ A preset is data/genres/<id>.json; its id is the story_axes id story_gen.py roll
 story), mood (stack), setting (content tags), frame (wraps the whole story). Presets never pick the rules: the system
 is Braid (`core`) unless the players ask for 5e.
 
-  genres.py list                                         every preset: id, kind, name, modules ("early" marked)
+  genres.py list                                         every preset: id, name, the stories it fits, modules ("early" marked)
   genres.py show <id>                                    one preset
   genres.py combine <id,id,… | id id …> [--drives <id>] [--set k=v …]   the mix, every conflict, exit 1 when it cannot be played
   genres.py apply <id,id,…> [--drives <id>] [--set k=v …] --seed <seed.json | ->   write the flags into a new world's seed
@@ -39,7 +39,7 @@ DIALS = {"storyteller": ("none", "pulp", "noir", "banter", "dread"), "pacing": (
          "when_down": ("saves", "choices")}
 SUGGEST = {"content": ("standard", "18", "20"), "romance": ("off", "fade", "open")}
 FIELDS = {"id": str, "name": str, "kind": str, "system": str, "early": bool, "story_axes": str, "dials": dict,
-          "suggest": dict, **{f: list for f in LISTS}}
+          "suggest": dict, "fits": list, **{f: list for f in LISTS}}
 
 
 def catalog() -> dict:
@@ -74,7 +74,7 @@ def validate(gid: str) -> list:
         out.append("system must be core: presets never force 5e")
     if g["story_axes"] not in story_gen.genre_ids():
         out.append(f"story_axes {g['story_axes']!r} is not a data/story_axes file")
-    for f in LISTS:
+    for f in (*LISTS, "fits"):
         if not all(isinstance(x, str) and x.strip() for x in g[f]):
             out.append(f"{f}: a list of non-empty text")
     known = modules.catalog()
@@ -231,7 +231,8 @@ def main(argv=None) -> int:
     try:
         if args.cmd == "list":
             for gid, g in catalog().items():
-                print(f"{gid:14} {g['kind']:8} {g['name']}{'  [early]' if g['early'] else ''}: {', '.join(g['modules'])}")
+                print(f"{gid:14} {g['name']}{'  [early]' if g['early'] else ''}: fits {', '.join(g['fits'])}"
+                      f" | modules {', '.join(g['modules'])}")
             return 0
         if args.cmd == "show":
             print(json.dumps(load(args.id), ensure_ascii=False, indent=1))

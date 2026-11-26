@@ -40,6 +40,14 @@
   "monsters",
   "kingdoms"
  ],
+ "fits": [
+  "sword and sorcery",
+  "fairy tales",
+  "myths and folklore",
+  "a quest",
+  "dungeon crawling",
+  "dark fantasy"
+ ],
  "checks": [
   "no empty story axis, and no seed fact contradicted"
  ]

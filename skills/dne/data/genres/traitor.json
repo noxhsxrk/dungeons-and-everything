@@ -36,6 +36,14 @@
   "trust",
   "suspicion"
  ],
+ "fits": [
+  "social deduction",
+  "a werewolf or mafia game",
+  "a mole in the crew",
+  "a spy story",
+  "paranoia",
+  "who can you trust"
+ ],
  "checks": [
   "no empty story axis, and no seed fact contradicted"
  ]

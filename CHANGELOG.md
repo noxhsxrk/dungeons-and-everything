@@ -8,6 +8,13 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Changed
+- `/dne new` no longer shows a genre menu. The players describe the story in their own words; the GM matches it to the presets, mixes them when the story is more than one thing, and pitches the result back in plain words (no preset ids, no plot/mood/setting/frame labels). A story no preset fits runs on plain Braid with the modules it needs.
+- Every genre preset lists the stories it `fits` (creepypasta, first contact, documentary, isekai…); `genres.py list` prints them for the GM.
+
+### Added
+- `ANY_GENRE.md` / `ANY_GENRE.th.md`: how to prompt for the story you want, mixing genres, and every preset with example prompts.
+
 ## [2.0.0-alpha] — 2026-11-26 — Braid: any genre
 
 First alpha of the Unrolled Engine 2.0 line: a campaign can now run on **Braid**, our own 2d6 rules for any genre, instead of 5e. Pick one to five genres at `/dne new` and the engine switches on the rules that genre needs. 5e campaigns play exactly as in 1.8.6 (pinned by `tests/test_d20_golden.py`). This release also folds in the unpublished `2.0.0-alpha.1` groundwork.

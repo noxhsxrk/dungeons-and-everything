@@ -40,6 +40,14 @@
   "comrades",
   "orders"
  ],
+ "fits": [
+  "a soldier's story",
+  "a resistance",
+  "a revolution",
+  "a siege",
+  "a military campaign",
+  "post-war survival"
+ ],
  "checks": [
   "a ladder of 3+ steps that rise one after another",
   "no empty story axis, and no seed fact contradicted"

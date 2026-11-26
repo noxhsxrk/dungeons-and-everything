@@ -38,6 +38,14 @@
   "secrets",
   "witnesses"
  ],
+ "fits": [
+  "a detective story",
+  "a murder case",
+  "noir",
+  "a whodunit",
+  "a cold case",
+  "a twist thriller"
+ ],
  "checks": [
   "a solvable case: who, how and why each have 3+ clues in 2+ places, every place reachable, solved 95% of the time with a third of the clues missed",
   "no empty story axis, and no seed fact contradicted"

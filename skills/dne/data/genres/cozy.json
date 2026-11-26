@@ -38,6 +38,14 @@
   "seasons",
   "food"
  ],
+ "fits": [
+  "slice of life",
+  "ordinary life",
+  "a small village",
+  "a café or shop",
+  "farming",
+  "a found family"
+ ],
  "checks": [
   "no empty story axis, and no seed fact contradicted"
  ]

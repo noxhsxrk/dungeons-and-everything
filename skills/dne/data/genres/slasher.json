@@ -38,6 +38,14 @@
   "a hunter",
   "night"
  ],
+ "fits": [
+  "survival",
+  "a zombie outbreak",
+  "a creature feature",
+  "a killer in the woods",
+  "being hunted",
+  "a disaster"
+ ],
  "checks": [
   "a ladder of 3+ steps that rise one after another",
   "no empty story axis, and no seed fact contradicted"
