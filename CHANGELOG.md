@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [2.0.3-alpha] — 2026-11-26 — Safer 5e seam
+
 ### Fixed
 - In a Braid world the 5e-only scripts (`xp.py calc`, `encounter_gen.py`, `character.py`, `lookup.py`, `combat.py`) refuse even without `-c`: the campaign in play decides, as `combat.py` already did. A 5e world in play is unchanged.
 - `economy.py buy` in a Braid world no longer sorts gear through the 5e SRD.
