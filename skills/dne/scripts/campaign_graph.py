@@ -24,7 +24,7 @@ Storage: <campaign-dir>/graph.json
     ]
   }
 
-Node types (open vocab, suggested): npc, faction, place, item, thread.
+Node types (open vocab, suggested): pc, npc, faction, place, item, thread.
 Edge types (open vocab, common): loyal_to, opposes, allied_with, member_of,
   lives_in, controls, knows_about, friends_with, lover_of, owes, rules,
   related_by_blood, advances_thread, blocks_thread.
@@ -41,8 +41,12 @@ Subcommands:
                  to overwrite a graph that already has nodes or edges)
   add-node       --type T --name N [--id ID] [--tags t1,t2] [--summary S]
   add-edge       --from FROM --to TO --type T [--since N] [--until N] [--note S]
+                 [--anchor S]  (required between a PC or the party and a person)
   set-disposition --to NPC_OR_FACTION --level L [--since N] [--note S]
+                 [--anchor S]  (required for friendly/allied)
                  (L = allied|friendly|neutral|suspicious|hostile; party stance)
+  An anchor is what the NPC said or did in play, or the sheet's bond line: how
+  someone feels about a PC never stands on the PC's own word.
   close-edge     --id EDGE_ID [--at-session N]
   list           [--type T] [--at-session N]
   show           --id ID
@@ -121,6 +125,9 @@ PARTY_NODE_ID = "party"
 # Edge type per target: the party's stance toward an NPC is a `disposition`;
 # toward a faction it is a `standing`. Both carry a `level` from the scale above.
 _DISPOSITION_EDGE_TYPES = ("disposition", "standing")
+WARM_LEVELS = ("allied", "friendly")
+ANCHOR_NEEDED = ("error: {what} needs --anchor: what the NPC said or did in play, or the sheet's bond line "
+                 "(a PC's own word is a claim, not a relationship).")
 
 
 # -------- helpers --------
@@ -235,10 +242,38 @@ def cmd_add_node(args) -> int:
     return 0
 
 
+NOT_PEOPLE = ("place", "item", "thread", "category")
+
+
+def _pc_names(campaign: str) -> set:
+    """The PCs by sheet, so a PC node typed `npc` or `character` is still a PC."""
+    folder = find_campaign(campaign) / "characters"
+    names = set()
+    for sheet in folder.glob("*.md") if folder.is_dir() else []:
+        lines = sheet.read_text(encoding="utf-8", errors="replace").splitlines()
+        names |= {sheet.stem.casefold(), (lines[0].lstrip("# ").strip() if lines else "").casefold()}
+    return names - {""}
+
+
+def _about_a_pc(data: dict, campaign: str, a: str, b: str) -> bool:
+    """An edge between a PC (or the party) and a person: how someone feels about a PC."""
+    pcs = _pc_names(campaign)
+
+    def is_pc(i):
+        n = _node_by_id(data, i) or {}
+        return i == PARTY_NODE_ID or n.get("type") == "pc" or (n.get("name") or "").casefold() in pcs
+    return any(is_pc(x) and not is_pc(y) and (_node_by_id(data, y) or {}).get("type") not in NOT_PEOPLE
+               for x, y in ((a, b), (b, a)))
+
+
 def cmd_add_edge(args) -> int:
     data = _load(args.campaign)
     from_id = _resolve_or_die(data, args.from_id, "source")
     to_id = _resolve_or_die(data, args.to_id, "target")
+    anchor = (args.anchor or "").strip()
+    if not anchor and _about_a_pc(data, args.campaign, from_id, to_id):
+        print(ANCHOR_NEEDED.format(what="an edge between a PC and a person"), file=sys.stderr)
+        return 1
     edge = {
         "id": _next_edge_id(data["edges"]),
         "from": from_id,
@@ -249,6 +284,8 @@ def cmd_add_edge(args) -> int:
     }
     if args.note:
         edge["note"] = args.note
+    if anchor:
+        edge["anchor"] = anchor
     data["edges"].append(edge)
     _save(args.campaign, data)
     sess = f" since:{args.since}" if args.since is not None else ""
@@ -335,6 +372,10 @@ def cmd_set_disposition(args) -> int:
               file=sys.stderr)
         return 1
 
+    anchor = (args.anchor or "").strip()
+    if level in WARM_LEVELS and not anchor:
+        print(ANCHOR_NEEDED.format(what=f"a {level} stance"), file=sys.stderr)
+        return 1
     data = _load(args.campaign)
     to_id = _resolve_or_die(data, args.to_id, "target")
     if to_id == PARTY_NODE_ID:
@@ -366,6 +407,8 @@ def cmd_set_disposition(args) -> int:
     }
     if args.note:
         edge["note"] = args.note
+    if anchor:
+        edge["anchor"] = anchor
     data["edges"].append(edge)
     _save(args.campaign, data)
 
@@ -435,7 +478,7 @@ def _print_edge(e: dict, data: dict, direction: str = "out") -> None:
     if e.get("until_session") is not None:
         sess.append(f"until s{e['until_session']}")
     sess_str = " (" + ", ".join(sess) + ")" if sess else ""
-    note = f"  — {e['note']}" if e.get("note") else ""
+    note = (f"  — {e['note']}" if e.get("note") else "") + (f' (because: "{e["anchor"]}")' if e.get("anchor") else "")
     etype = f"{e['type']}:{e['level']}" if e.get("level") else e["type"]
     print(f"  [{e.get('id', '?')}] {arrow} {etype}: {other_name}{sess_str}{note}")
 
@@ -602,7 +645,7 @@ def _emit_subgraph(sub: dict, at_session: Optional[int]) -> None:
             if e.get("superseded_by"):
                 sess.append(f"superseded by {e['superseded_by']}")
             sess_str = " (" + ", ".join(sess) + ")" if sess else ""
-            note = f"  — {e['note']}" if e.get("note") else ""
+            note = (f"  — {e['note']}" if e.get("note") else "") + (f' (because: "{e["anchor"]}")' if e.get("anchor") else "")
             # Disposition/standing edges carry a level on the normalized scale;
             # fold it into the type so the party's stance reads at a glance.
             etype = f"{e['type']}:{e['level']}" if e.get("level") else e["type"]
@@ -969,6 +1012,7 @@ def main() -> int:
     sp.add_argument("--until", dest="until", type=int, default=None,
                     help="session number when edge ended (rare on add)")
     sp.add_argument("--note")
+    sp.add_argument("--anchor", help="what the NPC said or did in play, or the sheet's bond line")
     sp.set_defaults(func=cmd_add_edge)
 
     sp = sub.add_parser("close-edge")
@@ -999,6 +1043,7 @@ def main() -> int:
     sp.add_argument("--since", type=int, default=None,
                     help="session number this stance became true")
     sp.add_argument("--note", help="one-line reason for the stance")
+    sp.add_argument("--anchor", help="what the NPC said or did in play, or the sheet's bond line")
     sp.set_defaults(func=cmd_set_disposition)
 
     sp = sub.add_parser("list")

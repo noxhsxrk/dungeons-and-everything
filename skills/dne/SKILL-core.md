@@ -70,7 +70,8 @@ One sheet for every genre, `characters/<name>.md`, made by `sheet.py new` (templ
   fitting label gives +1, or lets the character try what others simply can't.
 - **Harm and stress** — kept by the engine (section 3), never written on the sheet.
 - **Bonds** — who they are tied to. Write it on the sheet and record it in the engine (`{"action": "bond", "a":
-  "Mira", "b": "Theo", "set": 1}`) so help works.
+  "Mira", "b": "Theo", "set": 1, "note": "he covered for her"}`) so help works. The note is all that person knows of
+  the character's past: the turn context lists it as what they know, and nothing else on the sheet.
 - **Gear** — what they carry, in the world's words. Gear makes an action possible; a fine tool can be a label's +1.
 
 **Making a character** (`/dne character new`, or step 2 of `/dne new` for a Braid world): ask the player for the

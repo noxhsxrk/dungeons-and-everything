@@ -805,6 +805,8 @@ def main() -> None:
             closed = turn.narration_sent(_camp, text) if _camp else None
             if closed and closed.get("finished") is False:
                 print(f"send.py: world engine turn {closed['turn_id']} stays open — {closed.get('note', '')}")
+            if closed and closed.get("check"):
+                print(f"send.py: check — {closed['check']}")
         except Exception:
             pass
 

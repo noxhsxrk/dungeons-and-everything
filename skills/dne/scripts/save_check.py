@@ -206,7 +206,8 @@ def checklist(campaign: str, since: float) -> list[tuple[bool, str]]:
     now = lambda ns: "; ".join(f"{n['name']} (now: {n['attitude'] or '?'})" for n in ns)  # noqa: E731
     how = (". This row never ticks itself. For each one that changed (toward the party or another NPC, romance "
            "and grudges included): update the Attitude column in npcs.md, `NPC dispositions` in state.md → Live "
-           "State Flags, and a graph edge (`campaign_graph.py set-disposition` / add-edge). Then name every NPC "
+           "State Flags, and a graph edge (`campaign_graph.py set-disposition` / add-edge, with --anchor quoting what "
+           "the NPC said or did; a PC's claim alone changes nothing). Then name every NPC "
            "here in your save summary with its change, or 'no change'")
     if seen:
         items.append((False, "Relationships for NPCs in this session's narration: " + now(seen) + how))

@@ -94,6 +94,28 @@ def mentioned(campaign: str, text: str, pool: "list | None" = None) -> list[dict
             if any(a.casefold() in low for a in e["aliases"])]
 
 
+SPEECH = re.compile(r'["“”「」]|\b(?:says?|said|asks?|asked|whispers?|shouts?|repl(?:y|ies|ied))\b'
+                    r"|พูด|บอก|ตอบ|ถาม|กระซิบ|ตะโกน|เอ่ย|กล่าว", re.IGNORECASE)
+
+
+def absent_speakers(campaign: str, narration: str) -> list[str]:
+    """Known NPCs the narration seems to have talking though the scene does not have them here. The speaker is taken
+    as the NPC named nearest before the first quote or speech verb of a sentence; a heuristic, so it only warns."""
+    present = {p.casefold() for p in scene(campaign).get("present") or []}
+    if not present:                                   # nobody recorded here: nothing to check against
+        return []
+    pool = [e for e in entities(campaign) if e["kind"] == "npc"]
+    out = []
+    for chunk in re.split(r'\n|(?<=[”」"])\s+', narration):
+        m = SPEECH.search(chunk)
+        before = chunk[:m.start()].casefold() if m else ""
+        spots = [(max(before.rfind(a.casefold()) for a in e["aliases"]), e) for e in pool if e["aliases"]]
+        pos, who = max(spots, key=lambda s: s[0], default=(-1, None))
+        if pos >= 0 and not {a.casefold() for a in who["aliases"]} & present:
+            out.append(who["name"])
+    return list(dict.fromkeys(out))
+
+
 def scene(campaign: str) -> dict:
     """{place, present}: what the engine was told, else the map's party location and nobody known present."""
     with wdb.reader(campaign) as db:
@@ -218,6 +240,7 @@ def build(campaign: str, text: str = "", audience: str = "dm", budget: int = 180
         "reference": reference(campaign, text, named, here, pool) if text else None,
         "recent": _recent_events(campaign, audience),
         "heard_here": _heard_here(campaign, here) if audience == "dm" else [],
+        "npc_knows": _npc_knows(campaign, here, pool) if audience == "dm" else {},   # beliefs hold secrets
         "rules": {k: v for k in RULE_FLAGS if (v := paths.session_flag(campaign, k, ""))},
     }
     if paths.campaign_system(campaign) != "d20":   # Braid dials the GM rules by (5e has none of them)
@@ -239,6 +262,46 @@ def build(campaign: str, text: str = "", audience: str = "dm", budget: int = 180
         if "recent" not in view["cut"]:
             view["cut"].append("recent")
     return view
+
+
+KNOWS_PER_NPC = 3          # shortcut: newest 3 per NPC, 110 characters each; `knows` has the rest
+
+
+def _npc_knows(campaign: str, here: dict, pool: list) -> dict:
+    """For each NPC in the scene, what they know of the PCs: their bond line on a sheet or in the engine, and the
+    beliefs they hold (knowledge.py), matched through their aliases. An empty list means only what they can see."""
+    present = {p.casefold() for p in here.get("present") or []}
+    npcs = [e for e in pool if e["kind"] == "npc"
+            and present & {n.casefold() for n in [e["name"], *e.get("aliases", [])]}]
+    if not npcs:
+        return {}
+    camp, sheet_bonds = paths.find_campaign(campaign), []
+    try:
+        import sheet
+        for path in sorted((camp / "characters").glob("*.md")):
+            sheet_bonds += [(path.stem, b) for b in sheet.parse(path.read_text(encoding="utf-8", errors="replace"))["bonds"]]
+    except Exception:          # a 5e sheet has no bonds section
+        pass
+    with wdb.reader(campaign) as db:
+        beliefs = wdb.all_of(db, "belief") if db is not None else {}
+        bonds = wdb.all_of(db, "bond") if db is not None else {}
+    out = {}
+    for e in npcs:
+        names = {n.casefold() for n in [e["name"], *e.get("aliases", [])]}
+        known = []
+        for pc, line in sheet_bonds:
+            who, _, note = line.partition(":")
+            if who.strip().casefold() in names:
+                known.append(f"bond with {pc}: {note.strip() or '(no note)'}")
+        for rec in bonds.values():
+            note = str(rec.get("note") or "").strip()
+            if note and names & {str(x).casefold() for x in rec.get("between") or []} and not any(note in k for k in known):
+                known.append(f"bond: {note}")
+        held = sorted((b for key, b in beliefs.items() if key.startswith("npc:")
+                       and key.split("|", 1)[0][4:].casefold() in names), key=lambda b: -(b.get("learned_at") or 0))
+        known += [f"{b['claim']} ({b['source']})" for b in held]
+        out[e["name"]] = [k if len(k) <= 110 else k[:109] + "…" for k in known[:KNOWS_PER_NPC]]
+    return out
 
 
 def _heard_here(campaign: str, here: dict) -> list[str]:
@@ -277,6 +340,11 @@ def render_parts(view: dict) -> list:
         parts.append((0, f"UNCLEAR WHO IS MEANT. Ask before anything changes in the world: \"{ref['ask']}\""))
     elif ref:
         parts.append((1, f"\"He/she/the same one\" here means {ref['means']} (last named, and present)."))
+    if view.get("npc_knows"):
+        parts.append((0, "What the NPCs here know of the PCs, and all they know (a PC's sheet, gear and past are the "
+                      "player's; record what a PC tells them with `fact`, naming them as witnesses): "
+                      + "; ".join(f"{n}: {' | '.join(k) if k else 'only what they see'}" for n, k in view["npc_knows"].items())
+                      + "."))
     where = view.get("place") or "place not set"
     who = ", ".join(view.get("present") or []) or "nobody recorded"
     parts.append((1, f"Scene: {where}. Present: {who}."))

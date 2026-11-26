@@ -423,5 +423,48 @@ class BraidKits(unittest.TestCase):
         self.assertIn("npcs[0].threat", [e["path"] for e in errs])
 
 
+class NpcKnowsOnlyTheirOwn(BraidCampaign):
+    """terrible-world, 2026-11-26: the GM had an NPC quote the grandfather's notebook from the PC's sheet. The turn
+    context now lists what each NPC in the scene knows: their bond line and what they witnessed or were told."""
+
+    def test_the_context_lists_the_bond_not_the_sheet_then_what_she_was_told(self):
+        npcs = [{**SEED["npcs"][0], "aliases": ["Hale"]}]
+        self.build(worldkit=KIT, npcs=npcs)
+        mira = list(MIRA)
+        mira[mira.index("--gear") + 1] = "grandfather's notebook,brass compass"
+        mira[mira.index("--bonds") + 1] = "Captain Hale: worked with her mother, signed her pass"
+        self.assertEqual(self.sheet(*mira), 0)
+        self.turn_with("[GM]: the ford", {"action": "scene", "place": "The Ford", "present": ["Mira Vale", "Captain Hale"]})
+        import scene_context
+        knows = scene_context.build("braid")["npc_knows"]
+        self.assertEqual(len(knows["Captain Hale"]), 1)
+        self.assertIn("worked with her mother", knows["Captain Hale"][0])
+        line = next(t for p, t in scene_context.render_parts(scene_context.build("braid")) if t.startswith("What the NPCs"))
+        self.assertNotIn("notebook", line)
+        self.assertEqual(scene_context.build("braid", audience="player")["npc_knows"], {})   # the GM's eyes only
+        self.turn_with("[Mira]: I show Hale grandfather's notebook",
+                       {"action": "fact", "id": "notebook-shown", "text": "Mira showed Hale her grandfather's notebook",
+                        "witnesses": ["Hale"]})                                           # recorded under an alias
+        self.assertIn("notebook", " ".join(scene_context.build("braid")["npc_knows"]["Captain Hale"]))
+
+
+    def test_finish_flags_a_known_npc_who_speaks_from_outside_the_scene(self):
+        npcs = [{**SEED["npcs"][0], "aliases": ["Hale", "ฮาเล"]},
+                {"name": "Old Wren", "role": "ferryman", "threat": 1, "location": "The Ford", "aliases": ["Wren", "เรน"]}]
+        self.build(worldkit=KIT, npcs=npcs)
+        self.turn_with("[GM]: the ford", {"action": "scene", "place": "The Ford", "present": ["Captain Hale"]})
+        import turn
+        for narration, flagged in (('Hale says, "Pay the toll."\nYou think of Wren.', False),
+                                   ('Hale says, "Wren took the boat."', False),
+                                   ('นึกถึงเรนอยู่ครู่หนึ่ง แล้วฮาเลก็บอกว่า "จ่ายค่าผ่านทางก่อน"', False),
+                                   ('Wren calls from the bank: "Not today."', True),
+                                   ('"Not today," Wren says.', True),
+                                   ('เรนตะโกนมาจากอีกฝั่ง "ไม่ใช่วันนี้"', True)):
+            turn.begin("braid", "[Mira]: I wait")
+            r = turn.finish("braid", narration)
+            self.assertTrue(r["status"] == "finished", r)
+            self.assertEqual("Old Wren" in r.get("check", ""), flagged, (narration, r.get("check")))
+
+
 if __name__ == "__main__":
     unittest.main()

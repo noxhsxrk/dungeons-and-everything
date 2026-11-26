@@ -431,7 +431,7 @@ class GraphSubcommandTests(unittest.TestCase):
         rc, out, err = _run(
             ["set-disposition", "--campaign", self.campaign,
              "--to", "Aldric", "--level", "friendly", "--since", "2",
-             "--note", "helped in the mine"],
+             "--note", "helped in the mine", "--anchor", "Aldric: 'I owe you my life.'"],
             env_overrides=self.env,
         )
         self.assertEqual(rc, 0, msg=err)
@@ -464,7 +464,8 @@ class GraphSubcommandTests(unittest.TestCase):
         _run(["add-node", "--campaign", self.campaign,
               "--type", "npc", "--name", "Aldric"], env_overrides=self.env)
         _run(["set-disposition", "--campaign", self.campaign,
-              "--to", "Aldric", "--level", "friendly", "--since", "2"],
+              "--to", "Aldric", "--level", "friendly", "--since", "2",
+              "--anchor", "he shared his bread"],
              env_overrides=self.env)
         _run(["set-disposition", "--campaign", self.campaign,
               "--to", "Aldric", "--level", "suspicious", "--since", "5"],
@@ -479,6 +480,35 @@ class GraphSubcommandTests(unittest.TestCase):
                   and e.get("until_session") == 5]
         self.assertEqual(len(closed), 1)
         self.assertEqual(closed[0]["level"], "friendly")
+
+    def test_a_pcs_word_does_not_make_a_relationship(self):
+        """Glitch: Nox told the grandparents he was dating Rina; she never said yes, yet lover_of was written."""
+        for kind, name in (("pc", "Nox"), ("npc", "Rina")):
+            _run(["add-node", "--campaign", self.campaign, "--type", kind, "--name", name], env_overrides=self.env)
+        lover = ["add-edge", "--campaign", self.campaign, "--from", "pc_nox", "--to", "Rina", "--type", "lover_of"]
+        rc, _, err = _run(lover, env_overrides=self.env)
+        self.assertEqual(rc, 1)
+        self.assertIn("--anchor", err)
+        rc, _, err = _run(["set-disposition", "--campaign", self.campaign, "--to", "Rina", "--level", "allied"],
+                          env_overrides=self.env)
+        self.assertEqual(rc, 1)
+        self.assertEqual(self._graph_json()["edges"], [])
+        rc, out, err = _run(lover + ["--anchor", "Rina: 'Yes. Ask me properly next time.'"], env_overrides=self.env)
+        self.assertEqual(rc, 0, msg=err)
+        self.assertEqual(self._graph_json()["edges"][0]["anchor"], "Rina: 'Yes. Ask me properly next time.'")
+        rc, out, _ = _run(["show", "--campaign", self.campaign, "--id", "Rina"], env_overrides=self.env)
+        self.assertIn("because:", out)
+
+    def test_the_lock_finds_the_pc_by_sheet_and_leaves_places_alone(self):
+        (self.camp_dir / "characters").mkdir(parents=True, exist_ok=True)
+        (self.camp_dir / "characters" / "nox.md").write_text("# Nox\n", encoding="utf-8")
+        for kind, name in (("character", "Nox"), ("npc", "Rina"), ("place", "Grandma's House")):
+            _run(["add-node", "--campaign", self.campaign, "--type", kind, "--name", name], env_overrides=self.env)
+        edge = ["add-edge", "--campaign", self.campaign, "--from", "Nox"]
+        rc, _, err = _run(edge + ["--to", "Rina", "--type", "lover_of"], env_overrides=self.env)
+        self.assertEqual(rc, 1, msg="a PC node not typed pc is still a PC")
+        rc, _, err = _run(edge + ["--to", "Grandma's House", "--type", "lives_in"], env_overrides=self.env)
+        self.assertEqual(rc, 0, msg=err)
 
     def test_invalid_level_rejected(self):
         _run(["add-node", "--campaign", self.campaign,

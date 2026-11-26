@@ -581,9 +581,18 @@ def finish(campaign: str, narration: str, turn_id: "str | None" = None, already_
     wdb.apply_staged(campaign)                    # the record is on disk before anyone reads the narration
     wdb.crash_point("after_commit_before_send")
     sent = deliver(campaign)
+    extra = {}
+    try:                                          # a warning, not a refusal: the narration is already out
+        import scene_context
+        absent = scene_context.absent_speakers(campaign, narration)
+        if absent:
+            extra["check"] = (f"{', '.join(absent)} seems to speak in this narration but is not in the scene: if they "
+                              "are here, add them with a `scene` action; if they were only talked about, ignore this")
+    except Exception:
+        pass
     with wdb.reader(campaign) as db:
         turn = db.execute("SELECT * FROM turns WHERE turn_id=?", (turn_id,)).fetchone()
-        return _turn_view(db, turn, finished=True, sent=sent, committed=wdb.get(db, "turn_record", turn_id))
+        return _turn_view(db, turn, finished=True, sent=sent, committed=wdb.get(db, "turn_record", turn_id), **extra)
 
 
 BLOCK = ("<!-- unrolled:world -->", "<!-- /unrolled:world -->")

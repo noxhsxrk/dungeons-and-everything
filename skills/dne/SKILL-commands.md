@@ -507,7 +507,7 @@ The continuity summary is what stays hot in context. The full verbose log is in 
 - A character learning a secret ("the party now knows Velkyn was the spy")
 - A quest / thread ending or being blocked
 
-For each candidate, draft an `add-edge` or `close-edge` call. Then **present the batch to the DM as a numbered list** and ask: *"Apply all? [y / pick / skip]"*
+For each candidate, draft an `add-edge` or `close-edge` call, with `--anchor` quoting the moment for any edge that touches a PC and any friendly or allied stance; a shift with no such moment (only a PC said so) is not a candidate. Then **present the batch to the DM as a numbered list** and ask: *"Apply all? [y / pick / skip]"*
 
 - `y` → run all proposed calls via `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_graph.py ...`
 - `pick` → DM names the numbers to apply (e.g. `1, 3, 5`); skip the rest
@@ -929,18 +929,18 @@ Local-only typed-edge relationship graph supplementing markdown. Stored at `${DN
 All subcommands invoke `python3 ${CLAUDE_SKILL_DIR}/scripts/campaign_graph.py <subcommand> --campaign <name> [args]`.
 
 ### `/dne graph init [campaign-name]`
-First-time bootstrap. Run `campaign_graph.py init --campaign <name>` to create the empty `graph.json` — idempotent on an empty graph, and it refuses to overwrite one that already holds nodes or edges. Then read existing `npcs.md` / `world.md` / `state.md` for the campaign. Propose a node list (NPCs as `npc_*`, factions as `faction_*`, key locations as `place_*`) and a starter edge list (faction membership from npcs.md tables, NPC location from "Lives in / Based at" fields, faction relationships from world.md). Display the proposed list to the DM and **ask for approval** before writing — do not silently extract. After approval, run `add-node` and `add-edge` for each. Use `--since 1` for everything already true before play (a fresh campaign's session count is 0), and the current session number for anything newer.
+First-time bootstrap. Run `campaign_graph.py init --campaign <name>` to create the empty `graph.json` — idempotent on an empty graph, and it refuses to overwrite one that already holds nodes or edges. Then read existing `npcs.md` / `world.md` / `state.md` for the campaign. Seed edges between a PC and an NPC carry `--anchor` with the sheet's bond line or the logged moment. Propose a node list (PCs as `pc_*` with `--type pc`, NPCs as `npc_*`, factions as `faction_*`, key locations as `place_*`) and a starter edge list (faction membership from npcs.md tables, NPC location from "Lives in / Based at" fields, faction relationships from world.md). Display the proposed list to the DM and **ask for approval** before writing — do not silently extract. After approval, run `add-node` and `add-edge` for each. Use `--since 1` for everything already true before play (a fresh campaign's session count is 0), and the current session number for anything newer.
 
 For existing campaigns being initialized for the first time, the `/dne load` flow offers to back the campaign directory up first; honour that flow rather than running init from a cold prompt.
 
 ### `/dne graph add-node --type T --name N [--tags ...] [--summary ...]`
 Add a single node. Type is open vocab; suggested: `npc`, `faction`, `place`, `item`, `thread`. Default id is `<type>_<name-slug>`.
 
-### `/dne graph add-edge --from <id> --to <id> --type T [--since N] [--note ...]`
-Add a typed edge between two existing nodes. Edge type is open vocab; common: `loyal_to`, `opposes`, `allied_with`, `member_of`, `lives_in`, `controls`, `knows_about`, `friends_with`, `lover_of`, `owes`, `rules`, `related_by_blood`, `advances_thread`, `blocks_thread`. Always supply `--since` (the current session number from state.md) so historical replay works.
+### `/dne graph add-edge --from <id> --to <id> --type T [--since N] [--note ...] [--anchor ...]`
+Add a typed edge between two existing nodes. An edge between a PC (a `pc` node, or a node named like a sheet in `characters/`) or the `party` and a person or faction is refused without `--anchor`: the words the NPC said or what they did in play, or the sheet's bond line. A PC's own claim ("I'm dating Rina") is no anchor. Edge type is open vocab; common: `loyal_to`, `opposes`, `allied_with`, `member_of`, `lives_in`, `controls`, `knows_about`, `friends_with`, `lover_of`, `owes`, `rules`, `related_by_blood`, `advances_thread`, `blocks_thread`. Always supply `--since` (the current session number from state.md) so historical replay works.
 
-### `/dne graph set-disposition --to <npc-or-faction> --level <L> [--since N] [--note ...]`
-Type how the **party** stands toward an NPC or faction on the normalized scale `allied | friendly | neutral | suspicious | hostile` — the same five values the display's faction panel uses, so the graph and the sidebar speak one language. The edge runs from the shared `party` node (auto-created on first use) to the target; its type is inferred from the target — `disposition` for an NPC, `standing` for a faction — and it carries the `level`.
+### `/dne graph set-disposition --to <npc-or-faction> --level <L> [--since N] [--note ...] [--anchor ...]`
+`friendly` and `allied` are refused without `--anchor` (what the NPC said or did). Type how the **party** stands toward an NPC or faction on the normalized scale `allied | friendly | neutral | suspicious | hostile` — the same five values the display's faction panel uses, so the graph and the sidebar speak one language. The edge runs from the shared `party` node (auto-created on first use) to the target; its type is inferred from the target — `disposition` for an NPC, `standing` for a faction — and it carries the `level`.
 
 Single-valued and current: setting a new stance **closes** any prior active party→target stance edge at `--since` (its arc stays queryable with `--at-session <old N>`) and adds the new level, so `scene-context` only ever surfaces the party's *current* stance. `scene-context` renders it as `The Party --[disposition:suspicious]--> Aldric` so the stance reads at a glance. Always pass `--since <current-session-N>`.
 
@@ -976,7 +976,7 @@ Apply previously-extracted proposals (from either the Haiku or deterministic pas
 ### Suggested DM workflow
 
 1. **First session after install:** `/dne load` will offer to initialize the graph (with a backup-first prompt). Accept; review the proposed seed; approve.
-2. **During session:** when a relationship shifts in narration, run `/dne graph add-edge` (or `close-edge`) with `--since` set to the current session number. Don't batch this — record at the moment of the narrative change so you don't forget.
+2. **During session:** when a relationship shifts in play (the NPC said or did it, not a PC claiming it), run `/dne graph add-edge` (or `close-edge`, with `--anchor` for anything between a PC and a person) with `--since` set to the current session number. Don't batch this — record at the moment of the narrative change so you don't forget.
 3. **Before a heavy social/political scene:** run `/dne graph scene-context --place <current-place> --present <key-NPCs>` to refresh which relationships matter right now.
 4. **At `/dne save`:** review the session log and add any edges you missed during play (the save flow runs an automatic sweep and presents proposals for approval).
 

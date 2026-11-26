@@ -8,6 +8,12 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Fixed
+- NPCs knew what only the player knew: an NPC quoted the grandfather's notebook from the PC's sheet (Braid), and a girlfriend appeared because a PC said so (5e). Each turn's context now lists, for every NPC in the scene, what they know of the PCs (their bond line, what they witnessed or were told) and that this is all they know; GM only. SKILL.md (both systems): a PC's sheet and past are the player's, and a character's word is a claim: what an NPC feels, agrees to or has done is hers, and no disposition, bond or graph edge changes from a PC's statement alone. The `claims` dial covers the world, never another character's mind.
+- A Braid bond takes a `note` at character creation (SKILL-core), the one thing that NPC knows of the character's past.
+- The campaign graph refuses a relationship that stands only on a PC's word: `add-edge` between a PC (typed `pc`, or named like a character sheet) or the `party` and a person or faction, and a `friendly` or `allied` stance, need `--anchor` (what the NPC said or did in play, or the sheet's bond line). The anchor is kept on the edge and shown as "because: …". Old graphs are left as they are.
+- `turn.py finish` (and a plain `send.py` narration that closes a turn) answers with a `check` when a known NPC seems to speak in the narration but is not in the scene. A warning only, and only where the world engine runs.
+
 ## [2.0.4-alpha] — 2026-11-26 — Kit content for every genre
 
 ### Added
