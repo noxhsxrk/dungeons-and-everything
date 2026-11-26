@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/images/hero.jpg" alt="Dungeons & Everything — a glowing d20 whose faces show neon Bangkok, a Thai temple, a Weird West town, a 1990s small town and a starship diving into a sun" width="100%">
+  <img src="docs/images/hero.jpg" alt="Dungeons & Everything — a glowing die whose faces show neon Bangkok, a Thai temple, a Weird West town, a 1990s small town and a starship diving into a sun. Any story. Any genre. One engine." width="100%">
 
   <h3>Describe any story. Your AI Game Master builds it, runs it, and plays everyone in it.</h3>
   <p>Dungeons &amp; Everything is a Game Master skill for any AI coding agent, running on the <b>Unrolled Engine</b>:<br>a murder mystery, a heist, a slasher night, a cozy village or a D&amp;D dungeon, each on rules made for it,<br>and a world that keeps moving when the party isn't looking.</p>
@@ -54,11 +54,15 @@ At `/dne new` you just describe the story you want, in your own words: *"a murde
 
 Behind that pitch the engine has 35 genre presets, each a bundle of small rules rather than a box your story has to fit: mystery, heist, war, competition, psychological thriller, spy, court intrigue, crime family, survival; cosmic horror, Thai ghost story, slasher, analog horror, romance, cozy, comedy, kids on bikes; fantasy, portal fantasy, magic academy, abyssal delve, urban occult, hard sci-fi, space opera, post-apocalypse, superheroes, western, pirates, kaiju and giant robots, wuxia, LitRPG, historical; time loop, road trip and traitor among us. A story none of them fits runs on plain Braid with only the rules it needs (23 modules to pick from).
 
+<img src="docs/images/genres.jpg" alt="A board of 35 genre presets, from abyssal delve and analog horror to western and wuxia" width="100%">
+
 **A different story every time.** The story generator rolls a skeleton (the crime, the victim, who did it, why, how, the twist, the red herring) from each genre's own lists and remembers past campaigns, so the hundredth murder is not the first one again. A mystery is checked before play: every place reachable, every conclusion backed by at least three clues in at least two places, and still solvable in 95% of 1000 trials that hide a third of the clues.
 
 **[The full guide: how to prompt for every genre, with examples →](ANY_GENRE.md)**
 
 ## Mix genres
+
+<img src="docs/images/mix.jpg" alt="Three genre mixes as cards: slasher + romance, heist + wuxia + traitor, Thai ghost story + mystery, each with an example prompt and the rules it brings" width="100%">
 
 The best stories are rarely one thing. Describe two or three at once and the GM mixes up to five presets, every rule included:
 
