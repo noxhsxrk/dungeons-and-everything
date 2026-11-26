@@ -145,6 +145,17 @@ class Campaign(EngineCase):
         self.flags("- world_engine: on\n")
         self.assertEqual(modules.enabled("oldworld"), [])
 
+    def test_a_change_of_the_set_is_logged(self):
+        self.assertEqual(self.apply()["changed"], {"added": ["composure", "panic", "doom"], "removed": []})
+        self.assertNotIn("changed", self.apply("again"))                         # same set: nothing to log
+        self.flags("- display: none\n- roll_mode: auto\n- world_engine: on\n- modules: composure, clues\n")
+        self.assertEqual(self.apply("switch")["changed"], {"added": ["clues"], "removed": ["panic", "doom"]})
+        log = self.thing("modules", "campaign")["log"]
+        self.assertEqual([e["added"] for e in log], [["composure", "panic", "doom"], ["clues"]])
+        import turn_snapshot
+        turn_snapshot.undo_snapshot("oldworld", notify_display=False)               # undo takes the entry back
+        self.assertEqual(len(self.thing("modules", "campaign")["log"]), 1)
+
     def test_apply_gives_each_pc_the_tracks_and_keeps_the_breaking_point(self):
         d = self.apply()
         self.assertEqual(d["pcs"], ["Mira"])

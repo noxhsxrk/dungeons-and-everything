@@ -197,7 +197,8 @@ advances work as above (an advance's `--raise` makes that approach count as one 
 ## Modules
 
 Optional rules a campaign switches on, one line in Session Flags: `- modules: composure, clues`. Change it between
-sessions if the table wants (note the change in the session log). A module adds tracks, tables or one engine action
+sessions if the table wants, then send `apply` (below): it logs what was switched on or off (`changed`); note it in
+the session log too. A module adds tracks, tables or one engine action
 over the same roll; never a second way to roll, and players never open a table. `modules.py list` shows every
 module and when to use it; `modules.py -c <campaign> rules` prints the rules of the ones switched on (session start
 lists it), and `modules.py check` catches a missing requirement, a conflict or too many (more than 8). Once the sheets

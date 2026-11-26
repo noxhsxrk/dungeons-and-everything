@@ -67,6 +67,7 @@ def _view(rec: dict, **extra) -> dict:
 
 
 @turn.handler("loop")
+@modules.requires("loop")
 def _loop(ctx, intent: dict) -> dict:
     """loop — the day that plays again (module loop).
 
@@ -80,26 +81,23 @@ def _loop(ctx, intent: dict) -> dict:
     {"action": "loop", "anchor": "the silver key"}    an item that carries (3 at most, default; "drop": "<name>")
     {"action": "loop"}                            read it
     Escape progress: {"action": "track", "owner": "party", "id": "loop_break", "mark": 1, "why": "learned why"}."""
-    err = modules.need(ctx, "loop")
-    if err:
-        return mechanics._err(err)
     import world_db as wdb
     nums = modules.load("loop")["numbers"]
     modules.ensure(ctx, "loop", [])
     rec, events = _record(ctx), []
     if intent.get("start") or intent.get("restart"):
         if rec["seed"] is not None and not intent.get("restart"):
-            return mechanics._err("the loop already has its seed: send \"restart\": true to take a new one")
+            return mechanics.error("the loop already has its seed: send \"restart\": true to take a new one")
         rec["carry"] = sorted({str(c).strip().casefold() for c in intent.get("carry") or [] if str(c).strip()})
         rec["seed"] = capture(ctx, rec["carry"])
         rec["loop"] = max(rec["loop"], 1)
         events.append({"type": "loop", "recipient": "party", "text": f"The day is set. Loop {rec['loop']} begins."})
     elif intent.get("reset"):
         if rec["seed"] is None:
-            return mechanics._err("no seed yet: send {\"action\": \"loop\", \"start\": true} at the loop's first morning")
+            return mechanics.error("no seed yet: send {\"action\": \"loop\", \"start\": true} at the loop's first morning")
         brk = wdb.get(ctx.db, "track", "party/loop_break")
         if brk and brk["value"] >= brk["max"]:
-            return mechanics._err("the loop is broken (loop_break is full): tomorrow comes, nothing resets")
+            return mechanics.error("the loop is broken (loop_break is full): tomorrow comes, nothing resets")
         writes = restore(ctx, rec["seed"], rec.get("carry") or ())
         rec["loop"] += 1
         fat = mechanics.change_track(ctx, "party", "loop_fatigue", mark=int(nums["fatigue_per_loop"]),
@@ -111,20 +109,20 @@ def _loop(ctx, intent: dict) -> dict:
         events.append({"type": "loop", "recipient": "party",
                        "text": f"The day begins again: loop {rec['loop']}. Fatigue {fat['value']}/{fat['max']}."
                                + (f" Forgotten: {forgot}." if forgot else "")})
-        return mechanics._done(_view(rec, fatigue=fat["value"], forgot=forgot, carried=rec["anchors"],
+        return mechanics.done(_view(rec, fatigue=fat["value"], forgot=forgot, carried=rec["anchors"],
                                      carried_tracks=rec.get("carry") or []),
                                writes=writes, refresh="clocks", visible_events=events)
     for field, have, cap in (("learn", "knowledge", None), ("anchor", "anchors", int(nums["anchors"]))):
         text = str(intent.get(field) or "").strip()
         if text and text not in rec[have]:
             if cap is not None and len(rec[have]) >= cap:
-                return mechanics._err(f"{cap} anchors at most (default): drop one first ({', '.join(rec[have])})")
+                return mechanics.error(f"{cap} anchors at most (default): drop one first ({', '.join(rec[have])})")
             rec[have].append(text)
     for field, have in (("forget", "knowledge"), ("drop", "anchors")):
         text = str(intent.get(field) or "").strip()
         if text:
             if text not in rec[have]:
-                return mechanics._err(f"{field}: {text!r} is not in {have}")
+                return mechanics.error(f"{field}: {text!r} is not in {have}")
             rec[have].remove(text)
     wdb.put(ctx.db, "loop", "party", rec)
-    return mechanics._done(_view(rec), visible_events=events)
+    return mechanics.done(_view(rec), visible_events=events)

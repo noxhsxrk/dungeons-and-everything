@@ -8,6 +8,19 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Added
+- **Genre-tagged kit content** (`data/content.json`, `content.py <genres>`): 73 labels, 34 pieces of gear and 69 threats, each tagged with the genres it fits. A mix draws from the union, the main genre first, with the era bans applied (`--mix-eras` keeps everything). `/dne new` step 7 (Braid) starts the World Kit from it.
+- `story_gen.py skeleton --drives <genre>`: the thread that leads, when it is not the first plot genre.
+
+### Fixed
+- A horror, Thai ghost or kids' adventure world with `clues` was led by the mystery thread added for its case (since 2.0.2). `genres.py combine` now prints `--drives <genre>` on the story generator line, so the table's story leads and the case is a thread inside it.
+- A 5e world set up while the campaign marker still named a Braid world: `lookup.py … --ruleset 2024` (step 7) was refused (since 2.0.3). An explicit `--ruleset` is a 5e question and passes.
+- `{"action": "modules", "apply": true}` logs each change of the module set (`changed`: what was switched on and off; world.db, so undo takes it back).
+
+### Changed (for developers)
+- Module handlers declare their module with `@modules.requires(...)` instead of three lines each; `mechanics.error`, `done`, `key_of` and `log_entry` are public (were `_err`, `_done`, `_key`, `_log`); `story_gen.STRUCTURES` maps a genre to what it builds and checks.
+- Tests renamed by what they test: `test_braid_drama_modules`, `test_braid_own_modules`, `test_braid_playtest_findings`, `test_braid_module_seams`, `test_braid_storygen`. New: one synthetic state.md per old save header (every format loads as d20), a `table_roll` resend test, and a spy on the 5e entry points of shared scripts (skirmish fights, rest, death saves, rest and treasure in economy).
+
 ## [2.0.3-alpha] — 2026-11-26 — Safer 5e seam
 
 ### Fixed

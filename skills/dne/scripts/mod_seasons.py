@@ -69,22 +69,20 @@ def _events(turned: dict) -> list:
 
 
 @turn.handler("season")
+@modules.requires("seasons")
 def _season(ctx, intent: dict) -> dict:
     """season — the campaign's season and its happening (module seasons).
 
     {"action": "season"}   the season the calendar is in now; if it differs from the one on record it turns here
     It also turns by itself after any action that moves the calendar (wait, travel). A turn rolls a happening from
     that season's table and gives every character 1 token (pool `tokens`, our default)."""
-    err = modules.need(ctx, "seasons")
-    if err:
-        return mechanics._err(err)
     import scheduler
     turned = _turn(ctx, scheduler.World(ctx.campaign, ctx.db).json("calendar.json") or {})
     rec = wdb.get(ctx.db, "season", "party")
     if not rec:
-        return mechanics._err("no calendar: the season comes from calendar.json (calendar.py init)")
+        return mechanics.error("no calendar: the season comes from calendar.json (calendar.py init)")
     data = {"season": rec["name"], "happening": rec["happening"], "turned": bool(turned)}
-    return mechanics._done(data, refresh="clocks", visible_events=_events(turned) if turned else [])
+    return mechanics.done(data, refresh="clocks", visible_events=_events(turned) if turned else [])
 
 
 def _after(ctx, intent: dict, out: dict) -> None:

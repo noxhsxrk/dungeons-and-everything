@@ -288,6 +288,8 @@ class Refusals(unittest.TestCase):
             r = self.run_py(*call)
             self.assertEqual(r.returncode, 2, (call, r.stdout, r.stderr))
             self.assertIn("Braid", r.stderr, call)
+        r = self.run_py("lookup.py", "goblin", "--ruleset", "2014")    # /dne new for a 5e world: an explicit 5e question
+        self.assertEqual(r.returncode, 0, r.stderr)
         (rt / "active-campaign.json").write_text(json.dumps({"name": "fivee"}), encoding="utf-8")
         self.assertEqual(self.run_py("lookup.py", "goblin").returncode, 0)   # a 5e world in play passes
 
@@ -341,6 +343,58 @@ class MigrateSystem(unittest.TestCase):
                                             encoding="utf-8")
         self.assertEqual(self.mig("oldworld", "--yes").returncode, 0)
         self.assertIn("**Ruleset:** 2014  **System:** d20\n", (self.camp / "state.md").read_text(encoding="utf-8"))
+
+
+class EveryOldSaveFormat(unittest.TestCase):
+    """PR 1's passes-when line: every save from before 2.0 loads as d20. One synthetic header per format the
+    migration meets (never a copy of a real save)."""
+    BODY = "\n## Current Situation\n- Location: Millbridge\n\n## Notes\n- the bard joked \"**System:** core\"\n"
+    HEADERS = {
+        "no created line": "# Campaign: x\n**Session count:** 3\n",
+        "created, no ruleset": "# Campaign: x\n**Created:** 2025-03-01\n",
+        "ruleset 2014": "# Campaign: x\n**Created:** 2025-03-01  **Ruleset:** 2014\n",
+        "ruleset 2024": "# Campaign: x\n**Created:** 2025-03-01  **Ruleset:** 2024\n**Session count:** 12\n",
+        "thai title": "# แคมเปญ: เมืองท่า\n**Created:** 2025-03-01  **Ruleset:** 2014\n",
+        "no title": "**Created:** 2025-03-01  **Ruleset:** 2014\n",
+    }
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = pathlib.Path(self._tmp.name)
+        self.env = {**os.environ, "DNE_CAMPAIGN_ROOT": str(self.root), "DNE_RUNTIME_DIR": str(self.root / "rt"),
+                    "PYTHONIOENCODING": "utf-8"}
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def mig(self, *args):
+        return subprocess.run([sys.executable, str(SCRIPTS / "migrate_system.py"), *args], capture_output=True,
+                              text=True, encoding="utf-8", env=self.env, timeout=60)
+
+    def system_and_ruleset(self, name):
+        code = f"import paths; print(paths.campaign_system({name!r}), paths.campaign_ruleset({name!r}))"
+        r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, encoding="utf-8",
+                           env=self.env, cwd=SCRIPTS, timeout=60)
+        return r.stdout.split()
+
+    def test_every_format_loads_as_d20_and_keeps_its_ruleset(self):
+        for n, (label, header) in enumerate(self.HEADERS.items()):
+            with self.subTest(label):
+                name = f"save{n}"
+                camp = _old_campaign.make(self.root, name)
+                before = header + self.BODY
+                (camp / "state.md").write_text(before, encoding="utf-8")
+                ruleset = self.system_and_ruleset(name)[1]
+                self.assertEqual(self.system_and_ruleset(name), ["d20", ruleset])     # plays as d20 before the stamp
+                self.assertEqual(self.mig(name, "--check").returncode, 1)
+                r = self.mig(name, "--yes")
+                self.assertEqual(r.returncode, 0, r.stderr)
+                after = (camp / "state.md").read_text(encoding="utf-8")
+                self.assertEqual(self.system_and_ruleset(name), ["d20", ruleset])
+                self.assertEqual(after.count("**System:** d20"), 1)
+                self.assertTrue(after.endswith(self.BODY), label)                      # nothing below the header moved
+                self.assertEqual(self.mig(name, "--check").returncode, 0)
+                self.assertIn("Already migrated", self.mig(name, "--yes").stdout)
 
 
 class InitAndLoad(unittest.TestCase):

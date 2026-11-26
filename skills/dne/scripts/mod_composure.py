@@ -16,6 +16,7 @@ import turn  # noqa: E402
 
 
 @turn.handler("fright")
+@modules.requires("composure")
 def _fright(ctx, intent: dict) -> dict:
     """fright — a character meets something that should not be (module composure).
 
@@ -24,16 +25,13 @@ def _fright(ctx, intent: dict) -> dict:
     the usual one with Heart (2d6 + Heart from the sheet, or send "spec"); "push" and "help" as on `roll`. Story mode:
     the oracle answers (minor likely, serious 50/50, overwhelming unlikely). The loss lands at once, so a token
     cannot step this check up afterwards. The reply's `crossed` carries any threshold and the table entry rolled."""
-    err = modules.need(ctx, "composure")
-    if err:
-        return mechanics._err(err)
     nums = modules.load("composure")["numbers"]
     rating = str(intent.get("rating", "serious")).casefold()
     if rating not in nums["ratings"]:
-        return mechanics._err(f"rating: one of {', '.join(nums['ratings'])}")
+        return mechanics.error(f"rating: one of {', '.join(nums['ratings'])}")
     actor, what = str(intent.get("actor") or "").strip(), str(intent.get("what") or "something terrible")
     if not actor:
-        return mechanics._err("fright needs an actor")
+        return mechanics.error("fright needs an actor")
     check = {"action": "roll", "actor": actor, "approach": intent.get("approach") or nums["approach"],
              "label": f"keep composure: {what}", "likelihood": nums["story_odds"][rating],
              **{k: intent[k] for k in ("spec", "push", "help") if k in intent}}

@@ -42,19 +42,19 @@ PROGRESS_ODDS = ("no-way", "no-way", "unlikely", "unlikely", "50/50", "50/50", "
 LOG_KEEP = 20
 
 
-def _key(*parts) -> str:
+def key_of(*parts) -> str:
     return "/".join(str(p).strip().casefold() for p in parts)
 
 
-def _done(data: dict, **extra) -> dict:
+def done(data: dict, **extra) -> dict:
     return {"status": "done", "elapsed_minutes": 0, "data": data, **extra}
 
 
-def _err(msg: str) -> dict:
-    return _done({"error": msg})
+def error(msg: str) -> dict:
+    return done({"error": msg})
 
 
-def _log(rec: dict, entry: dict) -> None:
+def log_entry(rec: dict, entry: dict) -> None:
     rec["log"] = (rec.get("log") or [])[-(LOG_KEEP - 1):] + [entry]
 
 
@@ -89,9 +89,9 @@ def _table_roll(ctx, intent: dict) -> dict:
     One entry, rolled once: resending it returns the same entry. Name a different `why` to roll the same table again
     in one turn."""
     try:
-        return _done({**roll_table(ctx, intent.get("table"), "table"), "why": str(intent.get("why", ""))})
+        return done({**roll_table(ctx, intent.get("table"), "table"), "why": str(intent.get("why", ""))})
     except (OSError, ValueError) as exc:
-        return _err(f"table_roll: {exc}")
+        return error(f"table_roll: {exc}")
 
 
 # ── tracks ────────────────────────────────────────────────────────────────────
@@ -113,7 +113,7 @@ def _sync_conditions(ctx, rec: dict) -> None:
         cond = t.get("condition")
         if not cond:
             continue
-        key = _key(rec["owner"], cond["name"])
+        key = key_of(rec["owner"], cond["name"])
         down = t.get("dir") == "down"
         on = rec["value"] <= int(t["at"]) if down else rec["value"] >= int(t["at"])
         if on and wdb.get(ctx.db, "condition", key) is None:
@@ -134,7 +134,7 @@ def _crossed(ctx, rec: dict, before: int) -> list:
             hit = {"at": at, "dir": "down" if down else "up", "note": str(t.get("note", ""))}
             if t.get("table"):
                 try:
-                    hit.update(roll_table(ctx, t["table"], f"{_key(rec['owner'], rec['id'])}@{at}{hit['dir']}"))
+                    hit.update(roll_table(ctx, t["table"], f"{key_of(rec['owner'], rec['id'])}@{at}{hit['dir']}"))
                 except (OSError, ValueError) as exc:
                     hit["error"] = f"table: {exc}"
             out.append(hit)
@@ -143,7 +143,7 @@ def _crossed(ctx, rec: dict, before: int) -> list:
 
 def change_track(ctx, owner: str, tid: str, *, mark: int = 0, set_to=None, why: str = "", define: "dict | None" = None) -> dict:
     """Change one track (created with defaults if new) and store it. Returns the record plus `crossed`."""
-    key = _key(owner, tid)
+    key = key_of(owner, tid)
     rec = wdb.get(ctx.db, "track", key)
     new = rec is None
     shaped = any(k in (define or {}) for k in ("min", "max", "thresholds"))
@@ -165,7 +165,7 @@ def change_track(ctx, owner: str, tid: str, *, mark: int = 0, set_to=None, why: 
     crossed = [] if new and (shaped or set_to is not None) else _crossed(ctx, rec, before)
     _sync_conditions(ctx, rec)
     if rec["value"] != before or crossed:
-        _log(rec, {"from": before, "to": rec["value"], "why": why, "turn": ctx.turn_id,
+        log_entry(rec, {"from": before, "to": rec["value"], "why": why, "turn": ctx.turn_id,
                    **({"crossed": [c["at"] for c in crossed]} if crossed else {})})
     wdb.put(ctx.db, "track", key, rec)
     return {**{k: v for k, v in rec.items() if k != "log"}, "crossed": crossed}
@@ -187,20 +187,20 @@ def _track(ctx, intent: dict) -> dict:
     mark twice in one turn give each a different `why`."""
     owner, tid = str(intent.get("owner") or "party").strip(), str(intent.get("id", "")).strip()
     if not tid:
-        return _err("track needs an id (stress, harm, composure, …)")
+        return error("track needs an id (stress, harm, composure, …)")
     if intent.get("remove"):
-        wdb.delete(ctx.db, "track", _key(owner, tid))
-        return _done({"removed": f"{owner} {tid}"}, refresh="clocks")
+        wdb.delete(ctx.db, "track", key_of(owner, tid))
+        return done({"removed": f"{owner} {tid}"}, refresh="clocks")
     try:
         rec = change_track(ctx, owner, tid, mark=int(intent.get("mark", 0)), set_to=intent.get("set"),
                            why=str(intent.get("why", "")), define=intent)
     except (KeyError, TypeError, ValueError) as exc:
-        return _err(f"track: {exc}")
+        return error(f"track: {exc}")
     events = [{"type": "track", "recipient": "party", "text": f"{owner} {tid}: {rec['value']}/{rec['max']}"}]
     events += [{"type": "threshold", "recipient": "dm",
                 "text": f"{owner} {tid} crossed {c['at']}: " + "; ".join(x for x in (c["note"], c.get("result", "")) if x)}
                for c in rec["crossed"]]
-    return _done(rec, refresh="clocks", visible_events=events)
+    return done(rec, refresh="clocks", visible_events=events)
 
 
 # ── pools (points, usage dice) ────────────────────────────────────────────────
@@ -228,21 +228,21 @@ def _step_up(ctx, rec: dict, intent: dict) -> dict:
     actor = str(intent.get("actor") or rec["owner"])
     aid, data = _last_check(ctx, actor, intent.get("of"))
     if not aid:
-        return _err(f"no graded check by {actor} to step up (a `roll` check or a progress roll, System core or story)")
+        return error(f"no graded check by {actor} to step up (a `roll` check or a progress roll, System core or story)")
     cost = int(intent.get("spend", 1))
     if rec["value"] < cost:
-        return _err(f"{rec['owner']} has {rec['value']} {rec['id']}: not enough to spend {cost}")
+        return error(f"{rec['owner']} has {rec['value']} {rec['id']}: not enough to spend {cost}")
     before = wdb.get(ctx.db, "step_up", aid) or {"steps": 0, "degree": data["degree"]}
     if before["degree"] == checks.LADDER[-1]:
-        return _err(f"{actor}'s {data.get('label') or 'check'} is already a critical success")
+        return error(f"{actor}'s {data.get('label') or 'check'} is already a critical success")
     steps = before["steps"] + 1
     graded = checks.resolve(paths.campaign_system(ctx.campaign), data["spec"], None, data["dice"], step_up=steps,
                             likelihood=str(data.get("likelihood") or "50/50"), chaos=int(data.get("chaos", checks.oracle.CHAOS_DEFAULT)))
     rec["value"] -= cost
-    _log(rec, {"spent": cost, "why": f"step up {aid}", "turn": ctx.turn_id})
-    wdb.put(ctx.db, "pool", _key(rec["owner"], rec["id"]), rec)
+    log_entry(rec, {"spent": cost, "why": f"step up {aid}", "turn": ctx.turn_id})
+    wdb.put(ctx.db, "pool", key_of(rec["owner"], rec["id"]), rec)
     wdb.put(ctx.db, "step_up", aid, {"steps": steps, "degree": graded["degree"]})
-    return _done({"owner": rec["owner"], "id": rec["id"], "value": rec["value"], "check": aid, "actor": actor,
+    return done({"owner": rec["owner"], "id": rec["id"], "value": rec["value"], "check": aid, "actor": actor,
                   "was": data["degree"], "degree": graded["degree"], "passed": graded["passed"]},
                  refresh="clocks", visible_events=[{"type": "roll", "recipient": "party",
                                                     "text": f"{actor} spends {cost} {rec['id'].removesuffix('s') if cost == 1 else rec['id']}: {graded['degree']}"}])
@@ -254,14 +254,14 @@ def _cadence(ctx, cadence: str) -> dict:
     for key, rec in wdb.all_of(ctx.db, "pool").items():
         if rec.get("cadence") == cadence and rec["value"] != rec["max"]:
             rec["value"] = rec["max"]
-            _log(rec, {"refill": cadence, "turn": ctx.turn_id})
+            log_entry(rec, {"refill": cadence, "turn": ctx.turn_id})
             wdb.put(ctx.db, "pool", key, rec)
             refilled.append(f"{rec['owner']} {rec['id']}")
     for key, rec in wdb.all_of(ctx.db, "condition").items():
         if rec.get("clears") == cadence:
             wdb.delete(ctx.db, "condition", key)
             cleared.append(f"{rec['owner']}: {rec['name']}")
-    return _done({"cadence": cadence, "refilled": refilled, "cleared": cleared}, refresh="clocks")
+    return done({"cadence": cadence, "refilled": refilled, "cleared": cleared}, refresh="clocks")
 
 
 @turn.handler("pool")
@@ -280,21 +280,21 @@ def _pool(ctx, intent: dict) -> dict:
     No op reads the pool. Sending the same intent again in a turn applies it once; spend twice with different `why`."""
     if isinstance(intent.get("refill"), str) and not intent.get("id"):
         if intent["refill"] not in CADENCES:
-            return _err(f"refill: one of {', '.join(CADENCES)}")
+            return error(f"refill: one of {', '.join(CADENCES)}")
         return _cadence(ctx, intent["refill"])
     owner, pid = str(intent.get("owner") or "party").strip(), str(intent.get("id", "")).strip()
     if not pid:
-        return _err("pool needs an id (tokens, luck, torches, …)")
-    key = _key(owner, pid)
+        return error("pool needs an id (tokens, luck, torches, …)")
+    key = key_of(owner, pid)
     if intent.get("remove"):
         wdb.delete(ctx.db, "pool", key)
-        return _done({"removed": f"{owner} {pid}"}, refresh="clocks")
+        return done({"removed": f"{owner} {pid}"}, refresh="clocks")
     rec = wdb.get(ctx.db, "pool", key) or {"owner": owner, "id": pid, "value": 0, "max": 3, "cadence": None,
                                            "die": None, "log": []}
     if intent.get("cadence") not in (None, *CADENCES):
-        return _err(f"cadence: one of {', '.join(CADENCES)}")
+        return error(f"cadence: one of {', '.join(CADENCES)}")
     if intent.get("die") is not None and intent["die"] not in DIE_STEPS:
-        return _err(f"die: one of {', '.join(DIE_STEPS)}")
+        return error(f"die: one of {', '.join(DIE_STEPS)}")
     for field in ("max", "cadence", "die"):
         if field in intent:
             rec[field] = int(intent[field]) if field == "max" else intent[field]
@@ -305,7 +305,7 @@ def _pool(ctx, intent: dict) -> dict:
     data = {}
     if intent.get("use"):
         if not rec.get("die"):
-            return _err(f"{owner} {pid} has no usage die left")
+            return error(f"{owner} {pid} has no usage die left")
         was = rec["die"]
         n = ctx.roll("use", int(was[1:]))[0]
         if n <= 2:
@@ -313,7 +313,7 @@ def _pool(ctx, intent: dict) -> dict:
             rec["die"] = DIE_STEPS[i] if i < len(DIE_STEPS) else None
         rec["gone"] = rec["die"] is None
         data = {"rolled": n, "was": was}
-        _log(rec, {"use": was, "rolled": n, "turn": ctx.turn_id})
+        log_entry(rec, {"use": was, "rolled": n, "turn": ctx.turn_id})
     if "set" in intent:
         rec["value"] = int(intent["set"])
     if intent.get("gain"):
@@ -321,13 +321,13 @@ def _pool(ctx, intent: dict) -> dict:
     if intent.get("spend"):
         cost = int(intent["spend"])
         if rec["value"] < cost:
-            return _err(f"{owner} has {rec['value']} {pid}: not enough to spend {cost}")
+            return error(f"{owner} has {rec['value']} {pid}: not enough to spend {cost}")
         rec["value"] -= cost
-        _log(rec, {"spent": cost, "why": str(intent.get("why", "")), "turn": ctx.turn_id})
+        log_entry(rec, {"spent": cost, "why": str(intent.get("why", "")), "turn": ctx.turn_id})
     rec["value"] = max(0, min(rec["max"], rec["value"]))
     wdb.put(ctx.db, "pool", key, rec)
     shown = rec["die"] or ("gone" if rec.get("gone") else f"{rec['value']}/{rec['max']}")
-    return _done({**{k: v for k, v in rec.items() if k != "log"}, **data}, refresh="clocks",
+    return done({**{k: v for k, v in rec.items() if k != "log"}, **data}, refresh="clocks",
                  visible_events=[{"type": "pool", "recipient": "party", "text": f"{owner} {pid}: {shown}"}])
 
 
@@ -357,15 +357,15 @@ def _condition(ctx, intent: dict) -> dict:
     healer") is cleared by hand. Not the weather (`conditions`)."""
     owner, name = str(intent.get("owner") or "").strip(), str(intent.get("name", "")).strip()
     if not owner:
-        return _err("condition needs an owner")
+        return error("condition needs an owner")
     if not name:
         mine = [r for r in wdb.all_of(ctx.db, "condition").values() if r["owner"].casefold() == owner.casefold()]
-        return _done({"owner": owner, "conditions": mine})
-    key = _key(owner, name)
+        return done({"owner": owner, "conditions": mine})
+    key = key_of(owner, name)
     if intent.get("clear"):
         had = wdb.get(ctx.db, "condition", key)
         wdb.delete(ctx.db, "condition", key)
-        return _done({"owner": owner, "name": name, "cleared": had is not None})
+        return done({"owner": owner, "name": name, "cleared": had is not None})
     rec = wdb.get(ctx.db, "condition", key) or {"owner": owner, "name": name, "mod": 0, "approaches": [],
                                                 "clears": "", "note": ""}
     try:
@@ -373,9 +373,9 @@ def _condition(ctx, intent: dict) -> dict:
             if field in intent:
                 rec[field] = cast(intent[field])
     except (TypeError, ValueError) as exc:
-        return _err(f"condition: {exc}")
+        return error(f"condition: {exc}")
     wdb.put(ctx.db, "condition", key, rec)
-    return _done(rec, visible_events=[{"type": "condition", "recipient": "party", "text": f"{owner} is {name}"}])
+    return done(rec, visible_events=[{"type": "condition", "recipient": "party", "text": f"{owner} is {name}"}])
 
 
 # ── bonds ─────────────────────────────────────────────────────────────────────
@@ -396,7 +396,7 @@ def _bond(ctx, intent: dict) -> dict:
     wrong. Points are what drama modules spend (a hold on someone, a favour owed). Refused if short."""
     a, b = str(intent.get("a", "")).strip(), str(intent.get("b", "")).strip()
     if not a or not b or a.casefold() == b.casefold():
-        return _err("bond needs two different characters, a and b")
+        return error("bond needs two different characters, a and b")
     key = "|".join(sorted((a.casefold(), b.casefold())))
     rec = wdb.get(ctx.db, "bond", key) or {"between": sorted((a, b), key=str.casefold), "value": 0, "max": 5,
                                            "points": {}, "note": "", "log": []}
@@ -411,15 +411,15 @@ def _bond(ctx, intent: dict) -> dict:
     held = int(rec["points"].get(a.casefold(), 0))
     if intent.get("spend"):
         if held < int(intent["spend"]):
-            return _err(f"{a} holds {held} on {b}: not enough to spend {intent['spend']}")
+            return error(f"{a} holds {held} on {b}: not enough to spend {intent['spend']}")
         held -= int(intent["spend"])
     held += int(intent.get("gain", 0))
     rec["points"][a.casefold()] = max(0, held)
     if rec["value"] != before or intent.get("spend") or intent.get("gain"):
-        _log(rec, {"by": a, "from": before, "to": rec["value"], "gain": intent.get("gain"), "spend": intent.get("spend"),
+        log_entry(rec, {"by": a, "from": before, "to": rec["value"], "gain": intent.get("gain"), "spend": intent.get("spend"),
                    "why": str(intent.get("why", "")), "turn": ctx.turn_id})
     wdb.put(ctx.db, "bond", key, rec)
-    return _done({k: v for k, v in rec.items() if k != "log"})
+    return done({k: v for k, v in rec.items() if k != "log"})
 
 
 # ── progress ──────────────────────────────────────────────────────────────────
@@ -443,18 +443,18 @@ def _progress(ctx, intent: dict) -> dict:
     import paths
     owner, name = str(intent.get("owner") or "party").strip(), str(intent.get("name", "")).strip()
     if not name:
-        return _err("progress needs a name")
-    key = _key(owner, name)
+        return error("progress needs a name")
+    key = key_of(owner, name)
     if intent.get("remove"):
         wdb.delete(ctx.db, "progress", key)
-        return _done({"removed": f"{owner} {name}"}, refresh="clocks")
+        return done({"removed": f"{owner} {name}"}, refresh="clocks")
     rec = wdb.get(ctx.db, "progress", key)
     if intent.get("roll"):                        # alone: the handler runs again when the player's dice arrive
         if not rec:
-            return _err(f"no progress track {name!r} for {owner}")
+            return error(f"no progress track {name!r} for {owner}")
         system = paths.campaign_system(ctx.campaign)
         if system == "d20":
-            return _err("progress rolls are Braid checks (System: core or story)")
+            return error("progress rolls are Braid checks (System: core or story)")
         boxes = rec["ticks"] // 4
         out = turn._check(ctx, {"actor": intent.get("actor") or owner, "spec": progress_spec(boxes),
                                 "label": f"progress: {name}", "likelihood": PROGRESS_ODDS[boxes]}, system)
@@ -464,15 +464,15 @@ def _progress(ctx, intent: dict) -> dict:
     rec = rec or {"owner": owner, "name": name, "rank": "tough", "ticks": 0, "log": []}
     if "rank" in intent:
         if intent["rank"] not in RANKS:
-            return _err(f"rank: one of {', '.join(RANKS)}")
+            return error(f"rank: one of {', '.join(RANKS)}")
         rec["rank"] = intent["rank"]
     if intent.get("mark"):
         before = rec["ticks"]
         rec["ticks"] = max(0, min(40, before + int(intent["mark"]) * RANKS[rec["rank"]]))
-        _log(rec, {"from": before, "to": rec["ticks"], "why": str(intent.get("why", "")), "turn": ctx.turn_id})
+        log_entry(rec, {"from": before, "to": rec["ticks"], "why": str(intent.get("why", "")), "turn": ctx.turn_id})
     wdb.put(ctx.db, "progress", key, rec)
     boxes = rec["ticks"] // 4
-    return _done({**{k: v for k, v in rec.items() if k != "log"}, "boxes": boxes, "full": boxes >= 10},
+    return done({**{k: v for k, v in rec.items() if k != "log"}, "boxes": boxes, "full": boxes >= 10},
                  refresh="clocks", visible_events=[{"type": "progress", "recipient": "party",
                                                     "text": f"{name}: {boxes}/10"}])
 
@@ -517,7 +517,7 @@ def _modifiers(ctx, intent: dict, system: str, actor: str) -> dict:
         mod += int(c["mod"])
         notes.append(f"{c['name']} {int(c['mod']):+d}")
     if intent.get("push"):
-        st = wdb.get(ctx.db, "track", _key(actor, "stress")) or _new_track(actor, "stress", True)
+        st = wdb.get(ctx.db, "track", key_of(actor, "stress")) or _new_track(actor, "stress", True)
         if st["value"] >= st["max"]:
             return {"error": f"{actor}'s stress is full ({st['value']}/{st['max']}): no push left"}
         mod += 1

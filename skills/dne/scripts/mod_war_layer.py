@@ -20,7 +20,7 @@ TRACKS = ("war_time", "war_pressure", "morale", "supply")
 
 
 def _tracks(ctx) -> dict:
-    return {t: wdb.get(ctx.db, "track", mechanics._key("party", t))["value"] for t in TRACKS}
+    return {t: wdb.get(ctx.db, "track", mechanics.key_of("party", t))["value"] for t in TRACKS}
 
 
 def _report(ctx, extra: dict, why: str = "") -> dict:
@@ -30,7 +30,7 @@ def _report(ctx, extra: dict, why: str = "") -> dict:
                "text": f"War: time {now['war_time']}/12, pressure {now['war_pressure']}, morale {now['morale']}, supply {now['supply']}"}]
     crossed = [c for c in extra.pop("crossed", [])]
     events += [{"type": "threshold", "recipient": "party", "text": c["note"]} for c in crossed]
-    return mechanics._done({**now, "campaign_actions": actions, **extra, "crossed": crossed}, refresh="clocks",
+    return mechanics.done({**now, "campaign_actions": actions, **extra, "crossed": crossed}, refresh="clocks",
                            visible_events=events if why else [])
 
 
@@ -40,14 +40,14 @@ def _unit(ctx, intent: dict) -> dict:
     unit = wdb.get(ctx.db, "unit", name.casefold())
     if intent.get("quality"):
         if intent["quality"] not in nums["quality"]:
-            return mechanics._err(f"quality: one of {', '.join(nums['quality'])}")
+            return mechanics.error(f"quality: one of {', '.join(nums['quality'])}")
         rating, boxes = nums["quality"][intent["quality"]]
         unit = {"name": name, "quality": intent["quality"], "rating": rating}
         wdb.put(ctx.db, "unit", name.casefold(), unit)
         rec = mechanics.change_track(ctx, name, "harm", set_to=0, why="mustered", define={"min": 0, "max": boxes, "thresholds": []})
-        return mechanics._done({**unit, "harm": rec["value"], "boxes": rec["max"]}, refresh="clocks")
+        return mechanics.done({**unit, "harm": rec["value"], "boxes": rec["max"]}, refresh="clocks")
     if not unit:
-        return mechanics._err(f"no unit {name!r}: muster it with a quality first")
+        return mechanics.error(f"no unit {name!r}: muster it with a quality first")
     if intent.get("roll"):
         check = {"action": "roll", "actor": name, "spec": f"2d6{unit['rating']:+d}", "label": str(intent["roll"]),
                  "likelihood": mechanics.PROGRESS_ODDS[(unit["rating"] + 2) * 2],             # story mode: the odds
@@ -60,12 +60,13 @@ def _unit(ctx, intent: dict) -> dict:
         wdb.put(ctx.db, "unit", name.casefold(), unit)
         m = mechanics.change_track(ctx, "party", "morale", mark=int(nums["unit_broken_morale"]), why=f"{name} broke")
         data["crossed"] = m["crossed"]
-    return mechanics._done(data, refresh="clocks", visible_events=[{"type": "unit", "recipient": "party",
+    return mechanics.done(data, refresh="clocks", visible_events=[{"type": "unit", "recipient": "party",
                                                                     "text": f"{name}: {rec['value']}/{rec['max']} harm"
                                                                             + (" — broken" if data["broken"] else "")}])
 
 
 @turn.handler("war")
+@modules.requires("war_layer")
 def _war(ctx, intent: dict) -> dict:
     """war — the army between missions (module war_layer).
 
@@ -76,9 +77,6 @@ def _war(ctx, intent: dict) -> dict:
     {"action": "war", "unit": "Third Lantern", "quality": "trained"}   muster a unit (raw +0/1 box, trained +1/2,
                                                   veteran +2/3); "roll": "hold the bridge" rolls it; "hit": 1 harms it
     {"action": "war"}                             read the four tracks and how many campaign actions morale allows"""
-    err = modules.need(ctx, "war_layer")
-    if err:
-        return mechanics._err(err)
     nums = modules.load("war_layer")["numbers"]
     modules.ensure(ctx, "war_layer", [])
     if intent.get("unit"):

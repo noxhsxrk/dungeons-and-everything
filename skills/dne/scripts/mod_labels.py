@@ -22,10 +22,11 @@ def _names() -> list:
 
 
 def values(ctx, owner: str) -> dict:
-    return {n: (wdb.get(ctx.db, "track", mechanics._key(owner, n)) or {"value": 0})["value"] for n in _names()}
+    return {n: (wdb.get(ctx.db, "track", mechanics.key_of(owner, n)) or {"value": 0})["value"] for n in _names()}
 
 
 @turn.handler("identity")
+@modules.requires("labels")
 def _identity(ctx, intent: dict) -> dict:
     """identity — a hero's five identity labels (module labels): fierce, uncanny, guardian, proud, grounded, -2..+3.
 
@@ -38,17 +39,14 @@ def _identity(ctx, intent: dict) -> dict:
         Finesse, guardian Grit, proud Wits, grounded Heart); story mode: the label sets the oracle's odds; a
         token can step it up afterwards
     {"action": "identity", "owner": "Kit"}   read the five"""
-    err = modules.need(ctx, "labels")
-    if err:
-        return mechanics._err(err)
     nums = modules.load("labels")["numbers"]
     owner, names = str(intent.get("owner") or "").strip(), _names()
     if not owner:
-        return mechanics._err("identity needs an owner")
+        return mechanics.error("identity needs an owner")
     asked = [intent.get(k) for k in ("roll", "up", "down") if intent.get(k)] + list(intent.get("set") or {})
     bad = [a for a in asked if a not in names]
     if bad:
-        return mechanics._err(f"labels: {', '.join(names)} (not {', '.join(map(str, bad))})")
+        return mechanics.error(f"labels: {', '.join(names)} (not {', '.join(map(str, bad))})")
     modules.ensure(ctx, "labels", [owner])
     if intent.get("roll"):
         value = values(ctx, owner)[intent["roll"]]
@@ -64,11 +62,11 @@ def _identity(ctx, intent: dict) -> dict:
     if intent.get("set"):
         for n, v in intent["set"].items():
             mechanics.change_track(ctx, owner, n, set_to=max(nums["min"], min(nums["max"], int(v))), why="starting labels")
-        return mechanics._done({"owner": owner, "labels": values(ctx, owner)}, refresh="clocks")
+        return mechanics.done({"owner": owner, "labels": values(ctx, owner)}, refresh="clocks")
     if not (intent.get("up") or intent.get("down")):
-        return mechanics._done({"owner": owner, "labels": values(ctx, owner)})
+        return mechanics.done({"owner": owner, "labels": values(ctx, owner)})
     if not (intent.get("up") and intent.get("down")) or intent["up"] == intent["down"]:
-        return mechanics._err("a shift moves one label up and a different one down: send both")
+        return mechanics.error("a shift moves one label up and a different one down: send both")
     now, why = values(ctx, owner), f"{intent.get('by') or 'someone'}: {intent.get('why') or 'told them who they are'}"
     edge = [n for n, d in ((intent["up"], 1), (intent["down"], -1)) if not nums["min"] <= now[n] + d <= nums["max"]]
     for n, d in ((intent["up"], 1), (intent["down"], -1)):
@@ -84,4 +82,4 @@ def _identity(ctx, intent: dict) -> dict:
             events.append({"type": "condition", "recipient": "party", "text": f"{owner} is {nums['edge_emotion']}"})
         else:
             data["note"] = f"{', '.join(edge)} is already at the edge: name a condition for {owner} instead"
-    return mechanics._done(data, refresh="clocks", visible_events=events)
+    return mechanics.done(data, refresh="clocks", visible_events=events)

@@ -164,6 +164,8 @@ def combine(ids, drives=None, sets=None) -> dict:
     if "clues" in out["modules"] and "mystery" not in out["story_axes"]:
         if len(out["story_axes"]) < MAX:
             out["story_axes"].append("mystery")
+            if not out["drives"]:                       # an added case stays a sub-thread: the table's story leads
+                out["story_drives"] = out["story_axes"][0]
             out["warnings"].append("clues: mystery added to the story generator as a thread, so a case is built")
         else:
             out["warnings"].append("clues: no case without mystery in the story generator: drop a genre or use make_the_case")
@@ -212,7 +214,8 @@ def _report(mix: dict) -> str:
              f"Modules: {', '.join(mix['modules']) or '(none)'}" + (f"  (could add: {', '.join(mix['optional'])})" if mix["optional"] else ""),
              "Dials: " + ", ".join(f"{k} {v}" for k, v in mix["dials"].items()),
              "Ask the table: " + ", ".join(f"{k} (suggested {v})" for k, v in mix["suggest"].items()),
-             f"Story generator: story_gen.py skeleton --genre {','.join(mix['story_axes'])}",
+             f"Story generator: story_gen.py skeleton --genre {','.join(mix['story_axes'])}"
+             + (f" --drives {mix['story_drives']}" if mix.get("story_drives") else ""),
              "GM moves: " + "; ".join(mix["gm_moves"]),
              "Content tags: " + ", ".join(mix["tags"]),
              "Checks: " + "; ".join(mix["checks"])]

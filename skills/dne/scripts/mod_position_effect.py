@@ -46,6 +46,7 @@ def reading(position: str, effect: str, degree: str, deals: int = 0) -> dict:
 
 
 @turn.handler("position")
+@modules.requires("position_effect")
 def _position(ctx, intent: dict) -> dict:
     """position — a risky action read through position and effect (module position_effect).
 
@@ -59,21 +60,18 @@ def _position(ctx, intent: dict) -> dict:
     the last one named); effect left out = standard.
     {"action": "position", "set": "desperate", "why": "the alarm"}   name the position without a roll
     {"action": "position"}                                           read it"""
-    err = modules.need(ctx, "position_effect")
-    if err:
-        return mechanics._err(err)
     nums = modules.load("position_effect")["numbers"]
     if "set" in intent:
         if intent["set"] not in POSITIONS:
-            return mechanics._err(f"position: one of {', '.join(POSITIONS)}")
+            return mechanics.error(f"position: one of {', '.join(POSITIONS)}")
         store(ctx, intent["set"], str(intent.get("why", "")))
-        return mechanics._done({"position": intent["set"]})
+        return mechanics.done({"position": intent["set"]})
     if not intent.get("actor"):
-        return mechanics._done({"position": current(ctx)})
+        return mechanics.done({"position": current(ctx)})
     position = intent.get("position") or current(ctx)
     effect = intent.get("effect") or nums["default_effect"]
     if position not in POSITIONS or effect not in nums["ticks"]:
-        return mechanics._err(f"position: one of {', '.join(POSITIONS)}; effect: one of {', '.join(nums['ticks'])}")
+        return mechanics.error(f"position: one of {', '.join(POSITIONS)}; effect: one of {', '.join(nums['ticks'])}")
     check = {"action": "roll", "actor": intent["actor"], "label": intent.get("label") or "a risky action",
              "likelihood": {"controlled": "likely", "risky": "50/50", "desperate": "unlikely"}[position],
              **{k: intent[k] for k in ("spec", "approach", "push", "help", "use_label", "against") if k in intent}}
@@ -89,7 +87,7 @@ def _position(ctx, intent: dict) -> dict:
     if intent.get("against"):
         import mod_mooks
         foe = wdb.get(ctx.db, "foe", str(intent["against"]).strip().casefold())
-        rec = foe and wdb.get(ctx.db, "track", mechanics._key(foe["name"], "harm"))
+        rec = foe and wdb.get(ctx.db, "track", mechanics.key_of(foe["name"], "harm"))
         deals = mod_mooks._view(foe, rec)["deals"] if rec else 0
     data["reading"] = read = reading(position, effect, data["degree"], deals)
     events = [{"type": "position", "recipient": "dm",

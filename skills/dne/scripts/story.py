@@ -472,7 +472,7 @@ def _register() -> None:
         if token:
             import mechanics
             import world_db as wdb
-            pool = wdb.get(ctx.db, "pool", mechanics._key(actor, "tokens"))
+            pool = wdb.get(ctx.db, "pool", mechanics.key_of(actor, "tokens"))
             if not pool or int(pool.get("value") or 0) < 1:
                 return {"status": "done", "elapsed_minutes": 0,
                         "data": {"error": f"{actor} has no token for this flashback: pay 1 stress instead (leave out `cost`)"}}

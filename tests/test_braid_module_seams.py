@@ -12,7 +12,7 @@ import unittest
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from test_braid_pr5 import FLAGS, Module  # noqa: E402
+from test_braid_drama_modules import FLAGS, Module  # noqa: E402
 
 import turn  # noqa: E402,F401  (the engine first)
 import genres  # noqa: E402

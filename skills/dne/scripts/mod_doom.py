@@ -39,6 +39,7 @@ def _events(d: dict) -> list:
 
 
 @turn.handler("doom")
+@modules.requires("doom")
 def _doom(ctx, intent: dict) -> dict:
     """doom — the party's doom track (module doom). Every Braid check already adds 1 and rolls by itself.
 
@@ -46,14 +47,11 @@ def _doom(ctx, intent: dict) -> dict:
     {"action": "doom"}                                     read it
     The script rolls a hidden d20 (our default); at or under doom, disaster: the reply's `disaster` is the entry
     rolled from the module's table (play it at once), doom drops to its floor and the floor rises by 1 (up to 6)."""
-    err = modules.need(ctx, "doom")
-    if err:
-        return mechanics._err(err)
     if "add" not in intent:
         modules.ensure(ctx, "doom", [])
-        return mechanics._done({k: v for k, v in mechanics.change_track(ctx, "party", "doom").items() if k != "log"})
+        return mechanics.done({k: v for k, v in mechanics.change_track(ctx, "party", "doom").items() if k != "log"})
     d = step(ctx, int(intent["add"]), str(intent.get("why") or "a risk"))
-    return mechanics._done(d, refresh="clocks", visible_events=_events(d))
+    return mechanics.done(d, refresh="clocks", visible_events=_events(d))
 
 
 def _after(ctx, intent: dict, out: dict) -> None:

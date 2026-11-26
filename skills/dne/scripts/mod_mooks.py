@@ -31,6 +31,7 @@ def _view(foe: dict, rec: dict) -> dict:
 
 
 @turn.handler("foe")
+@modules.requires("mooks")
 def _foe(ctx, intent: dict) -> dict:
     """foe — an enemy or a group of nameless ones (module mooks).
 
@@ -39,20 +40,17 @@ def _foe(ctx, intent: dict) -> dict:
     {"action": "foe", "name": "Dock thugs", "hit": 2}                  mooks: one down per point of harm dealt
     {"action": "foe", "name": "Captain Hale", "hit": 2}                named: the harm dealt marks its boxes
     {"action": "foe", "name": "Dock thugs"}                            read: left, down, deals (harm per hit)"""
-    err = modules.need(ctx, "mooks")
-    if err:
-        return mechanics._err(err)
     name = str(intent.get("name") or "").strip()
     if not name:
-        return mechanics._err("foe needs a name")
+        return mechanics.error("foe needs a name")
     foe = wdb.get(ctx.db, "foe", name.casefold())
     if "threat" in intent:
         threat = int(intent["threat"])
         if str(threat) not in mechanics.BRAID["threats"]:
-            return mechanics._err("threat: 1 to 5")
+            return mechanics.error("threat: 1 to 5")
         count = int(intent.get("count", 1))
         if count < 1 or count > 10:
-            return mechanics._err("count: 1 to 10 mooks in a group (split a bigger crowd)")
+            return mechanics.error("count: 1 to 10 mooks in a group (split a bigger crowd)")
         kind = "mooks" if count > 1 or intent.get("mook") else "named"
         boxes = count if kind == "mooks" else max(int(modules.load("mooks")["numbers"]["named_min_boxes"]),
                                                   int(mechanics.BRAID["threats"][str(threat)]["harm"]))
@@ -60,14 +58,14 @@ def _foe(ctx, intent: dict) -> dict:
         wdb.put(ctx.db, "foe", name.casefold(), foe)
         rec = mechanics.change_track(ctx, name, "harm", set_to=0, why="enters",
                                      define={"min": 0, "max": boxes, "thresholds": []})
-        return mechanics._done(_view(foe, rec), refresh="clocks")
+        return mechanics.done(_view(foe, rec), refresh="clocks")
     if not foe:
-        return mechanics._err(f"no foe {name!r}: bring it in with a threat first")
+        return mechanics.error(f"no foe {name!r}: bring it in with a threat first")
     if "hit" not in intent:
-        return mechanics._done(_view(foe, wdb.get(ctx.db, "track", mechanics._key(name, "harm"))))
+        return mechanics.done(_view(foe, wdb.get(ctx.db, "track", mechanics.key_of(name, "harm"))))
     hit = int(intent["hit"])
     rec = mechanics.change_track(ctx, name, "harm", mark=hit, why=str(intent.get("why") or "a hit"))
     view = _view(foe, rec)
     text = f"{name}: down" if view["down"] else (f"{name}: {view['left']} left" if foe["kind"] == "mooks"
                                                   else f"{name}: {view['harm']}/{view['boxes']} harm")
-    return mechanics._done(view, refresh="clocks", visible_events=[{"type": "foe", "recipient": "party", "text": text}])
+    return mechanics.done(view, refresh="clocks", visible_events=[{"type": "foe", "recipient": "party", "text": text}])

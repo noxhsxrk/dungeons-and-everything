@@ -52,7 +52,7 @@ def diff(before: dict, after: dict) -> list:
 
 def award(ctx, owner: str, title: str, why: str, key: str = "") -> "str | None":
     """Record an achievement once per owner (and key); the announcement, or None if they had it already."""
-    key = key or mechanics._key(owner, title)
+    key = key or mechanics.key_of(owner, title)
     if wdb.get(ctx.db, "achievement", key):
         return None
     wdb.put(ctx.db, "achievement", key, {"owner": owner, "title": title, "why": why, "turn": ctx.turn_id})
@@ -76,7 +76,7 @@ def _after(ctx, intent: dict, out: dict) -> None:
     data = out.get("data") or {}
     firsts = modules.load("status_window")["tables"]
     table = f"first_{str(data.get('degree') or '').replace(' ', '_')}"
-    key = mechanics._key(data.get("actor") or "", table)
+    key = mechanics.key_of(data.get("actor") or "", table)
     if data.get("actor") and table in firsts and not data.get("error") and not wdb.get(ctx.db, "achievement", key):
         title = mechanics.roll_table(ctx, firsts[table], f"status-{table}")["result"]
         lines.append(award(ctx, str(data["actor"]), title, f"first {data['degree']}", key))
@@ -99,6 +99,7 @@ def window(db, owner: str) -> str:
 
 
 @turn.handler("status")
+@modules.requires("status_window")
 def _status(ctx, intent: dict) -> dict:
     """status — the LitRPG system (module status_window). Every change to a track, pool, progress or condition is
     announced by itself after each action as a "[System]" line; these are for the rest.
@@ -109,13 +110,10 @@ def _status(ctx, intent: dict) -> dict:
     {"action": "status", "loot": "silver", "to": "Mira"}     a loot box (bronze | silver | gold): the script rolls
         d100 for its tier (common, rare, epic) and an item from that tier's table
     The first critical success and the first critical failure of each character earn an achievement by themselves."""
-    err = modules.need(ctx, "status_window")
-    if err:
-        return mechanics._err(err)
     mod = modules.load("status_window")
     who = str(intent.get("to") or intent.get("show") or "").strip()
     if not who:
-        return mechanics._err("status needs \"show\" or \"to\": a character")
+        return mechanics.error("status needs \"show\" or \"to\": a character")
     out, lines = {}, []
     if intent.get("achievement"):
         line = award(ctx, who, str(intent["achievement"]).strip(), str(intent.get("why") or ""))
@@ -125,7 +123,7 @@ def _status(ctx, intent: dict) -> dict:
         box = str(intent["loot"]).casefold()
         odds = mod["numbers"]["boxes"].get(box)
         if not odds:
-            return mechanics._err(f"loot: one of {', '.join(mod['numbers']['boxes'])}")
+            return mechanics.error(f"loot: one of {', '.join(mod['numbers']['boxes'])}")
         d100 = ctx.roll("loot-tier", 100)[0]
         tier = next(t for t, cap in zip(mod["numbers"]["tiers"], _cumulative(odds)) if d100 <= cap)
         item = mechanics.roll_table(ctx, mod["tables"][f"loot_{tier}"], "loot-item")["result"]
@@ -133,8 +131,8 @@ def _status(ctx, intent: dict) -> dict:
         out = {"owner": who, "box": box, "d100": d100, "tier": tier, "item": item}
     else:
         text = window(ctx.db, who)
-        return mechanics._done({"owner": who, "window": text}, messages=[{"to": "party", "kind": "system", "text": text}])
-    done = mechanics._done(out)
+        return mechanics.done({"owner": who, "window": text}, messages=[{"to": "party", "kind": "system", "text": text}])
+    done = mechanics.done(out)
     _say(done, lines)
     return done
 

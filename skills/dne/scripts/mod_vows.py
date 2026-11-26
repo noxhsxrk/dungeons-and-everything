@@ -17,6 +17,7 @@ import world_db as wdb  # noqa: E402
 
 
 @turn.handler("vow")
+@modules.requires("vows")
 def _vow(ctx, intent: dict) -> dict:
     """vow — a long promise kept on a 10-box progress track (module vows).
 
@@ -27,24 +28,21 @@ def _vow(ctx, intent: dict) -> dict:
         at a cost: kept, one XP less; a miss: two boxes lost, the vow stands. Lands at once (no token after).
     {"action": "vow", "owner": "Mira", "name": "…", "forsake": true}   stress by rank (1 / 1 / 2 / 2 / 3)
     {"action": "vow", "owner": "Mira", "name": "…"}                    read it"""
-    err = modules.need(ctx, "vows")
-    if err:
-        return mechanics._err(err)
     nums = modules.load("vows")["numbers"]
     owner, name = str(intent.get("owner") or "party").strip(), str(intent.get("name") or "").strip()
     if not name:
-        return mechanics._err("vow needs a name: what was sworn")
-    key = mechanics._key(owner, name)
+        return mechanics.error("vow needs a name: what was sworn")
+    key = mechanics.key_of(owner, name)
     rec = wdb.get(ctx.db, "progress", key)
     base = {"action": "progress", "owner": owner, "name": name}
     if not rec and ("rank" not in intent or intent.get("forsake") or intent.get("fulfil")):
-        return mechanics._err(f"no vow {name!r} for {owner}: swear it with a rank first")
+        return mechanics.error(f"no vow {name!r} for {owner}: swear it with a rank first")
     if intent.get("forsake"):
         wdb.delete(ctx.db, "progress", key)
         stress = int(nums["forsake_stress"][rec["rank"]])
         who = str(intent.get("actor") or owner)
         st = mechanics.change_track(ctx, who, "stress", mark=stress, why=f"forsook a vow: {name}")
-        return mechanics._done({"owner": owner, "name": name, "forsaken": True, "stress": stress, "crossed": st["crossed"]},
+        return mechanics.done({"owner": owner, "name": name, "forsaken": True, "stress": stress, "crossed": st["crossed"]},
                                refresh="clocks", visible_events=[{"type": "vow", "recipient": "party",
                                                                   "text": f"{owner} forsakes the vow: {name}"}])
     if not intent.get("fulfil"):
@@ -65,7 +63,7 @@ def _vow(ctx, intent: dict) -> dict:
         text = f"{owner} keeps the vow: {name}" + (" (at a cost)" if degree == "success at a cost" else "")
     else:
         rec["ticks"] = max(0, rec["ticks"] - int(nums["miss_ticks_lost"]))
-        mechanics._log(rec, {"to": rec["ticks"], "why": "a fulfilment roll missed", "turn": ctx.turn_id})
+        mechanics.log_entry(rec, {"to": rec["ticks"], "why": "a fulfilment roll missed", "turn": ctx.turn_id})
         wdb.put(ctx.db, "progress", key, rec)
         data.update(kept=False, boxes_now=rec["ticks"] // 4)
         text = f"{name}: not yet ({rec['ticks'] // 4}/10)"

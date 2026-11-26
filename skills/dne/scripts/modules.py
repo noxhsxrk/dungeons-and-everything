@@ -18,6 +18,7 @@ Engine action: {"action": "modules", "apply": true} (turn.py help modules).
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import re
 import sys
@@ -142,6 +143,18 @@ def need(ctx, mid: str) -> "str | None":
     return None
 
 
+def requires(*mids: str):
+    """Handler decorator: the action refuses (need()) unless every module in `mids` may run in this campaign.
+    Sits under @turn.handler; functools.wraps keeps the docstring `turn.py help` prints."""
+    def wrap(fn):
+        @functools.wraps(fn)
+        def run(ctx, intent: dict) -> dict:
+            err = next((e for e in (need(ctx, m) for m in mids) if e), None)
+            return mechanics.error(err) if err else fn(ctx, intent)
+        return run
+    return wrap
+
+
 def _same(a: dict, b: dict) -> bool:
     return (int(a["at"]), a.get("dir", "up"), a.get("note", "")) == (int(b["at"]), b.get("dir", "up"), b.get("note", ""))
 
@@ -153,7 +166,7 @@ def ensure(ctx, mid: str, owners: list) -> list:
     mod, made = load(mid), []
     for decl in mod["tracks"]:
         for owner in (["party"] if decl["owner"] == "party" else owners):
-            cur = wdb.get(ctx.db, "track", mechanics._key(owner, decl["id"]))
+            cur = wdb.get(ctx.db, "track", mechanics.key_of(owner, decl["id"]))
             base = cur or mechanics._new_track(owner, decl["id"], mechanics._braid(ctx))
             marks = list(base["thresholds"])
             for th in decl.get("thresholds") or []:
@@ -168,7 +181,7 @@ def ensure(ctx, mid: str, owners: list) -> list:
             made.append(f"{owner} {decl['id']}")
     for decl in mod["pools"]:
         for owner in (["party"] if decl["owner"] == "party" else owners):
-            if wdb.get(ctx.db, "pool", mechanics._key(owner, decl["id"])) is None:
+            if wdb.get(ctx.db, "pool", mechanics.key_of(owner, decl["id"])) is None:
                 mechanics._pool(ctx, {**{k: v for k, v in decl.items() if k != "owner"}, "action": "pool", "owner": owner})
                 made.append(f"{owner} {decl['id']}")
     return made
@@ -197,21 +210,29 @@ def _modules(ctx, intent: dict) -> dict:
     {"action": "modules", "apply": true}  give every player character (characters/*.md) the tracks and pools
         those modules declare: composure for each PC, doom for the party, panic's thresholds on each stress.
     Send `apply` once the sheets exist, and again when a module is switched on or off or a PC joins: a track that
-    exists keeps its value and only gains the new thresholds; a switched-off module's thresholds come off again. Rules: `modules.py -c <campaign> rules`."""
+    exists keeps its value and only gains the new thresholds; a switched-off module's thresholds come off again. Each change of the set is logged (`changed`; world.db
+    record modules/campaign). Rules: `modules.py -c <campaign> rules`."""
     on = enabled(ctx.campaign)
     errors, warnings = problems(on)
     if errors:
-        return mechanics._err("modules: " + "; ".join(errors))
+        return mechanics.error("modules: " + "; ".join(errors))
     if not intent.get("apply"):
-        return mechanics._done({"modules": on, "warnings": warnings})
+        return mechanics.done({"modules": on, "warnings": warnings})
     if paths.campaign_system(ctx.campaign) == "d20":
-        return mechanics._err("modules are Braid rules (System: core or story)")
+        return mechanics.error("modules are Braid rules (System: core or story)")
     import table
+    import world_db as wdb
     pcs = list(table.pcs(ctx.campaign))
     dropped = prune(ctx, [m for m in catalog() if m not in on])
     made = {mid: ensure(ctx, mid, pcs) for mid in on}
-    return mechanics._done({"modules": on, "pcs": pcs, "made": made, "dropped": dropped, "warnings": warnings},
-                           refresh="clocks")
+    # every change of the set is logged (world.db, so undo takes it back with the tracks)
+    rec = wdb.get(ctx.db, "modules", "campaign") or {"on": [], "log": []}
+    change = {"added": [m for m in on if m not in rec["on"]], "removed": [m for m in rec["on"] if m not in on]}
+    if change["added"] or change["removed"]:
+        mechanics.log_entry(rec, {**change, "turn": ctx.turn_id})
+        wdb.put(ctx.db, "modules", "campaign", {**rec, "on": on})
+    return mechanics.done({"modules": on, "pcs": pcs, "made": made, "dropped": dropped, "warnings": warnings,
+                            **({"changed": change} if change["added"] or change["removed"] else {})}, refresh="clocks")
 
 
 _import_scripts()

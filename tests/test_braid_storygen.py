@@ -1,9 +1,9 @@
 """
-test_braid_pr10_storygen.py — PR 10 story generator fixes from the AI-GM playtests: `axes`, prose facts in `check`,
+test_braid_storygen.py — PR 10 story generator fixes from the AI-GM playtests: `axes`, prose facts in `check`,
 campaign places and NPC names in the case, the clue brief and cheaper fleshing, setting bans, re-rolls and history.
 
 Run from repo root:
-    python3 -m unittest tests.test_braid_pr10_storygen -v
+    python3 -m unittest tests.test_braid_storygen -v
 """
 import contextlib
 import io

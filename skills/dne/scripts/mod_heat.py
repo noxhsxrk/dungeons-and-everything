@@ -21,6 +21,7 @@ def _state(ctx) -> dict:
 
 
 @turn.handler("crew_heat")
+@modules.requires("heat")
 def _crew_heat(ctx, intent: dict) -> dict:
     """crew_heat — the crew's heat and wanted level (module heat).
 
@@ -30,9 +31,6 @@ def _crew_heat(ctx, intent: dict) -> dict:
     {"action": "crew_heat", "add": -2, "why": "laid low for a week"}
     {"action": "crew_heat", "entangle": true}   between jobs: the script rolls the trouble that finds the crew
     {"action": "crew_heat"}                     read heat and wanted"""
-    err = modules.need(ctx, "heat")
-    if err:
-        return mechanics._err(err)
     mod = modules.load("heat")
     nums = mod["numbers"]
     modules.ensure(ctx, "heat", [])
@@ -44,17 +42,17 @@ def _crew_heat(ctx, intent: dict) -> dict:
         column = next(name for lo, hi, name in nums["columns"] if lo <= now["crew_heat"] <= hi)
         row = next(i for i, top in enumerate(nums["rows"]) if got <= top)
         what = mod["tables"][column][row]
-        return mechanics._done({**now, "dice": dice, "result": got, "column": column, "entanglement": what},
+        return mechanics.done({**now, "dice": dice, "result": got, "column": column, "entanglement": what},
                                visible_events=[{"type": "entanglement", "recipient": "dm", "text": f"Entanglement ({got}): {what}"}])
     if "job" in intent:
         if intent["job"] not in nums["job"]:
-            return mechanics._err(f"job: one of {', '.join(nums['job'])}")
+            return mechanics.error(f"job: one of {', '.join(nums['job'])}")
         add = nums["job"][intent["job"]] + sum(v for k, v in nums["extra"].items() if intent.get(k))
         why = f"a {intent['job']} job" + "".join(f", {k.replace('_', ' ')}" for k in nums["extra"] if intent.get(k))
     elif "add" in intent:
         add, why = int(intent["add"]), str(intent.get("why") or "")
     else:
-        return mechanics._done(now)
+        return mechanics.done(now)
     total, wanted = max(0, now["crew_heat"] + add), now["wanted"]
     while total >= nums["overflow"] and wanted < 4:
         total, wanted = total - nums["overflow"], wanted + 1
@@ -63,4 +61,4 @@ def _crew_heat(ctx, intent: dict) -> dict:
         mechanics.change_track(ctx, "party", "wanted", set_to=wanted, why=why)
     data = {"crew_heat": heat["value"], "wanted": wanted, "added": add, "wanted_up": wanted - now["wanted"]}
     text = f"Heat {heat['value']}/{nums['overflow'] - 1}, wanted {wanted}" + (" (wanted level up!)" if data["wanted_up"] else "")
-    return mechanics._done(data, refresh="clocks", visible_events=[{"type": "track", "recipient": "party", "text": text}])
+    return mechanics.done(data, refresh="clocks", visible_events=[{"type": "track", "recipient": "party", "text": text}])

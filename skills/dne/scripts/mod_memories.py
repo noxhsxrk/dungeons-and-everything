@@ -24,6 +24,7 @@ def _which(held: list, value) -> "int | None":
 
 
 @turn.handler("memories")
+@modules.requires("memories")
 def _memories(ctx, intent: dict) -> dict:
     """memories — what a character still remembers (module memories).
 
@@ -34,13 +35,10 @@ def _memories(ctx, intent: dict) -> dict:
     {"action": "memories", "owner": "Mira", "lose": true}  amnesia: the script picks one and it is gone
     {"action": "memories", "owner": "Mira", "slots": 6}    a mind that grows (or shrinks; the newest stay)
     {"action": "memories", "owner": "Mira"}                read them, oldest first"""
-    err = modules.need(ctx, "memories")
-    if err:
-        return mechanics._err(err)
     owner = str(intent.get("owner") or "").strip()
     if not owner:
-        return mechanics._err("memories needs an owner")
-    key = mechanics._key(owner)
+        return mechanics.error("memories needs an owner")
+    key = mechanics.key_of(owner)
     rec = wdb.get(ctx.db, "memory", key) or {"owner": owner, "slots": int(modules.load("memories")["numbers"]["slots"]),
                                               "held": []}
     held, gone = rec["held"], []
@@ -60,13 +58,13 @@ def _memories(ctx, intent: dict) -> dict:
     if pick is not None:
         i = _which(held, pick)
         if i is None:
-            return mechanics._err(f"forget: no memory {pick!r} (1 to {len(held)}, or its text)")
+            return mechanics.error(f"forget: no memory {pick!r} (1 to {len(held)}, or its text)")
         gone.append(held.pop(i))
     if intent.get("lose") and held:
         gone.append(held.pop(ctx.roll("lose", len(held))[0] - 1))
     if keep:
         held.append(keep)
     wdb.put(ctx.db, "memory", key, rec)
-    return mechanics._done({"owner": owner, "slots": rec["slots"], "held": held, "forgotten": gone},
+    return mechanics.done({"owner": owner, "slots": rec["slots"], "held": held, "forgotten": gone},
                            visible_events=[{"type": "memory", "recipient": "party", "text": f"{owner} forgets: {m}"}
                                            for m in gone])

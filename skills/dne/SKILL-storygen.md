@@ -40,6 +40,8 @@ story_gen.py -c <camp> skeleton --genre war,mystery,horror [--seed N]
   - **frame:** road-trip, timeloop, traitor
 - **Who drives.** The first plot genre drives the story. Every other genre is a sub-thread: in war + mystery the
   mission is the spine and the case is a thread inside it. With no plot genre, the first genre drives.
+  `--drives <genre>` overrides both: `genres.py combine` prints it when it added a mystery thread for `clues`, so
+  the case stays a sub-thread inside the horror story.
 - **How each genre is rolled.** Each axis (culprit, motive, twist, obstacle…) is rolled on its own from
   `data/story_axes/<genre>.json`.
   - A value used in the last 20 stories of that genre counts for ×0.3 per use.
@@ -60,7 +62,8 @@ story_gen.py -c <camp> skeleton --genre war,mystery,horror [--seed N]
   `data/eras.json`; `axes` shows what each leaves out. A pin still wins. When the players want the eras mixed
   (pirates with phones, a cyber-western), add `--mix-eras` to `skeleton`: nothing is left out, and `check` keeps it.
 - **The clues module needs the mystery thread.** Only mystery builds a case. `genres.py combine` adds mystery to
-  the story generator line when `clues` is on without it, so a Thai ghost story or a thriller gets its case too.
+  the story generator line when `clues` is on without it, so a Thai ghost story or a thriller gets its case too. Pin that case's axes to the host story's secret
+  (`mystery.crime=…`, `mystery.motive=…` from the spirit's old wrong), so the case and the ghost story are one secret.
 - **In a campaign (`-c`).** A mystery's places become the campaign's map places (the party's place first, where
   the trail starts) and its suspects get the names of NPCs in npcs.md, as far as there are enough of each. Places
   the map lacks keep their generated names: add them to the map, or rename them with

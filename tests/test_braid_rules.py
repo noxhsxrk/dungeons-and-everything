@@ -6,6 +6,7 @@ A scripted scene plays one character from creation to the end of a fight on the 
 from __future__ import annotations
 
 import contextlib
+import importlib
 import io
 import json
 import os
@@ -45,16 +46,39 @@ class _Spy(types.ModuleType):
         raise AttributeError(f"5e module {self.__name__} used: {name}")
 
 
+#: 5e entry points inside modules Braid also uses (travel, buy/sell, generic conditions): spied one by one.
+FIVE_E_ACTIONS = ("fight", "combatant", "advise", "move", "spend", "damage", "area", "prop", "round", "rest")
+FIVE_E_FUNCS = {"tracker": ("cmd_saves", "cmd_rest"), "economy": ("apply_rest", "treat_wounds", "treasure_budget")}
+
+
+def _watch(name, fn):
+    def watched(*a, **k):
+        _Spy.used.append(name)
+        return fn(*a, **k)
+    return watched
+
+
 @contextlib.contextmanager
 def no_5e():
     _Spy.used = []
+    import journey  # noqa: F401  (registers travel and rest)
+    import skirmish  # noqa: F401
+    mods = {m: importlib.import_module(m) for m in FIVE_E_FUNCS}
     saved = {m: sys.modules.get(m) for m in FIVE_E}
+    handlers = {a: turn.HANDLERS[a] for a in FIVE_E_ACTIONS}
+    funcs = {(m, f): getattr(mods[m], f) for m, names in FIVE_E_FUNCS.items() for f in names}
     sys.modules.update({m: _Spy(m) for m in FIVE_E})
+    turn.HANDLERS.update({a: _watch(f"action {a}", h) for a, h in handlers.items()})
+    for (m, f), fn in funcs.items():
+        setattr(mods[m], f, _watch(f"{m}.{f}", fn))
     try:                       # only these keys are swapped back: the engine modules imported meanwhile stay loaded
         yield _Spy.used
     finally:
         for m, mod in saved.items():
             sys.modules.pop(m) if mod is None else sys.modules.__setitem__(m, mod)
+        turn.HANDLERS.update(handlers)
+        for (m, f), fn in funcs.items():
+            setattr(mods[m], f, fn)
 
 
 SEED = {"seed_version": 1, "campaign": "braid", "system": "core",
@@ -192,6 +216,10 @@ class NoFiveEOnTheWay(BraidCampaign):
             with self.assertRaises(ImportError):
                 worldkit.validate({"_meta": {}}, system="d20")
         self.assertTrue(used)
+        with no_5e() as used:                                                # ... and a 5e entry point in a shared one
+            import economy
+            economy.treasure_budget(3)
+        self.assertEqual(used, ["economy.treasure_budget"])
 
 
 class ScriptedScene(BraidCampaign):

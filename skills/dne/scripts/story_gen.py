@@ -15,7 +15,7 @@ Four steps (GM procedure: SKILL-storygen.md):
 Usage:
   story_gen.py axes     mystery,horror                          (every axis and its values: what `seed` can pin)
   story_gen.py seed     --file F "fact" ["mystery.motive=an old debt" ...]
-  story_gen.py skeleton --file F --genre war,mystery,horror [--seed N] [--history-at K] [--mix-eras]
+  story_gen.py skeleton --file F --genre war,mystery,horror [--seed N] [--history-at K] [--mix-eras] [--drives G]
   story_gen.py flesh    --file F --slot premise                 (prints the brief and the ban list)
   story_gen.py flesh    --file F --slot premise --candidates '[{"text": "...", "p": 0.08}, ...]'
   story_gen.py fill     --file F                                (plain text for every unwritten hidden clue)
@@ -486,6 +486,44 @@ def fix_case(case: dict, seed, limit: int = 40) -> dict:
 
 # ── per-genre validators ──────────────────────────────────────────────────────
 
+def _check_case(thread: dict, seed) -> tuple:
+    report = fix_case(thread.setdefault("case", {}), seed)
+    return ([] if report["ok"] else [p[2] for p in report["problems"]]), {"solve_rate": report["solve_rate"]}
+
+
+def _check_romance(thread: dict, seed) -> tuple:
+    if not any(o.get("src") == "character" and str(o.get("who", "")).strip() and str(o.get("text", "")).strip()
+               for o in thread.get("obstacles") or []):
+        return ["no obstacle comes from a character: luck alone keeps them apart"], {}
+    return [], {}
+
+
+def _check_heist(thread: dict, seed) -> tuple:
+    plan, problems = thread.get("plan") or {}, []
+    for key in ("target", "insider", "goes_wrong"):
+        if not str(plan.get(key, "")).strip():
+            problems.append(f"heist plan has no {key}")
+    if len([d for d in plan.get("defences") or [] if str(d).strip()]) < 2:
+        problems.append("heist plan needs at least 2 defences")
+    return problems, {}
+
+
+def _build_mystery(rng, axes: dict, table: dict, seed, world) -> dict:
+    case = build_case(rng, axes, table, f"case-{seed}")
+    if world:
+        link_case(case, world, seed)
+    return case
+
+
+#: The genres that build a structure on their axes: the thread field, build(rng, axes, table, seed, world),
+#: check(thread, seed) -> (problems, extra).
+STRUCTURES = {
+    "mystery": ("case", _build_mystery, _check_case),
+    "heist": ("plan", lambda rng, axes, table, seed, world: build_heist(rng, axes, table), _check_heist),
+    "romance": ("obstacles", lambda rng, axes, table, seed, world: build_romance(axes), _check_romance),
+}
+
+
 def check_thread(thread: dict, table: dict, seed) -> dict:
     """Validate (and repair in place) one genre thread. → {ok, problems, ...}."""
     problems, extra = [], {}
@@ -496,23 +534,9 @@ def check_thread(thread: dict, table: dict, seed) -> dict:
         steps = [s.get("step") for s in thread.get("ladder") or []]
         if len(steps) < 3 or any(not isinstance(s, int) for s in steps) or steps != sorted(set(steps)):
             problems.append(f"needs at least 3 steps that rise one after another (has {steps})")
-    gid = thread.get("genre")
-    if gid == "mystery":
-        report = fix_case(thread.setdefault("case", {}), seed)
-        if not report["ok"]:
-            problems += [p[2] for p in report["problems"]]
-        extra = {"solve_rate": report["solve_rate"]}
-    elif gid == "romance":
-        if not any(o.get("src") == "character" and str(o.get("who", "")).strip() and str(o.get("text", "")).strip()
-                   for o in thread.get("obstacles") or []):
-            problems.append("no obstacle comes from a character: luck alone keeps them apart")
-    elif gid == "heist":
-        plan = thread.get("plan") or {}
-        for key in ("target", "insider", "goes_wrong"):
-            if not str(plan.get(key, "")).strip():
-                problems.append(f"heist plan has no {key}")
-        if len([d for d in plan.get("defences") or [] if str(d).strip()]) < 2:
-            problems.append("heist plan needs at least 2 defences")
+    if thread.get("genre") in STRUCTURES:
+        more, extra = STRUCTURES[thread["genre"]][2](thread, seed)
+        problems += more
     return {"ok": not problems, "problems": problems, **extra}
 
 
@@ -570,7 +594,8 @@ def check(skel: dict) -> dict:
 
 # ── the four steps ────────────────────────────────────────────────────────────
 
-def generate(genres: list, seed=None, facts=None, history_at=None, record=True, world=None, mix_eras=False) -> dict:
+def generate(genres: list, seed=None, facts=None, history_at=None, record=True, world=None, mix_eras=False,
+             drives=None) -> dict:
     """Roll a skeleton for 1–5 genres. Same seed + same history_at → the same skeleton.
     `world` ({places, start, npcs}: campaign_world) puts a mystery's places and suspects into the campaign."""
     genres = [g.strip() for g in genres if g.strip()]
@@ -583,7 +608,9 @@ def generate(genres: list, seed=None, facts=None, history_at=None, record=True, 
     history_at = len(history)
     facts = list(facts or [])
     rng = random.Random(seed)
-    drives = next((g for g in genres if tables[g]["kind"] == "plot"), genres[0])
+    if drives and drives not in genres:
+        raise ValueError(f"--drives {drives}: not one of {', '.join(genres)}")
+    drives = drives or next((g for g in genres if tables[g]["kind"] == "plot"), genres[0])
     threads = []
     for gid in genres:
         table = tables[gid]
@@ -601,14 +628,9 @@ def generate(genres: list, seed=None, facts=None, history_at=None, record=True, 
                   "axes": best[1], "shares_at_most": best[0]}
         if table.get("ladder"):
             thread["ladder"] = build_ladder(rng, table)
-        if gid == "mystery":
-            thread["case"] = build_case(rng, thread["axes"], table, f"case-{seed}")
-            if world:
-                link_case(thread["case"], world, seed)
-        elif gid == "heist":
-            thread["plan"] = build_heist(rng, thread["axes"], table)
-        elif gid == "romance":
-            thread["obstacles"] = build_romance(thread["axes"])
+        if gid in STRUCTURES:
+            field, build, _check = STRUCTURES[gid]
+            thread[field] = build(rng, thread["axes"], table, seed, world)
         threads.append(thread)
     skel = {"seed": seed, "history_at": history_at, "genres": genres, "drives": drives, "facts": facts,
             "threads": threads, "flesh": {}, **({"world": world} if world else {}), **({"mix_eras": True} if mix_eras else {})}
@@ -702,6 +724,7 @@ def main(argv=None) -> int:
     k.add_argument("--seed", type=int)
     k.add_argument("--history-at", type=int, help="replay against the first K history lines; records nothing")
     k.add_argument("--mix-eras", action="store_true", help="the players want eras mixed (pirates with phones): no era bans")
+    k.add_argument("--drives", help="the genre that drives (default: the first plot genre); genres.py combine prints it")
     f = sub.add_parser("flesh")
     f.add_argument("--slot", required=True)
     f.add_argument("--candidates", help='JSON list of 5 {"text", "p"}; omit to print the brief')
@@ -730,7 +753,7 @@ def main(argv=None) -> int:
                 drop_unused(data)
             skel = generate(args.genre.split(","), args.seed, data.get("facts"), args.history_at,
                             record=args.history_at is None, world=campaign_world(args.campaign) if args.campaign else None,
-                            mix_eras=args.mix_eras)
+                            mix_eras=args.mix_eras, drives=args.drives)
             _save(path, skel)
             print(json.dumps(skel, ensure_ascii=False, indent=1))
             return 0 if skel["checked"]["ok"] else 1

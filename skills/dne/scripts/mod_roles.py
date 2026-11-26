@@ -43,6 +43,7 @@ def check(db, rec: dict, expect: "str | None" = None) -> list:
 
 
 @turn.handler("roles")
+@modules.requires("roles")
 def _roles(ctx, intent: dict) -> dict:
     """roles — secret roles, dealt and sealed by the script (module roles).
 
@@ -57,28 +58,25 @@ def _roles(ctx, intent: dict) -> dict:
         (`<role>_acts` in the module, or send "options": [...]); refused for a player character
     {"action": "roles", "reveal": true, "expect": "<seal a player kept>"}   the end: the deal, and whether it
         still matches the seal (`verified`; `problems` says what does not)."""
-    err = modules.need(ctx, "roles")
-    if err:
-        return mechanics._err(err)
     import table
     mod = modules.load("roles")
     rec = wdb.get(ctx.db, "roles", "deal")
     pcs = {n.casefold(): n for n in table.pcs(ctx.campaign)}
     if "deal" in intent:
         if rec and not rec.get("revealed"):
-            return mechanics._err("roles are already dealt and sealed: reveal them before a new deal")
+            return mechanics.error("roles are already dealt and sealed: reveal them before a new deal")
         if rec and not intent.get("new"):
-            return mechanics._err("the last deal was revealed: send \"new\": true to deal a new one on purpose")
+            return mechanics.error("the last deal was revealed: send \"new\": true to deal a new one on purpose")
         names = [str(n).strip() for n in intent["deal"] if str(n).strip()] if isinstance(intent["deal"], list) else []
         if len(set(n.casefold() for n in names)) != len(names) or len(names) < 2:
-            return mechanics._err("deal: two or more different names")
+            return mechanics.error("deal: two or more different names")
         counts = intent.get("roles") or {"traitor": max(1, len(names) // int(mod["numbers"]["one_traitor_per"]))}
         pack = [str(r) for r, n in counts.items() for _ in range(int(n))]
         # a solo player hunting the traitor must never turn out to be it, unless they asked for the chance
         kept = [n for n in names if n.casefold() in pcs] if len(pcs) == 1 and not intent.get("pc_may_draw") else []
         drawn = [n for n in names if n not in kept]
         if len(pack) > len(drawn):
-            return mechanics._err(f"{len(pack)} roles for {len(drawn)} names" + (f" ({kept[0]}, the only player character, is "
+            return mechanics.error(f"{len(pack)} roles for {len(drawn)} names" + (f" ({kept[0]}, the only player character, is "
                                   "always loyal unless \"pc_may_draw\": true)" if kept else ""))
         pack += [DEFAULT_ROLE] * (len(drawn) - len(pack))
         r = wdb.rng(ctx.db, f"{ctx.action_id}:deal")          # seeded: a retry or a replay deals the same
@@ -94,29 +92,29 @@ def _roles(ctx, intent: dict) -> dict:
                          "reveal must match it)"}]
         msgs += [{"to": pcs[n.casefold()], "text": f"Your secret role: {role}. Tell no one."}
                  for n, role in deal.items() if n.casefold() in pcs]
-        return mechanics._done({"dealt": names, "seal": rec["seal"], "told": [m["to"] for m in msgs[1:]]}, messages=msgs,
+        return mechanics.done({"dealt": names, "seal": rec["seal"], "told": [m["to"] for m in msgs[1:]]}, messages=msgs,
                                visible_events=[{"type": "roles", "recipient": "party", "text": f"Seal: {rec['seal']}"}])
     if not rec:
-        return mechanics._err("no roles dealt yet")
+        return mechanics.error("no roles dealt yet")
     if intent.get("act"):
         name = next((n for n in rec["deal"] if n.casefold() == str(intent["act"]).strip().casefold()), None)
         if name is None:
-            return mechanics._err(f"{intent['act']!r} was not dealt a role")
+            return mechanics.error(f"{intent['act']!r} was not dealt a role")
         if name.casefold() in pcs:
-            return mechanics._err(f"{name} is a player character: the player chooses")
+            return mechanics.error(f"{name} is a player character: the player chooses")
         options = intent.get("options") or mod["tables"].get(f"{rec['deal'][name]}_acts")
         if not options:
-            return mechanics._err(f"no table for this role: send \"options\": [...] (repeat an entry to make it likelier)")
+            return mechanics.error(f"no table for this role: send \"options\": [...] (repeat an entry to make it likelier)")
         got = mechanics.roll_table(ctx, list(options), f"act-{name}")
-        return mechanics._done({"npc": name, "act": got["result"], "why": str(intent.get("why", ""))})
+        return mechanics.done({"npc": name, "act": got["result"], "why": str(intent.get("why", ""))})
     if intent.get("reveal"):
         problems = check(ctx.db, rec, intent.get("expect"))
         rec["revealed"] = True
         wdb.put(ctx.db, "roles", "deal", rec)
         shown = ", ".join(f"{n}: {r}" for n, r in rec["deal"].items())
         verdict = "the seal matches" if not problems else "THE SEAL DOES NOT MATCH: " + "; ".join(problems)
-        return mechanics._done({"deal": rec["deal"], "salt": rec["salt"], "seal": rec["seal"], "verified": not problems,
+        return mechanics.done({"deal": rec["deal"], "salt": rec["salt"], "seal": rec["seal"], "verified": not problems,
                                 "problems": problems},
                                messages=[{"to": "party", "kind": "notice",
                                           "text": f"Roles revealed: {shown}. Salt {rec['salt']}. {verdict}."}])
-    return mechanics._done({"dealt": list(rec["deal"]), "seal": rec["seal"], "revealed": rec["revealed"]})
+    return mechanics.done({"dealt": list(rec["deal"]), "seal": rec["seal"], "revealed": rec["revealed"]})

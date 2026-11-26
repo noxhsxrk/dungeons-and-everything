@@ -24,11 +24,12 @@ ONE_ROLL = "next roll"
 
 def _one_roll(ctx, owner: str, name: str, mod: int, note: str) -> dict:
     rec = {"owner": owner, "name": name, "mod": mod, "approaches": [], "clears": ONE_ROLL, "note": note}
-    wdb.put(ctx.db, "condition", mechanics._key(owner, name), rec)
+    wdb.put(ctx.db, "condition", mechanics.key_of(owner, name), rec)
     return rec
 
 
 @turn.handler("string")
+@modules.requires("strings")
 def _string(ctx, intent: dict) -> dict:
     """string — one character's hold on another (module strings).
 
@@ -41,15 +42,12 @@ def _string(ctx, intent: dict) -> dict:
                                                           "accept": false closes it with nothing
     {"action": "string", "by": "Mira", "on": "Theo"}      read: who holds how many on whom
     Strings are bond points: the same bond record, shown in state.md. Spending is refused if there is none."""
-    err = modules.need(ctx, "strings")
-    if err:
-        return mechanics._err(err)
     nums = modules.load("strings")["numbers"]
     by, on = str(intent.get("by") or "").strip(), str(intent.get("on") or "").strip()
     if "accept" in intent:
         offer = wdb.get(ctx.db, "temptation", on.casefold())
         if not offer:
-            return mechanics._err(f"no open temptation on {on or '(on)'}")
+            return mechanics.error(f"no open temptation on {on or '(on)'}")
         wdb.delete(ctx.db, "temptation", on.casefold())
         data = {"on": offer["on"], "by": offer["by"], "offer": offer["offer"], "accepted": bool(intent["accept"])}
         if intent["accept"]:
@@ -57,19 +55,19 @@ def _string(ctx, intent: dict) -> dict:
             data["xp"] = int(nums["tempt_xp"])
             data["xp_command"] = (f'sheet.py -c {ctx.campaign} xp "{offer["on"]}" --mark {data["xp"]} '
                                   f'--why "went along with {offer["by"]}: {offer["offer"]}" --event {event}')
-        return mechanics._done(data)
+        return mechanics.done(data)
     if not by or not on or by.casefold() == on.casefold():
-        return mechanics._err("string needs two different characters: by (who holds it) and on (whom)")
+        return mechanics.error("string needs two different characters: by (who holds it) and on (whom)")
     spend = intent.get("spend")
     if spend is not None and spend not in SPENDS:
-        return mechanics._err(f"spend: one of {', '.join(SPENDS)}")
+        return mechanics.error(f"spend: one of {', '.join(SPENDS)}")
     if spend in ("plus", "minus") and paths.campaign_system(ctx.campaign) == "story":
-        return mechanics._err("story mode has no modifiers: spend a token afterwards to step the answer up "
+        return mechanics.error("story mode has no modifiers: spend a token afterwards to step the answer up "
                               "({\"action\": \"pool\", \"id\": \"tokens\", \"step_up\": true})")
     if spend == "emotion" and "emotions" not in modules.enabled(ctx.campaign):
-        return mechanics._err("spending a string on an emotion needs the emotions module switched on")
+        return mechanics.error("spending a string on an emotion needs the emotions module switched on")
     if spend == "tempt" and not str(intent.get("offer") or "").strip():
-        return mechanics._err("a temptation needs the offer: what Theo is asked to do")
+        return mechanics.error("a temptation needs the offer: what Theo is asked to do")
     move = {"action": "bond", "a": by, "b": on, "why": str(intent.get("why") or spend or "")}
     if spend:
         move["spend"] = 1
@@ -77,7 +75,7 @@ def _string(ctx, intent: dict) -> dict:
         move["gain"] = int(intent["gain"])
     bond = mechanics._bond(ctx, move)["data"]
     if bond.get("error"):
-        return mechanics._err(f"{by} holds no string on {on} to spend")
+        return mechanics.error(f"{by} holds no string on {on} to spend")
     data = {"by": by, "on": on, "strings": bond["points"], "bond": bond["value"]}
     events = []
     if spend == "plus":
@@ -90,7 +88,7 @@ def _string(ctx, intent: dict) -> dict:
         import mod_emotions
         rec = mod_emotions.give(ctx, on, str(intent.get("emotion") or ""), f"{by} got to them")
         if rec.get("error"):
-            return mechanics._err(rec["error"])
+            return mechanics.error(rec["error"])
         data["condition"] = rec
         events.append(f"{by} gets under {on}'s skin: {on} is {rec['name'].casefold()}")
     elif spend == "tempt":
@@ -100,7 +98,7 @@ def _string(ctx, intent: dict) -> dict:
         events.append(f"{by} tempts {on}: {offer['offer']} ({on} gains {nums['tempt_xp']} XP for going along)")
     elif intent.get("gain"):
         events.append(f"{by} gains a string on {on}")
-    return mechanics._done(data, visible_events=[{"type": "string", "recipient": "party", "text": t} for t in events])
+    return mechanics.done(data, visible_events=[{"type": "string", "recipient": "party", "text": t} for t in events])
 
 
 def _edges(obj) -> list:

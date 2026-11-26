@@ -33,7 +33,7 @@ import turn  # noqa: E402,F401  (the engine first, as the other Braid tests do)
 import genres  # noqa: E402
 import story_gen  # noqa: E402
 from test_braid_modules import TRADE as TRADE_4  # noqa: E402
-from test_braid_pr5 import TRADE as TRADE_5  # noqa: E402
+from test_braid_drama_modules import TRADE as TRADE_5  # noqa: E402
 
 LADDER = ("critical failure", "failure", "success at a cost", "success", "critical success")
 SEED = {"seed_version": 1, "campaign": "g", "system": "core", "flags": {"display": "none", "roll_mode": "auto"},
@@ -94,7 +94,7 @@ def play(ids: list) -> dict:
             datas = [x.get("data") or {} for x in r.get("results") or []]
             with wdb.reader("g") as db:
                 tracks = {k for (k,) in db.execute("SELECT id FROM things WHERE kind = 'track'")}
-            want = {mechanics._key("Mira Vale" if t["owner"] == "pc" else "party", t["id"])
+            want = {mechanics.key_of("Mira Vale" if t["owner"] == "pc" else "party", t["id"])
                     for m in mix["modules"] for t in modules.load(m)["tracks"]}
             state = (camp / "state.md").read_text(encoding="utf-8")
             return {"ids": ids, "status": r.get("status"), "errors": [d["error"] for d in datas if d.get("error")],
@@ -153,8 +153,12 @@ class Mixing(unittest.TestCase):
         self.assertEqual(genres.combine("thai-ghost")["story_axes"], ["thai-ghost", "mystery"])
         self.assertEqual(genres.combine("mystery,thai-ghost")["story_axes"], ["mystery", "thai-ghost"])
         self.assertEqual(genres.combine("western")["story_axes"], ["western"])
-        skel = story_gen.generate(genres.combine("thai-ghost")["story_axes"], seed=4, record=False)
+        mix = genres.combine("thai-ghost")
+        skel = story_gen.generate(mix["story_axes"], seed=4, record=False, drives=mix["story_drives"])
         self.assertTrue(next(t for t in skel["threads"] if t["genre"] == "mystery").get("case"))
+        self.assertEqual(skel["drives"], "thai-ghost")                   # the ghost story leads; the case is inside it
+        self.assertIn("--drives thai-ghost", genres._report(mix))
+        self.assertNotIn("story_drives", genres.combine("thriller"))      # a plot genre already drives
 
     def test_list_survives_a_preset_without_fits(self):
         from contextlib import redirect_stdout

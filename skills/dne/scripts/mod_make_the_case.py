@@ -23,6 +23,7 @@ def _odds(diff: int) -> str:
 
 
 @turn.handler("make_the_case")
+@modules.requires("make_the_case")
 def _make_the_case(ctx, intent: dict) -> dict:
     """make_the_case — the players put forward their theory of an open case (module make_the_case).
 
@@ -33,28 +34,25 @@ def _make_the_case(ctx, intent: dict) -> dict:
     "push" and "help" as on `roll`. 7 or more: the theory is now the case's truth (7-9 with a complication); the
     GM must play it as true. 6 or less: it is wrong, and the GM makes a move. Story mode: the oracle answers, with
     odds from explained − complexity. Settled at once: no token steps it up afterwards."""
-    err = modules.need(ctx, "make_the_case")
-    if err:
-        return mechanics._err(err)
     import scheduler
     world = scheduler.World(ctx.campaign, ctx.db)
     cid = str(intent.get("case", ""))
     case = world.get("case", cid)
     if not case:
-        return mechanics._err(f"no case {cid!r}")
+        return mechanics.error(f"no case {cid!r}")
     if not case.get("open"):
-        return mechanics._err(f"case {cid} has a fixed answer: make_the_case is for open cases (`case` with open: true)")
+        return mechanics.error(f"case {cid} has a fixed answer: make_the_case is for open cases (`case` with open: true)")
     if case.get("truth"):
-        return mechanics._err(f"case {cid} is already settled: {case['truth']}")
+        return mechanics.error(f"case {cid} is already settled: {case['truth']}")
     actor, theory = str(intent.get("actor") or "").strip(), str(intent.get("theory") or "").strip()
     if not actor or not theory:
-        return mechanics._err("make_the_case needs an actor and the theory, in the players' words")
+        return mechanics.error("make_the_case needs an actor and the theory, in the players' words")
     nums = modules.load("make_the_case")["numbers"]
     found = {c["id"] for c in case["clues"] if c.get("found_by")}
     cited = list(dict.fromkeys(str(c) for c in intent.get("explains") or []))
     counted = [c for c in cited if c in found]
     if len(counted) < int(nums["min_explained"]):
-        return mechanics._err("the theory must explain at least one clue the party has found (`explains`)")
+        return mechanics.error("the theory must explain at least one clue the party has found (`explains`)")
     system = paths.campaign_system(ctx.campaign)
     complexity = int(case.get("complexity") or nums["complexity"])
     diff = len(counted) - complexity
@@ -65,7 +63,7 @@ def _make_the_case(ctx, intent: dict) -> dict:
             import sheet
             base = sheet.approach(ctx.campaign, actor, nums["approach"])
             if base is None:
-                return mechanics._err(f"no {nums['approach']} on {actor}'s sheet: send a spec (\"2d6+1\")")
+                return mechanics.error(f"no {nums['approach']} on {actor}'s sheet: send a spec (\"2d6+1\")")
         spec = f"{checks.CORE_DICE}{base + diff:+d}"
     else:
         spec = None

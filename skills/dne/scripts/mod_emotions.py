@@ -24,11 +24,12 @@ def give(ctx, owner: str, name: str, why: str = "") -> dict:
     e = nums["emotions"][key]
     rec = {"owner": owner, "name": key.title(), "mod": int(nums["mod"]), "approaches": [e["approach"]],
            "clears": "acting on it", "note": f"{why + '. ' if why else ''}Clears when they {e['clear']}"}
-    wdb.put(ctx.db, "condition", mechanics._key(owner, rec["name"]), rec)
+    wdb.put(ctx.db, "condition", mechanics.key_of(owner, rec["name"]), rec)
     return rec
 
 
 @turn.handler("emotion")
+@modules.requires("emotions")
 def _emotion(ctx, intent: dict) -> dict:
     """emotion — a feeling that stays until the character acts on it (module emotions).
 
@@ -38,26 +39,23 @@ def _emotion(ctx, intent: dict) -> dict:
     afraid -1 Force, angry -1 Heart, guilty -1 Wits, hopeless -1 Grit, insecure -1 Finesse (our defaults). Each
     clears when the character does what it pushes them to (the reply's note says what), or when someone comforts
     them in a real scene (send "act" then too)."""
-    err = modules.need(ctx, "emotions")
-    if err:
-        return mechanics._err(err)
     owner, name = str(intent.get("owner") or "").strip(), str(intent.get("name") or "").strip()
     if not owner:
-        return mechanics._err("emotion needs an owner")
+        return mechanics.error("emotion needs an owner")
     known = modules.load("emotions")["numbers"]["emotions"]
     if not name:
-        return mechanics._done({"owner": owner, "emotions": [r for r in wdb.all_of(ctx.db, "condition").values()
+        return mechanics.done({"owner": owner, "emotions": [r for r in wdb.all_of(ctx.db, "condition").values()
                                                              if r["owner"].casefold() == owner.casefold()
                                                              and r["name"].casefold() in known]})
     if intent.get("act"):
-        key = mechanics._key(owner, name.title())
+        key = mechanics.key_of(owner, name.title())
         had = wdb.get(ctx.db, "condition", key) is not None
         wdb.delete(ctx.db, "condition", key)
-        return mechanics._done({"owner": owner, "name": name.title(), "cleared": had, "why": str(intent.get("why", ""))},
+        return mechanics.done({"owner": owner, "name": name.title(), "cleared": had, "why": str(intent.get("why", ""))},
                                visible_events=[{"type": "condition", "recipient": "party",
                                                 "text": f"{owner} is no longer {name.casefold()}"}] if had else [])
     rec = give(ctx, owner, name, str(intent.get("why", "")))
     if rec.get("error"):
-        return mechanics._err(rec["error"])
-    return mechanics._done(rec, visible_events=[{"type": "condition", "recipient": "party",
+        return mechanics.error(rec["error"])
+    return mechanics.done(rec, visible_events=[{"type": "condition", "recipient": "party",
                                                  "text": f"{owner} is {name.casefold()}"}])

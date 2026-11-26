@@ -20,7 +20,7 @@ DEVIATION = "Qi Deviation"
 
 
 def _deviate(ctx, actor: str, nums: dict, why: str) -> None:
-    wdb.put(ctx.db, "condition", mechanics._key(actor, DEVIATION),
+    wdb.put(ctx.db, "condition", mechanics.key_of(actor, DEVIATION),
             {"owner": actor, "name": DEVIATION, "mod": int(nums["deviation_mod"]), "approaches": [], "clears": "rest",
              "note": why})
 
@@ -36,7 +36,7 @@ def _check(ctx, intent: dict, actor: str, approach: str, diff: int, label: str, 
             import sheet
             base = sheet.approach(ctx.campaign, actor, approach)
             if base is None:
-                return mechanics._err(f"no approach {approach!r} on {actor}'s sheet: send a spec (\"2d6+1\")")
+                return mechanics.error(f"no approach {approach!r} on {actor}'s sheet: send a spec (\"2d6+1\")")
             spec = f"{checks.CORE_DICE}{base - diff:+d}"
     check = {"action": "roll", "actor": actor, "approach": approach, "label": label,
              "likelihood": ("likely", "50/50", "unlikely")[min(diff, 2)],
@@ -45,6 +45,7 @@ def _check(ctx, intent: dict, actor: str, approach: str, diff: int, label: str, 
 
 
 @turn.handler("realm")
+@modules.requires("realm")
 def _realm(ctx, intent: dict) -> dict:
     """realm — a cultivator's realm (module realm).
 
@@ -57,30 +58,27 @@ def _realm(ctx, intent: dict) -> dict:
         After the last: half or more passed = the realm; fewer = Qi Deviation and no realm.
     {"action": "realm", "actor": "Lin"}   read: realm, its name, any tribulation under way.
     Push and help as on `roll`. Each result lands at once: a token cannot step it up afterwards."""
-    err = modules.need(ctx, "realm")
-    if err:
-        return mechanics._err(err)
     mod = modules.load("realm")
     nums, names = mod["numbers"], mod["tables"]["realms"]
     actor = str(intent.get("actor") or "").strip()
     if not actor:
-        return mechanics._err("realm needs an actor")
+        return mechanics.error("realm needs an actor")
     modules.ensure(ctx, "realm", [actor])
     rec = mechanics.change_track(ctx, actor, "realm")
-    tkey = mechanics._key(actor)
+    tkey = mechanics.key_of(actor)
     trib = wdb.get(ctx.db, "tribulation", tkey)
     now = {"actor": actor, "realm": rec["value"], "name": names[min(rec["value"], len(names) - 1)], "tribulation": trib}
     if not intent.get("breakthrough") and "wave" not in intent:
-        return mechanics._done(now)
+        return mechanics.done(now)
     system = paths.campaign_system(ctx.campaign)
     target = (trib or {}).get("target", rec["value"] + 1)
     diff = min(int(nums["harder_max"]), target // int(nums["harder_every"]))
 
     if intent.get("breakthrough"):
         if trib:
-            return mechanics._err(f"a tribulation is under way: send wave {len(trib['results']) + 1}")
+            return mechanics.error(f"a tribulation is under way: send wave {len(trib['results']) + 1}")
         if rec["value"] >= rec["max"]:
-            return mechanics._err(f"{actor} stands at the last realm")
+            return mechanics.error(f"{actor} stands at the last realm")
         out = _check(ctx, intent, actor, str(intent.get("approach") or nums["approach"]), diff,
                      f"breakthrough to {names[min(target, len(names) - 1)]}", system)
         data = out.get("data") or {}
@@ -107,10 +105,10 @@ def _realm(ctx, intent: dict) -> dict:
         return out
 
     if not trib:
-        return mechanics._err(f"{actor} faces no tribulation")
+        return mechanics.error(f"{actor} faces no tribulation")
     wave = int(intent["wave"])
     if wave != len(trib["results"]) + 1:
-        return mechanics._err(f"wave {wave}: the next wave is {len(trib['results']) + 1} of {trib['waves']}")
+        return mechanics.error(f"wave {wave}: the next wave is {len(trib['results']) + 1} of {trib['waves']}")
     out = _check(ctx, intent, actor, str(intent.get("approach") or nums["tribulation_approach"]), diff,
                  f"tribulation wave {wave} of {trib['waves']}", system)
     data = out.get("data") or {}

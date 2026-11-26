@@ -18,6 +18,7 @@ import turn  # noqa: E402
 
 
 @turn.handler("engagement")
+@modules.requires("engagement", "position_effect")
 def _engagement(ctx, intent: dict) -> dict:
     """engagement — the opening roll of a job (module engagement, needs position_effect).
 
@@ -29,18 +30,15 @@ def _engagement(ctx, intent: dict) -> dict:
     way); other: -2..+2 for anything else. The roll is 2d6 + the sum; the reply's `position` is where play starts:
     critical success: controlled and past the first obstacle; success: controlled; at a cost: risky; a miss:
     desperate. It is stored as the party's position at once, so no token steps it up."""
-    err = modules.need(ctx, "engagement") or modules.need(ctx, "position_effect")
-    if err:
-        return mechanics._err(err)
     nums = modules.load("engagement")["numbers"]
     plan, detail = str(intent.get("plan", "")).casefold(), str(intent.get("detail") or "").strip()
     if plan not in nums["plans"]:
-        return mechanics._err(f"plan: one of {', '.join(nums['plans'])}")
+        return mechanics.error(f"plan: one of {', '.join(nums['plans'])}")
     if not detail:
-        return mechanics._err(f"a {plan} plan needs its detail: {nums['plans'][plan]}")
+        return mechanics.error(f"a {plan} plan needs its detail: {nums['plans'][plan]}")
     other = int(intent.get("other", 0))
     if abs(other) > nums["other_max"]:
-        return mechanics._err(f"other: -{nums['other_max']}..+{nums['other_max']}")
+        return mechanics.error(f"other: -{nums['other_max']}..+{nums['other_max']}")
     used = [f for f in nums["factors"] if intent.get(f)]
     mod = sum(nums["factors"][f] for f in used) + other
     job = str(intent.get("job") or "the job")

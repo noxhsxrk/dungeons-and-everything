@@ -308,14 +308,15 @@ def active_campaign():
 
 def refuse_unless_d20(argv: list, what: str) -> None:
     """CLI gate for the 5e-only scripts: when -c/--campaign names a non-d20 campaign, say why and exit 2.
-    With no -c, the campaign in play (active-campaign.json, written by /dne load and campaign_init) decides."""
+    With no -c, the campaign in play (active-campaign.json, written by /dne load and campaign_init) decides, unless
+    --ruleset names the 5e rules outright (a 5e world being set up while the marker still names a Braid one)."""
     name = None
     for i, a in enumerate(argv):
         if a in ("-c", "--campaign") and i + 1 < len(argv):
             name = argv[i + 1]
         elif a.startswith("--campaign="):
             name = a.split("=", 1)[1]
-    if not name:
+    if not name and not any(a == "--ruleset" or a.startswith("--ruleset=") for a in argv):
         name = active_campaign()
     if not name:
         return

@@ -761,10 +761,16 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/genres.py apply mystery,horror -c <campaign>
 ```
 A preset is `data/genres/<id>.json` (id = its `data/story_axes` id): kind (plot, mood, setting, frame), modules, optional modules, dials, suggestions (content, romance: asked, never written), GM moves, content tags, checks. First genre primary; lists are joined, single values come from the first, conflicts are listed; two plot genres need `--drives`.
 
+### Genre-tagged kit content — `scripts/content.py`
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/content.py western,horror [--kind labels|equipment|threats] [--mix-eras]   # kit-shaped JSON for the mix
+```
+`data/content.json`: labels, equipment and threats, each tagged with the genres it fits (several tags allowed). A mix draws from the union, the main genre first, with the era bans of `story_gen.py` (`--mix-eras` keeps everything). A starting point for the Braid World Kit (step 7): copy what fits, rewrite it for the world.
+
 ### Story generator — `scripts/story_gen.py`
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/story_gen.py -c <campaign> seed "<fact>" "genre.axis=value"
-python3 ${CLAUDE_SKILL_DIR}/scripts/story_gen.py -c <campaign> skeleton --genre <ids, driving plot first> [--seed N]
+python3 ${CLAUDE_SKILL_DIR}/scripts/story_gen.py -c <campaign> skeleton --genre <ids, driving plot first> [--seed N] [--drives <id>] [--mix-eras]
 python3 ${CLAUDE_SKILL_DIR}/scripts/story_gen.py -c <campaign> flesh --slot premise|clue:<id> [--candidates '<5 JSON>']
 python3 ${CLAUDE_SKILL_DIR}/scripts/story_gen.py -c <campaign> check      # exit 0 = ready to play
 ```

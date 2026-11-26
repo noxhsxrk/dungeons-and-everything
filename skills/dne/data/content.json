@@ -1,0 +1,1561 @@
+{
+ "_about": "Genre-tagged World Kit content for Braid (labels, equipment, threats). An entry may carry several genre tags; content.py <genres> lists what a mix draws from, the first genre's entries first, with the era bans of story_gen.py applied. A starting point the GM rewrites for the world. All text is our own.",
+ "labels": [
+  {
+   "name": "Former detective",
+   "description": "knows how a scene lies and who to ask",
+   "tags": [
+    "mystery",
+    "thriller"
+   ]
+  },
+  {
+   "name": "Night-shift coroner",
+   "description": "reads a body like a letter",
+   "tags": [
+    "mystery",
+    "urban-occult"
+   ]
+  },
+  {
+   "name": "Town gossip",
+   "description": "hears everything, believed by no one",
+   "tags": [
+    "mystery",
+    "kids-adventure"
+   ]
+  },
+  {
+   "name": "Safecracker",
+   "description": "patient hands, good ears",
+   "tags": [
+    "heist",
+    "mafia"
+   ]
+  },
+  {
+   "name": "Face",
+   "description": "becomes whoever the door expects",
+   "tags": [
+    "heist",
+    "spy"
+   ]
+  },
+  {
+   "name": "Wheelman",
+   "description": "knows every back road out",
+   "tags": [
+    "heist"
+   ]
+  },
+  {
+   "name": "Radio operator",
+   "description": "keeps the unit talking to the world",
+   "tags": [
+    "war"
+   ]
+  },
+  {
+   "name": "Field medic",
+   "description": "patches what can be patched, fast",
+   "tags": [
+    "war",
+    "post-apoc"
+   ]
+  },
+  {
+   "name": "Veteran sergeant",
+   "description": "has seen this go wrong before",
+   "tags": [
+    "war",
+    "historical"
+   ]
+  },
+  {
+   "name": "Rookie with a gift",
+   "description": "nobody saw them coming",
+   "tags": [
+    "competition"
+   ]
+  },
+  {
+   "name": "Old champion",
+   "description": "knows the judges and the tricks",
+   "tags": [
+    "competition",
+    "court-intrigue"
+   ]
+  },
+  {
+   "name": "Mountain guide",
+   "description": "reads weather, ice and people",
+   "tags": [
+    "survival",
+    "road-trip"
+   ]
+  },
+  {
+   "name": "Scavenger",
+   "description": "finds use in what others leave",
+   "tags": [
+    "survival",
+    "post-apoc"
+   ]
+  },
+  {
+   "name": "Patient with a gap",
+   "description": "lost a night they need back",
+   "tags": [
+    "thriller"
+   ]
+  },
+  {
+   "name": "Investigative journalist",
+   "description": "follows the money to the wrong door",
+   "tags": [
+    "thriller",
+    "spy"
+   ]
+  },
+  {
+   "name": "Handler",
+   "description": "runs agents and burns them when told",
+   "tags": [
+    "spy"
+   ]
+  },
+  {
+   "name": "Sleeper",
+   "description": "an ordinary life over an old order",
+   "tags": [
+    "spy"
+   ]
+  },
+  {
+   "name": "Lady-in-waiting",
+   "description": "close enough to hear, low enough to be ignored",
+   "tags": [
+    "court-intrigue",
+    "historical"
+   ]
+  },
+  {
+   "name": "Royal taster",
+   "description": "knows every poison by its taste",
+   "tags": [
+    "court-intrigue"
+   ]
+  },
+  {
+   "name": "Bookkeeper",
+   "description": "keeps two sets of accounts and one secret",
+   "tags": [
+    "mafia"
+   ]
+  },
+  {
+   "name": "Enforcer",
+   "description": "says it once, then does it",
+   "tags": [
+    "mafia"
+   ]
+  },
+  {
+   "name": "Office worker from our world",
+   "description": "knows how things work back home",
+   "tags": [
+    "portal-fantasy"
+   ]
+  },
+  {
+   "name": "Local guide",
+   "description": "explains this world, not always truthfully",
+   "tags": [
+    "portal-fantasy",
+    "fantasy"
+   ]
+  },
+  {
+   "name": "Rope-runner",
+   "description": "climbs where others fall",
+   "tags": [
+    "abyss-delve"
+   ]
+  },
+  {
+   "name": "Deep cartographer",
+   "description": "maps what moves",
+   "tags": [
+    "abyss-delve"
+   ]
+  },
+  {
+   "name": "Sceptic",
+   "description": "has an explanation for everything, until",
+   "tags": [
+    "horror",
+    "analog-horror"
+   ]
+  },
+  {
+   "name": "Medium",
+   "description": "hears what the house wants",
+   "tags": [
+    "horror",
+    "thai-ghost"
+   ]
+  },
+  {
+   "name": "Camp counsellor",
+   "description": "knows the woods, not the killer",
+   "tags": [
+    "slasher"
+   ]
+  },
+  {
+   "name": "Final kid",
+   "description": "notices first, runs fastest",
+   "tags": [
+    "slasher",
+    "kids-adventure"
+   ]
+  },
+  {
+   "name": "Archivist",
+   "description": "digitises old tapes for a living",
+   "tags": [
+    "analog-horror"
+   ]
+  },
+  {
+   "name": "Night guard",
+   "description": "watches screens no one else watches",
+   "tags": [
+    "analog-horror"
+   ]
+  },
+  {
+   "name": "Childhood friend",
+   "description": "knows them too well to say it",
+   "tags": [
+    "romance"
+   ]
+  },
+  {
+   "name": "New arrival in town",
+   "description": "nobody knows their story yet",
+   "tags": [
+    "romance",
+    "cozy"
+   ]
+  },
+  {
+   "name": "Tea shop owner",
+   "description": "knows what every regular needs",
+   "tags": [
+    "cozy"
+   ]
+  },
+  {
+   "name": "Retired adventurer",
+   "description": "keeps bees now, mostly",
+   "tags": [
+    "cozy"
+   ]
+  },
+  {
+   "name": "Overconfident hero",
+   "description": "very sure of the plan",
+   "tags": [
+    "comedy"
+   ]
+  },
+  {
+   "name": "Sidekick who is actually competent",
+   "description": "fixes it quietly",
+   "tags": [
+    "comedy"
+   ]
+  },
+  {
+   "name": "Village monk",
+   "description": "knows the rites and the stories behind them",
+   "tags": [
+    "thai-ghost"
+   ]
+  },
+  {
+   "name": "Herbalist",
+   "description": "remembers what the old ways cure",
+   "tags": [
+    "thai-ghost",
+    "historical"
+   ]
+  },
+  {
+   "name": "New kid in town",
+   "description": "has a bike, a map and no friends yet",
+   "tags": [
+    "kids-adventure"
+   ]
+  },
+  {
+   "name": "Little sibling",
+   "description": "always follows, always sees",
+   "tags": [
+    "kids-adventure"
+   ]
+  },
+  {
+   "name": "Hedge witch",
+   "description": "knows the old charms",
+   "tags": [
+    "fantasy"
+   ]
+  },
+  {
+   "name": "Wandering swordsman",
+   "description": "owes nothing, owns a blade",
+   "tags": [
+    "fantasy",
+    "wuxia",
+    "historical"
+   ]
+  },
+  {
+   "name": "Ship engineer",
+   "description": "keeps the reactor quiet",
+   "tags": [
+    "sci-fi"
+   ]
+  },
+  {
+   "name": "Xenobiologist",
+   "description": "curious first, careful second",
+   "tags": [
+    "sci-fi",
+    "space-opera"
+   ]
+  },
+  {
+   "name": "Smuggler pilot",
+   "description": "flies what others will not",
+   "tags": [
+    "space-opera"
+   ]
+  },
+  {
+   "name": "Exiled noble",
+   "description": "has a title and enemies",
+   "tags": [
+    "space-opera"
+   ]
+  },
+  {
+   "name": "Disciple of a fallen school",
+   "description": "the last to know its forms",
+   "tags": [
+    "wuxia"
+   ]
+  },
+  {
+   "name": "Inn keeper who has seen everything",
+   "description": "keeps the peace, mostly",
+   "tags": [
+    "wuxia"
+   ]
+  },
+  {
+   "name": "Player who knows the meta",
+   "description": "read every guide",
+   "tags": [
+    "litrpg"
+   ]
+  },
+  {
+   "name": "Summoned hero",
+   "description": "the system chose them, nobody knows why",
+   "tags": [
+    "litrpg",
+    "portal-fantasy"
+   ]
+  },
+  {
+   "name": "Scribe",
+   "description": "writes what the powerful want remembered",
+   "tags": [
+    "historical"
+   ]
+  },
+  {
+   "name": "Conscript",
+   "description": "far from home, not by choice",
+   "tags": [
+    "historical",
+    "war"
+   ]
+  },
+  {
+   "name": "Old-world mechanic",
+   "description": "keeps one engine running",
+   "tags": [
+    "post-apoc"
+   ]
+  },
+  {
+   "name": "Settlement trader",
+   "description": "knows what everything is worth now",
+   "tags": [
+    "post-apoc"
+   ]
+  },
+  {
+   "name": "Powered rookie",
+   "description": "strong, new, and trying",
+   "tags": [
+    "superhero"
+   ]
+  },
+  {
+   "name": "Hero's civilian friend",
+   "description": "keeps the secret and the job",
+   "tags": [
+    "superhero"
+   ]
+  },
+  {
+   "name": "Bounty hunter",
+   "description": "follows a poster across three territories",
+   "tags": [
+    "western"
+   ]
+  },
+  {
+   "name": "Schoolteacher",
+   "description": "the only one who reads the contracts",
+   "tags": [
+    "western"
+   ]
+  },
+  {
+   "name": "Quartermaster",
+   "description": "keeps the crew fed and the shares fair",
+   "tags": [
+    "pirates"
+   ]
+  },
+  {
+   "name": "Navigator",
+   "description": "reads stars, charts and lies",
+   "tags": [
+    "pirates"
+   ]
+  },
+  {
+   "name": "Pilot",
+   "description": "synced to a machine taller than a tower",
+   "tags": [
+    "kaiju"
+   ]
+  },
+  {
+   "name": "Disaster researcher",
+   "description": "studies what walks out of the sea",
+   "tags": [
+    "kaiju"
+   ]
+  },
+  {
+   "name": "Exorcist for hire",
+   "description": "cheap, quick, mostly works",
+   "tags": [
+    "urban-occult"
+   ]
+  },
+  {
+   "name": "Clan go-between",
+   "description": "carries messages between those who must not meet",
+   "tags": [
+    "urban-occult"
+   ]
+  },
+  {
+   "name": "Scholarship student",
+   "description": "the best in the class, the poorest in the hall",
+   "tags": [
+    "magic-academy"
+   ]
+  },
+  {
+   "name": "Prefect",
+   "description": "enforces rules they quietly break",
+   "tags": [
+    "magic-academy"
+   ]
+  },
+  {
+   "name": "The one who remembers",
+   "description": "the only one living this day before",
+   "tags": [
+    "timeloop"
+   ]
+  },
+  {
+   "name": "Stranger who also loops",
+   "description": "somewhere in the crowd, ahead of them",
+   "tags": [
+    "timeloop"
+   ]
+  },
+  {
+   "name": "Trusted second",
+   "description": "everyone's friend",
+   "tags": [
+    "traitor"
+   ]
+  },
+  {
+   "name": "Newcomer under suspicion",
+   "description": "too new to be trusted",
+   "tags": [
+    "traitor"
+   ]
+  },
+  {
+   "name": "Driver who never stops",
+   "description": "the one with the keys",
+   "tags": [
+    "road-trip"
+   ]
+  },
+  {
+   "name": "Hitchhiker",
+   "description": "joined at the last stop, says little",
+   "tags": [
+    "road-trip"
+   ]
+  }
+ ],
+ "equipment": [
+  {
+   "name": "Pocket notebook",
+   "description": "every name, every time, every lie",
+   "tags": [
+    "mystery",
+    "thriller",
+    "spy"
+   ]
+  },
+  {
+   "name": "A set of picks",
+   "description": "quiet, fast, never twice the same lock",
+   "tags": [
+    "heist"
+   ]
+  },
+  {
+   "name": "Field dressing kit",
+   "description": "enough for one bad wound",
+   "tags": [
+    "war"
+   ]
+  },
+  {
+   "name": "Lucky charm",
+   "description": "worn to every final",
+   "tags": [
+    "competition"
+   ]
+  },
+  {
+   "name": "Water filter",
+   "description": "makes bad water drinkable, slowly",
+   "tags": [
+    "survival",
+    "post-apoc",
+    "abyss-delve"
+   ]
+  },
+  {
+   "name": "Forged passport",
+   "description": "good enough for one border",
+   "tags": [
+    "spy"
+   ]
+  },
+  {
+   "name": "Signet ring",
+   "description": "seals letters only they may send",
+   "tags": [
+    "court-intrigue",
+    "historical"
+   ]
+  },
+  {
+   "name": "Envelope of cash",
+   "description": "opens doors, closes mouths",
+   "tags": [
+    "mafia"
+   ]
+  },
+  {
+   "name": "Dead phone from home",
+   "description": "a comfort and a mystery to the locals",
+   "tags": [
+    "portal-fantasy"
+   ]
+  },
+  {
+   "name": "Glowstone lamp",
+   "description": "light that does not need fire",
+   "tags": [
+    "abyss-delve"
+   ]
+  },
+  {
+   "name": "Flashlight with weak batteries",
+   "description": "works when it wants to",
+   "tags": [
+    "horror",
+    "slasher"
+   ]
+  },
+  {
+   "name": "Car keys that might work",
+   "description": "the way out, if the engine starts",
+   "tags": [
+    "slasher",
+    "survival"
+   ]
+  },
+  {
+   "name": "Camcorder",
+   "description": "sees what eyes do not",
+   "tags": [
+    "analog-horror"
+   ]
+  },
+  {
+   "name": "Unsent letter",
+   "description": "everything they could not say",
+   "tags": [
+    "romance"
+   ]
+  },
+  {
+   "name": "Well-loved kettle",
+   "description": "always something warm",
+   "tags": [
+    "cozy"
+   ]
+  },
+  {
+   "name": "A disguise that fools no one",
+   "description": "fools everyone",
+   "tags": [
+    "comedy"
+   ]
+  },
+  {
+   "name": "Sacred thread",
+   "description": "binds a spirit, or a promise",
+   "tags": [
+    "thai-ghost"
+   ]
+  },
+  {
+   "name": "Walkie-talkies",
+   "description": "range of one street",
+   "tags": [
+    "kids-adventure"
+   ]
+  },
+  {
+   "name": "Map with a blank corner",
+   "description": "the part worth seeing",
+   "tags": [
+    "fantasy"
+   ]
+  },
+  {
+   "name": "Pressure suit",
+   "description": "four hours of air",
+   "tags": [
+    "sci-fi"
+   ]
+  },
+  {
+   "name": "Blaster with a story",
+   "description": "older than its owner",
+   "tags": [
+    "space-opera"
+   ]
+  },
+  {
+   "name": "Jade token",
+   "description": "a sect's word of passage",
+   "tags": [
+    "wuxia"
+   ]
+  },
+  {
+   "name": "Inventory ring",
+   "description": "holds more than it should",
+   "tags": [
+    "litrpg"
+   ]
+  },
+  {
+   "name": "Letter of passage",
+   "description": "signed by someone who matters",
+   "tags": [
+    "historical"
+   ]
+  },
+  {
+   "name": "Jerrycan of clean fuel",
+   "description": "worth more than money",
+   "tags": [
+    "post-apoc"
+   ]
+  },
+  {
+   "name": "Costume that hides who they are",
+   "description": "mostly",
+   "tags": [
+    "superhero"
+   ]
+  },
+  {
+   "name": "Repeating rifle",
+   "description": "six shots before the reload",
+   "tags": [
+    "western"
+   ]
+  },
+  {
+   "name": "Spyglass",
+   "description": "sees the sail before they see you",
+   "tags": [
+    "pirates"
+   ]
+  },
+  {
+   "name": "Evacuation map",
+   "description": "where the shelters were",
+   "tags": [
+    "kaiju"
+   ]
+  },
+  {
+   "name": "Blessed amulet",
+   "description": "burns when they are near",
+   "tags": [
+    "urban-occult"
+   ]
+  },
+  {
+   "name": "Spellbook with a borrowed name",
+   "description": "somebody's notes in the margin",
+   "tags": [
+    "magic-academy"
+   ]
+  },
+  {
+   "name": "Wristwatch that runs backwards",
+   "description": "counts down to the reset",
+   "tags": [
+    "timeloop"
+   ]
+  },
+  {
+   "name": "Sealed orders",
+   "description": "only one of them knows what is inside",
+   "tags": [
+    "traitor"
+   ]
+  },
+  {
+   "name": "Mixtape for the drive",
+   "description": "one song for every mile",
+   "tags": [
+    "road-trip"
+   ]
+  }
+ ],
+ "threats": [
+  {
+   "name": "The one who did it",
+   "threat": 3,
+   "moves": [
+    "plants a false trail",
+    "removes a witness"
+   ],
+   "tags": [
+    "mystery",
+    "thriller"
+   ]
+  },
+  {
+   "name": "A friend who covers for them",
+   "threat": 2,
+   "moves": [
+    "gives a false alibi",
+    "warns the guilty"
+   ],
+   "tags": [
+    "mystery",
+    "court-intrigue",
+    "mafia"
+   ]
+  },
+  {
+   "name": "Vault guard on a double shift",
+   "threat": 2,
+   "moves": [
+    "calls it in",
+    "checks the camera again"
+   ],
+   "tags": [
+    "heist"
+   ]
+  },
+  {
+   "name": "Private security firm",
+   "threat": 4,
+   "moves": [
+    "locks the building down",
+    "sends someone who is good at this"
+   ],
+   "tags": [
+    "heist"
+   ]
+  },
+  {
+   "name": "Enemy patrol",
+   "threat": 3,
+   "moves": [
+    "pins them down",
+    "flanks through the trees"
+   ],
+   "tags": [
+    "war"
+   ]
+  },
+  {
+   "name": "Artillery on the ridge",
+   "threat": 4,
+   "moves": [
+    "shells the road",
+    "cuts the only bridge"
+   ],
+   "tags": [
+    "war"
+   ]
+  },
+  {
+   "name": "Rival who wants it more",
+   "threat": 3,
+   "moves": [
+    "takes the shortcut",
+    "gets in their head"
+   ],
+   "tags": [
+    "competition"
+   ]
+  },
+  {
+   "name": "Judge with a favourite",
+   "threat": 2,
+   "moves": [
+    "scores against them",
+    "changes a rule"
+   ],
+   "tags": [
+    "competition",
+    "court-intrigue"
+   ]
+  },
+  {
+   "name": "The storm",
+   "threat": 4,
+   "moves": [
+    "cuts them off",
+    "takes the heat out of everything"
+   ],
+   "tags": [
+    "survival"
+   ]
+  },
+  {
+   "name": "Hungry animals",
+   "threat": 2,
+   "moves": [
+    "circle the camp",
+    "take the food"
+   ],
+   "tags": [
+    "survival"
+   ]
+  },
+  {
+   "name": "The kind husband",
+   "threat": 3,
+   "moves": [
+    "explains it all away",
+    "makes them doubt themselves"
+   ],
+   "tags": [
+    "thriller"
+   ]
+  },
+  {
+   "name": "Counter-intelligence officer",
+   "threat": 4,
+   "moves": [
+    "turns their asset",
+    "follows them home"
+   ],
+   "tags": [
+    "spy"
+   ]
+  },
+  {
+   "name": "Double agent",
+   "threat": 3,
+   "moves": [
+    "sells their plan",
+    "plants a lie in their report"
+   ],
+   "tags": [
+    "spy",
+    "court-intrigue"
+   ]
+  },
+  {
+   "name": "Ambitious regent",
+   "threat": 4,
+   "moves": [
+    "calls a vote early",
+    "makes an ally an enemy"
+   ],
+   "tags": [
+    "court-intrigue"
+   ]
+  },
+  {
+   "name": "Palace whisperer",
+   "threat": 2,
+   "moves": [
+    "spreads a rumour",
+    "reads a sealed letter"
+   ],
+   "tags": [
+    "court-intrigue"
+   ]
+  },
+  {
+   "name": "Rival family",
+   "threat": 4,
+   "moves": [
+    "hits a shop they protect",
+    "buys their cop"
+   ],
+   "tags": [
+    "mafia"
+   ]
+  },
+  {
+   "name": "Detective on the take",
+   "threat": 3,
+   "moves": [
+    "raids at the worst time",
+    "squeezes the weakest one"
+   ],
+   "tags": [
+    "mafia",
+    "thriller"
+   ]
+  },
+  {
+   "name": "The one who opened the door",
+   "threat": 4,
+   "moves": [
+    "closes the way home",
+    "claims them as summoned"
+   ],
+   "tags": [
+    "portal-fantasy"
+   ]
+  },
+  {
+   "name": "Knight who thinks they are a demon",
+   "threat": 3,
+   "moves": [
+    "hunts them",
+    "raises the village"
+   ],
+   "tags": [
+    "portal-fantasy",
+    "fantasy"
+   ]
+  },
+  {
+   "name": "Pressure sickness",
+   "threat": 3,
+   "moves": [
+    "takes a mind",
+    "slows the climb back"
+   ],
+   "tags": [
+    "abyss-delve"
+   ]
+  },
+  {
+   "name": "Thing that hunts by sound",
+   "threat": 4,
+   "moves": [
+    "drops from above",
+    "takes the last one in line"
+   ],
+   "tags": [
+    "abyss-delve"
+   ]
+  },
+  {
+   "name": "The presence",
+   "threat": 4,
+   "moves": [
+    "shows them what they fear",
+    "takes one of them for a while"
+   ],
+   "tags": [
+    "horror"
+   ]
+  },
+  {
+   "name": "Something under the floor",
+   "threat": 2,
+   "moves": [
+    "knocks back",
+    "moves things in the night"
+   ],
+   "tags": [
+    "horror",
+    "cozy"
+   ]
+  },
+  {
+   "name": "The masked hunter",
+   "threat": 5,
+   "moves": [
+    "is already inside",
+    "cuts the lights"
+   ],
+   "tags": [
+    "slasher"
+   ]
+  },
+  {
+   "name": "Someone who should have helped",
+   "threat": 2,
+   "moves": [
+    "laughs it off",
+    "locks the wrong door"
+   ],
+   "tags": [
+    "slasher"
+   ]
+  },
+  {
+   "name": "The broadcast",
+   "threat": 4,
+   "moves": [
+    "speaks their name",
+    "changes what they remember"
+   ],
+   "tags": [
+    "analog-horror"
+   ]
+  },
+  {
+   "name": "Smiling host",
+   "threat": 3,
+   "moves": [
+    "invites them in",
+    "waits at the end of the hall"
+   ],
+   "tags": [
+    "analog-horror"
+   ]
+  },
+  {
+   "name": "Disapproving family",
+   "threat": 3,
+   "moves": [
+    "forbids it",
+    "arranges another match"
+   ],
+   "tags": [
+    "romance"
+   ]
+  },
+  {
+   "name": "Jealous rival",
+   "threat": 2,
+   "moves": [
+    "tells a half-truth",
+    "makes a scene"
+   ],
+   "tags": [
+    "romance",
+    "mafia",
+    "court-intrigue"
+   ]
+  },
+  {
+   "name": "Late winter",
+   "threat": 2,
+   "moves": [
+    "freezes the pipes",
+    "keeps the visitors away"
+   ],
+   "tags": [
+    "cozy"
+   ]
+  },
+  {
+   "name": "Developer with plans",
+   "threat": 3,
+   "moves": [
+    "buys the lot next door",
+    "charms the council"
+   ],
+   "tags": [
+    "cozy",
+    "comedy"
+   ]
+  },
+  {
+   "name": "Bureaucrat with a form",
+   "threat": 2,
+   "moves": [
+    "needs it in triplicate",
+    "closes for lunch"
+   ],
+   "tags": [
+    "comedy"
+   ]
+  },
+  {
+   "name": "Nemesis with a grudge",
+   "threat": 3,
+   "moves": [
+    "unveils a scheme",
+    "monologues at length"
+   ],
+   "tags": [
+    "comedy"
+   ]
+  },
+  {
+   "name": "Restless spirit",
+   "threat": 4,
+   "moves": [
+    "possesses someone close",
+    "shows how it died"
+   ],
+   "tags": [
+    "thai-ghost"
+   ]
+  },
+  {
+   "name": "Headman with a secret",
+   "threat": 2,
+   "moves": [
+    "hides the old wrong",
+    "sends them away"
+   ],
+   "tags": [
+    "thai-ghost"
+   ]
+  },
+  {
+   "name": "Teenage bullies",
+   "threat": 2,
+   "moves": [
+    "take the bike",
+    "tell the parents"
+   ],
+   "tags": [
+    "kids-adventure"
+   ]
+  },
+  {
+   "name": "The thing in the woods",
+   "threat": 4,
+   "moves": [
+    "takes a pet",
+    "calls in a friend's voice"
+   ],
+   "tags": [
+    "kids-adventure",
+    "horror"
+   ]
+  },
+  {
+   "name": "Goblin raiders",
+   "threat": 2,
+   "moves": [
+    "steal the horses",
+    "attack at dusk"
+   ],
+   "tags": [
+    "fantasy"
+   ]
+  },
+  {
+   "name": "Old dragon",
+   "threat": 5,
+   "moves": [
+    "burns the road",
+    "demands tribute"
+   ],
+   "tags": [
+    "fantasy"
+   ]
+  },
+  {
+   "name": "Failing life support",
+   "threat": 3,
+   "moves": [
+    "drops the oxygen",
+    "seals a door"
+   ],
+   "tags": [
+    "sci-fi"
+   ]
+  },
+  {
+   "name": "Company inspector",
+   "threat": 3,
+   "moves": [
+    "seizes the cargo",
+    "files the report that ends them"
+   ],
+   "tags": [
+    "sci-fi",
+    "space-opera"
+   ]
+  },
+  {
+   "name": "Imperial cruiser",
+   "threat": 5,
+   "moves": [
+    "jams their drive",
+    "boards the ship"
+   ],
+   "tags": [
+    "space-opera"
+   ]
+  },
+  {
+   "name": "Bounty hunter",
+   "threat": 3,
+   "moves": [
+    "tracks the ship",
+    "takes a hostage"
+   ],
+   "tags": [
+    "space-opera"
+   ]
+  },
+  {
+   "name": "Rival sect master",
+   "threat": 4,
+   "moves": [
+    "challenges them in public",
+    "poisons the tea"
+   ],
+   "tags": [
+    "wuxia"
+   ]
+  },
+  {
+   "name": "Bandits of the pass",
+   "threat": 2,
+   "moves": [
+    "block the road",
+    "demand a toll"
+   ],
+   "tags": [
+    "wuxia"
+   ]
+  },
+  {
+   "name": "Floor boss",
+   "threat": 4,
+   "moves": [
+    "enrages at half",
+    "calls adds"
+   ],
+   "tags": [
+    "litrpg"
+   ]
+  },
+  {
+   "name": "Player killer",
+   "threat": 3,
+   "moves": [
+    "waits at the safe zone",
+    "steals the drop"
+   ],
+   "tags": [
+    "litrpg"
+   ]
+  },
+  {
+   "name": "Tax collector",
+   "threat": 2,
+   "moves": [
+    "takes the harvest",
+    "names a debtor"
+   ],
+   "tags": [
+    "historical"
+   ]
+  },
+  {
+   "name": "Magistrate",
+   "threat": 3,
+   "moves": [
+    "orders an arrest",
+    "sells a verdict"
+   ],
+   "tags": [
+    "historical",
+    "court-intrigue"
+   ]
+  },
+  {
+   "name": "Raiders on the highway",
+   "threat": 3,
+   "moves": [
+    "block the road",
+    "burn the crops"
+   ],
+   "tags": [
+    "post-apoc"
+   ]
+  },
+  {
+   "name": "Radiation storm",
+   "threat": 4,
+   "moves": [
+    "poisons the water",
+    "drives them underground"
+   ],
+   "tags": [
+    "post-apoc"
+   ]
+  },
+  {
+   "name": "Villain with a reason",
+   "threat": 4,
+   "moves": [
+    "takes the city hostage",
+    "reveals a secret identity"
+   ],
+   "tags": [
+    "superhero"
+   ]
+  },
+  {
+   "name": "Henchmen",
+   "threat": 2,
+   "moves": [
+    "surround a bystander",
+    "cover the escape"
+   ],
+   "tags": [
+    "superhero"
+   ]
+  },
+  {
+   "name": "Cattle baron's men",
+   "threat": 3,
+   "moves": [
+    "dam the creek",
+    "burn the barn"
+   ],
+   "tags": [
+    "western"
+   ]
+  },
+  {
+   "name": "Outlaw gang",
+   "threat": 4,
+   "moves": [
+    "rob the stage",
+    "ride into town at noon"
+   ],
+   "tags": [
+    "western"
+   ]
+  },
+  {
+   "name": "Navy frigate",
+   "threat": 5,
+   "moves": [
+    "gives chase",
+    "fires a broadside"
+   ],
+   "tags": [
+    "pirates"
+   ]
+  },
+  {
+   "name": "Mutineer",
+   "threat": 3,
+   "moves": [
+    "turns the crew",
+    "takes the wheel at night"
+   ],
+   "tags": [
+    "pirates"
+   ]
+  },
+  {
+   "name": "The leviathan",
+   "threat": 5,
+   "moves": [
+    "levels a district",
+    "breaks the seawall"
+   ],
+   "tags": [
+    "kaiju"
+   ]
+  },
+  {
+   "name": "Military that wants the machine",
+   "threat": 3,
+   "moves": [
+    "seizes the hangar",
+    "orders the city sacrificed"
+   ],
+   "tags": [
+    "kaiju"
+   ]
+  },
+  {
+   "name": "Night clan enforcer",
+   "threat": 4,
+   "moves": [
+    "calls in a blood debt",
+    "takes someone at dusk"
+   ],
+   "tags": [
+    "urban-occult"
+   ]
+  },
+  {
+   "name": "Curse seller",
+   "threat": 2,
+   "moves": [
+    "sells to the wrong buyer",
+    "hides in the crowd"
+   ],
+   "tags": [
+    "urban-occult"
+   ]
+  },
+  {
+   "name": "Strict headmaster",
+   "threat": 3,
+   "moves": [
+    "gives detention at the worst time",
+    "expels a friend"
+   ],
+   "tags": [
+    "magic-academy"
+   ]
+  },
+  {
+   "name": "Secret society on campus",
+   "threat": 4,
+   "moves": [
+    "marks them",
+    "rigs the exam"
+   ],
+   "tags": [
+    "magic-academy"
+   ]
+  },
+  {
+   "name": "The reset",
+   "threat": 4,
+   "moves": [
+    "erases what they built",
+    "brings the day back worse"
+   ],
+   "tags": [
+    "timeloop"
+   ]
+  },
+  {
+   "name": "The one who wants the loop",
+   "threat": 3,
+   "moves": [
+    "undoes their fix",
+    "warns the others"
+   ],
+   "tags": [
+    "timeloop"
+   ]
+  },
+  {
+   "name": "The traitor among them",
+   "threat": 4,
+   "moves": [
+    "sabotages the plan",
+    "frames a friend"
+   ],
+   "tags": [
+    "traitor"
+   ]
+  },
+  {
+   "name": "Outside power paying the traitor",
+   "threat": 3,
+   "moves": [
+    "raises the price",
+    "makes contact"
+   ],
+   "tags": [
+    "traitor"
+   ]
+  },
+  {
+   "name": "Breakdown in nowhere",
+   "threat": 2,
+   "moves": [
+    "strands them",
+    "costs what they saved"
+   ],
+   "tags": [
+    "road-trip"
+   ]
+  },
+  {
+   "name": "Someone they left behind",
+   "threat": 3,
+   "moves": [
+    "calls every night",
+    "is waiting at the end"
+   ],
+   "tags": [
+    "road-trip"
+   ]
+  }
+ ]
+}
