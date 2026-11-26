@@ -1,0 +1,100 @@
+{
+ "_about": "Magic school life, house rivalries, and buried campus secrets. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "setting",
+ "axes": {
+  "campus": [
+   "a spire of bridged towers tethered to a storm cloud",
+   "a sunken coral conservatory lit by bottled tide-lanterns",
+   "a desert observatory built inside an hourglass crater",
+   "a sprawling hall grown inside the roots of a petrified cedar",
+   "an endless sleeper-train collegium that never stops at one border",
+   "a snowbound fortress warmed by bound salamander furnaces",
+   "a canal-city university where gondolas ferry students between faculties",
+   "a soot-stained foundry school hammering runes into living brass"
+  ],
+  "curriculum": [
+   "star-charting and the arithmetic of omens",
+   "true-name calligraphy brushed onto silk talismans",
+   "living-clay alchemy and homunculus husbandry",
+   "weather-singing and gale containment",
+   "memory-weaving and dream transcription",
+   "ward-smithing and unpickable threshold locks",
+   "lantern-shadow illusion and stagecraft",
+   "wild-herb toxicology and antidote brewing"
+  ],
+  "faction": [
+   "exhausted scholarship grinders hoarding past exam papers",
+   "old-blood dueling aristocrats with matching silver capes",
+   "midnight rooftop astronomers mapping illegal constellations",
+   "basement potion brewers trading contraband focus tonics",
+   "prefect wardens who bend curfew rules for their friends",
+   "a dead-language circle translating banned margin notes",
+   "remedial misfits exiled to the dampest cellar dormitory",
+   "key-runners smuggling freshmen through forgotten service stairs"
+  ],
+  "authority": [
+   "a smiling dean who hears every lie spoken under the bell tower",
+   "an immortal catalog-keeper chained willingly to the rare stacks",
+   "a scarred dueling instructor teaching under a borrowed name",
+   "porcelain courtyard hounds that hunt anyone out past midnight",
+   "class rankings burned onto the dining hall ceiling every Monday",
+   "wealthy trustees pressuring the school to train war-casters",
+   "a gruff groundskeeper hiding expelled apprentices in the greenhouse",
+   "an ancient school charter that strips magic from oath-breakers"
+  ],
+  "trouble": [
+   "last year's top graduate vanished during the final practical trial",
+   "a bricked-up dormitory wing started humming lullabies at dusk",
+   "someone is selling cheated exam charms that quietly eat memories",
+   "student familiars woke up speaking a dead founder's voice",
+   "the founder's oil portrait bled salt water across the trophy hall",
+   "practice wands are misfiring with wild, unseasonal storms",
+   "a delegation from a rival academy arrived three months too early",
+   "a forbidden grimoire signed itself out under a freshman's name"
+  ],
+  "stakes": [
+   "expulsion sends your family straight back to debtors' court",
+   "winning the winter cup clears an ugly favor owed to a senior",
+   "keeping your scholarship demands top-ten marks before frostfall",
+   "failing probation means the faculty binds your casting hand",
+   "something locked beneath the amphitheater already knows your name",
+   "your closest roommate made a reckless pact just to pass midterms",
+   "exposing the faculty cover-up disgraces the house that sheltered you",
+   "graduation forces every apprentice to swear loyalty to a patron"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "a classroom mishap leaves behind proof of tampered wards",
+   "a rival house plants contraband before a surprise dorm inspection",
+   "a cryptic margin note points to a room missing from campus maps",
+   "detention puts the group alone where no student should be at night"
+  ],
+  "2": [
+   "midterm trials turn hazardous when safety seals fail on purpose",
+   "a trusted professor destroys evidence to protect the school's reputation",
+   "two student factions clash openly during a festival night",
+   "a missing student's journal reveals what the founders buried downstairs"
+  ],
+  "3": [
+   "campus goes under lockdown as the board sends outside enforcers",
+   "someone inside the circle is blackmailed into handing over the seal key",
+   "the ancient engine keeping the academy standing begins to fracture",
+   "allies are suspended right before the decisive seasonal tournament"
+  ],
+  "4": [
+   "the sealed vault beneath the campus breaks open during final exams",
+   "students must unite rival houses to stand against corrupt leadership",
+   "rewriting the founding charter demands a sacrifice nobody taught in class",
+   "graduating intact means facing the thing the school was built to cage"
+  ]
+ },
+ "cliches": [
+  "ten points docked from the underdog house",
+  "the meanest professor was secretly protecting you all along",
+  "nobody ever checks the third-floor washroom",
+  "the final exam gets cancelled because the school was attacked again",
+  "a prophecy exclusively about one fourteen-year-old",
+  "adults leave deadly artifacts behind a freshman-level riddle"
+ ]
+}

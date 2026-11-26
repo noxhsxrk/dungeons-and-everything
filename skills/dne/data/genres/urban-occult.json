@@ -1,0 +1,57 @@
+{
+ "id": "urban-occult",
+ "name": "Urban occult (night world)",
+ "kind": "setting",
+ "system": "core",
+ "early": true,
+ "story_axes": "urban-occult",
+ "modules": [
+  "strings",
+  "heat",
+  "emotions"
+ ],
+ "optional": [
+  "doom",
+  "mooks",
+  "vows"
+ ],
+ "dials": {
+  "storyteller": "noir",
+  "pacing": "mixed",
+  "difficulty": "hard",
+  "claims": "grounded",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "18",
+  "romance": "fade"
+ },
+ "gm_moves": [
+  "call in an old favor at the worst possible hour of the night",
+  "put an innocent mortal witness right in the splash zone",
+  "make the cleanest solution violate neutral-ground law",
+  "let daylight or mortal obligations cut their time short",
+  "offer easy supernatural power with a personal price attached"
+ ],
+ "tags": [
+  "modern",
+  "occult",
+  "supernatural",
+  "secret-world",
+  "noir",
+  "night"
+ ],
+ "fits": [
+  "hidden supernatural underworld",
+  "vampires and night clans",
+  "modern-day exorcists",
+  "secret truce in the city",
+  "monsters blending in with mortals",
+  "occult favors and blood debts"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted",
+  "mortal life and hidden night politics pull against each other"
+ ]
+}

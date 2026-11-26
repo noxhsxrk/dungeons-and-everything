@@ -1,0 +1,56 @@
+{
+ "id": "road-trip",
+ "name": "Road Trip",
+ "kind": "frame",
+ "system": "core",
+ "early": true,
+ "story_axes": "road-trip",
+ "modules": [
+  "vows",
+  "emotions"
+ ],
+ "optional": [
+  "usage_die",
+  "gm_budget",
+  "contest"
+ ],
+ "dials": {
+  "storyteller": "none",
+  "pacing": "mixed",
+  "difficulty": "easy",
+  "claims": "grounded",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "offer a detour that matters to one traveler and costs time to the whole group",
+  "let a host ask what the group plans to do after arriving",
+  "bring back somebody from an earlier stop who now needs a ride",
+  "give the travelers a quiet stretch to follow up on something said at the last stop",
+  "make arrival possible under terms one traveler wants to renegotiate"
+ ],
+ "tags": [
+  "journey",
+  "companions",
+  "detours",
+  "destination",
+  "travel"
+ ],
+ "fits": [
+  "old friends on one last drive together",
+  "a family retracing a route from childhood",
+  "travelers sharing rides across several towns",
+  "a touring band on a tiny budget",
+  "a delivery with a promise at each stop",
+  "a pilgrimage shaped by the people met along the way"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted",
+  "name the destination and the promise the travelers make about reaching it",
+  "give each stop a choice about the route, the schedule, or a relationship",
+  "let an earlier stop matter again before the travelers make their arrival decision"
+ ]
+}

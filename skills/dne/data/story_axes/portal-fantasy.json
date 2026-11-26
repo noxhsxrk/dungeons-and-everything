@@ -1,0 +1,99 @@
+{
+ "_about": "Portal fantasy: outsiders who cross into another world, what they owe on arrival, and the choice between worlds. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "plot",
+ "axes": {
+  "crossing": [
+   "a freight elevator with a floor below the basement",
+   "a flooded underpass reflected in a dry shop window",
+   "a night bus that stops at a second dawn",
+   "a borrowed coat with a door sewn into its lining",
+   "a footbridge appearing on a printed map one fold at a time",
+   "a community theater trapdoor opened during a rehearsal",
+   "a laundromat dryer that turns to show a different sky",
+   "a stairwell that descends into somebody else's childhood"
+  ],
+  "arrival": [
+   "a market where the stalls can sail away at noon",
+   "a salt orchard whose fruit lights a whole courtyard",
+   "a hillside town packing its houses onto sleds",
+   "a station where conductors carry their own rails",
+   "a low-tide library with stairs cut into the seabed",
+   "a public bath built beneath an upside-down waterfall",
+   "a stadium converted into a garden of glass trees",
+   "a cliff village lowering its kitchens by rope for supper"
+  ],
+  "local_rule": [
+   "a public promise carries the speaker's shadow as collateral",
+   "a stranger may ask three directions before owing one in return",
+   "a guest who accepts a blanket can speak for the household at dawn",
+   "a road remembers the last name spoken at its first mile",
+   "a table set for a visitor stays warm until they arrive",
+   "a doorway opens only after each side has offered a greeting",
+   "a bell rung in apology returns the last thing freely given",
+   "a story told twice in public earns its subject a seat at council"
+  ],
+  "first_ally": [
+   "a cartographer who has mapped every road except their own street",
+   "a ferry cook who offers a meal in exchange for news of home",
+   "a tailor mending banners from a dissolved neighborhood",
+   "a guide whose family counts each rescue as an adoption",
+   "a customs clerk keeping a private ledger of the displaced",
+   "a retired courier who knows the names of disused gates",
+   "a street musician whose audience includes homesick ghosts",
+   "a market child saving coins for an adult-sized ticket"
+  ],
+  "return_anchor": [
+   "a receipt from home with a second address appearing in the ink",
+   "a key that warms whenever someone at home asks after its owner",
+   "a snapshot whose background changes as home grows farther away",
+   "a lunch tin that opens onto the smell of the same kitchen each morning",
+   "a voice message replayed in a local bell at dusk",
+   "a seed from home that turns toward the next crossing",
+   "a worn ticket that gains a fresh punch before each opening",
+   "a chalk outline that matches a familiar doorstep down to the cracks"
+  ],
+  "competing_duty": [
+   "bring a lost resident to the one gathering where they can speak for their family",
+   "witness a housing claim before the oldest resident leaves for good",
+   "escort a new friend to a reunion they are afraid to attend",
+   "trade a useful craft lesson for the shelter a household already gave you",
+   "deliver a sack of homebound letters from earlier arrivals",
+   "help a neighborhood mark a new route before the old one vanishes",
+   "carry a community's reply to an invitation across a closed border",
+   "stand beside your host when their neighbors question their decision to take you in"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "your ordinary belongings draw an unexpected crowd",
+   "a harmless greeting puts your name on a public roster",
+   "an ally invites you to supper and asks what you left behind",
+   "a local uses a familiar phrase with an entirely different meaning"
+  ],
+  "2": [
+   "a favor for your host falls at the same hour as a lead about home",
+   "two gatekeepers offer access under incompatible promises",
+   "someone from home sends a reply that arrives halfway through a local ceremony",
+   "another traveler asks to share the next crossing"
+  ],
+  "3": [
+   "a council proposes closing the crossings while displaced people still depend on them",
+   "your remaining route home has room for fewer travelers than are counting on it",
+   "a coalition offers passage if the party lets it set the terms for future arrivals",
+   "admitting how you arrived could remove an ally's right to shelter travelers"
+  ],
+  "4": [
+   "the last negotiable crossing opens and both worlds send people asking to be heard",
+   "choose which community keeps the only key to the crossing and what it owes the other side",
+   "a crossing can stay open for everyone if the party accepts a lifelong obligation to both sides",
+   "several families have one final chance to cross before the route is sealed for a generation"
+  ]
+ },
+ "cliches": [
+  "the first person you meet explains the whole world",
+  "the outsiders are important because a prophecy says so",
+  "home stops mattering once the adventure begins",
+  "everyone who crossed wants the same thing",
+  "the way back depends on a randomly discovered relic"
+ ]
+}

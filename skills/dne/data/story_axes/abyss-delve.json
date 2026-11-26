@@ -1,0 +1,100 @@
+{
+ "_about": "Expeditions into layered chasms of strange ecology, scarce supplies, and ancient relics. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "plot",
+ "axes": {
+  "chasm": [
+   "a mile-wide sinkhole ringed by whistling brass wind-towers",
+   "sunken cathedral vaults stacked beneath an inland black sea",
+   "the hollowed trunk of a petrified titan-tree lit by pale fungi",
+   "a vertical borehole lined with rusted ribs from an older sky",
+   "a split glacier dropping into steam-warmed prehistoric caverns",
+   "a salt-mine crater opening onto inverted palaces of smoked glass",
+   "the fossilized ribcage of a leviathan spanning seven buried strata",
+   "an iron oubliette whose stone rings grind into new layouts each tide"
+  ],
+  "rim_town": [
+   "a muddy boomtown cobbled together from salvaged dungeon shutters",
+   "a chartered guild keep taxing every hauled relic sack on brass scales",
+   "a cliffside bazaar of rope walkways dangling directly inside the mouth",
+   "a charity hospice treating depth-sick delvers in exchange for maps",
+   "a narrow-gauge railhead auctioning fresh shaft claims every dawn",
+   "a penal work-camp trading shaved prison years for third-layer salvage",
+   "a ring of lashed river-barges circling the whirlpool entrance",
+   "a snowed-in bathhouse hamlet heated by vents rising from layer one"
+  ],
+  "expedition_goal": [
+   "haul up enough singing amber before frost to buy back the family boat",
+   "recover a vanished sister's brass compass from the flooded fourth tier",
+   "chart a dry bypass shaft before the monopoly company claims the route",
+   "bring back a living hearth-core before winter starves the rim settlement",
+   "escort a frail linguist deep enough to read an unopened threshold gate",
+   "retrieve the camp's stolen payroll from a warren of shell-thieving crabs",
+   "clear a disgraced crew's name by recovering their last chalk logbook",
+   "carry a fallen partner's lantern down to the quiet garden they promised to see"
+  ],
+  "ecology": [
+   "blind lantern-beetles that mimic human calls for help around corners",
+   "velvet wall-moss that drinks lamp oil straight through sealed flasks",
+   "territorial cliff-apes wearing mismatched breastplates from dead prospectors",
+   "sweet spore-fogs that trick hungry crews into feasting on bare stones",
+   "choir-worms whose harmonic hum shatters overtired steel blades",
+   "porcelain banquet stewards still serving lethal vintage in sunken halls",
+   "warm subterranean rivers patrolled by translucent electric eels",
+   "desperate rival prospectors willing to cut an unguarded climbing line"
+  ],
+  "scarcity": [
+   "tallow lamps burn twice as fast once heavy damp air settles in",
+   "iron pitons rust to flakes whenever sour mist exhales from below",
+   "only a hot meal cooked from fresh cavern game wards off bone-shivers",
+   "climbing back up too quickly brings nosebleeds and waking hallucinations",
+   "every active relic hums louder the more metal your pack carries",
+   "dry kindling vanishes completely past the second milestone arch",
+   "clean drinking water down on layer three trades ounce-for-ounce with silver",
+   "braided hemp ropes rot overnight whenever luminous rain falls upward"
+  ],
+  "deep_secret": [
+   "the chasm is not collapsing—it is slowly digesting the surface world",
+   "every priceless relic brought up leaves a matching gap in someone's memory",
+   "rim-town's founders sealed a living bargain at the bottom eighty years ago",
+   "time drags deeper down until one week below costs a year above",
+   "the territorial beasts on layer four were once prospectors who stayed",
+   "a dormant cradle at the core is waiting for a warm hand on its helm",
+   "official guild maps erase a thriving lamp-lit settlement on layer five",
+   "the pit unseals a deeper staircase only when greed spills a friend's blood"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "the mapped route down has collapsed into an unrecorded side warren",
+   "a supply cache left on the first ledge has already been picked clean",
+   "fresh chalk marks warn that another crew went down hours ahead",
+   "a minor cave-in forces a choice between spare rations and climbing gear"
+  ],
+  "2": [
+   "crossing the boundary into a deeper tier changes how light and sound behave",
+   "camp for the night attracts scavengers drawn to the smell of hot food",
+   "a prized relic starts reacting violently to the chasm's pulse",
+   "a wounded survivor from an earlier crew begs not to be carried upward"
+  ],
+  "3": [
+   "the primary ascent shaft floods or shifts, cutting off the easy road home",
+   "depth sickness and dwindling lamp fuel turn allies suspicious",
+   "rival delvers corner the party at a narrow choke point over the drop",
+   "the ruin's deeper defenses wake up in response to disturbed treasure"
+  ],
+  "4": [
+   "reaching the target chamber reveals the true price of hauling the prize out",
+   "a desperate overloaded climb back toward daylight with the chasm rising behind",
+   "deciding whether to seal the lower gate forever or cash in at rim-town",
+   "the thing sleeping at the bottom offers safe passage for one stay-behind soul"
+  ]
+ },
+ "cliches": [
+  "torches burning brightly inside a tomb sealed for ten thousand years",
+  "gold coins minted in modern currency sitting inside prehistoric chests",
+  "a conveniently placed minecart track right to the exit",
+  "eating unidentified glowing mushrooms with zero consequences",
+  "nobody brought a single length of rope into a vertical pit",
+  "the ancient stone bridge collapses only on the last person's heel"
+ ]
+}

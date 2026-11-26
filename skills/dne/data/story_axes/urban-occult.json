@@ -1,0 +1,100 @@
+{
+ "_about": "Modern cities hiding nocturnal clans, exorcists, and fragile supernatural truces. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "setting",
+ "axes": {
+  "city_front": [
+   "a neon-lit coin laundry humming directly above a knotted ley line",
+   "a velvet basement jazz club hidden behind a meatpacker's freezer",
+   "a rusted harbor ferry that only drops anchor between midnight and four",
+   "a cramped pawnshop trading cursed watches for notarized favors",
+   "an abandoned subway platform converted into a lantern night market",
+   "a glass penthouse wellness clinic dealing synthetic vitality on credit",
+   "a rain-streaked greenhouse run by an exiled herbalist witch",
+   "an all-night highway diner where iron chimes jam hostile spells"
+  ],
+  "lineage": [
+   "old-money blood elders living off downtown real estate trusts",
+   "stray shapeshifters guarding dockside warehouses and stray packs",
+   "bleary-eyed civic occult cleaners working graveyard overtime",
+   "suit-wearing warlocks drafting loophole contracts for night syndicates",
+   "paper-charm exorcists operating out of an old temple courtyard",
+   "mediums running an unlicensed missing-persons desk above a bakery",
+   "immortal alchemists hoarding stolen youth in numbered glass vials",
+   "abandoned half-turned fledglings figuring out the rules alone"
+  ],
+  "truce": [
+   "no mortal witness walks away remembering what happened in the dark",
+   "spilling blood on chalked neutral ground carries an automatic death mark",
+   "every haunting or feeding requires a stamped token from the ward boss",
+   "three rival families rotate the night-mayor's silver seal every solstice",
+   "breaking a spoken oath over cold iron brands the liar's shadow",
+   "any faction that causes a breach gets forty-eight hours to scrub it",
+   "unpaid debts pass straight to your mortal kin or sworn proteges",
+   "sunrise freezes every vendetta until the first streetlamp flickers on"
+  ],
+  "breach": [
+   "a rideshare dashcam caught a feral transformation on the expressway",
+   "an untouchable regent burned to white ash inside a locked hotel elevator",
+   "club promoters started lacing party drinks with distilled demon-marrow",
+   "mortal detectives opened an off-the-record task force for weird homicides",
+   "subway boring machines cracked open a seventeenth-century plague seal",
+   "counterfeit truce tokens triggered a shootout outside central hospital",
+   "restless dead began hijacking emergency dispatch frequencies at 3 a.m.",
+   "an amateur hunter crew kidnapped the wrong elder's mortal grandchild"
+  ],
+  "antagonist": [
+   "zealot vigilantes sweeping the district with surplus ultraviolet rigs",
+   "a polite developer buying up ancestral shrines to starve local spirits",
+   "an ancient starved thing waking beneath the municipal storm drains",
+   "a smiling ledger-keeper calling in thirty years of overdue favors",
+   "a splinter coven stitching stolen mortal memories into obedient husks",
+   "a tech billionaire dissecting captured nightfolk to patent longevity",
+   "a charismatic pack alpha tired of bowing to old-world elders",
+   "your own former mentor quietly erasing everyone tied to an old job"
+  ],
+  "temptation": [
+   "drawing deeper on dark blood mends broken bones at the cost of mercy",
+   "an elder offers to wipe your street heat for one blank-check favor",
+   "a rival house promises to shield your mortal family if you look away",
+   "a seized relic hits twice as hard whenever it tastes bystanders' fear",
+   "breaking neutral ground tonight lets you finish a dangerous enemy early",
+   "erasing a mortal friend's memory keeps them safe while breaking trust",
+   "claiming a vacant council seat requires betraying the crew beside you",
+   "unleashing your worst nature guarantees survival and ruins your name"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "a messy cleanup job leaves mortal police asking the wrong questions",
+   "neutral ground is tested when two bitter rivals show up bleeding",
+   "an old creditor cashes in a small favor that points toward a conspiracy",
+   "someone close from daylight life stumbles onto nocturnal evidence"
+  ],
+  "2": [
+   "the night council sets a forty-eight-hour deadline to silence a leak",
+   "a safe haven burns down, forcing uneasy roommates onto hostile turf",
+   "mortal hunters start using insider knowledge that only an elder possesses",
+   "covering up the last breach creates a heavier debt to a worse patron"
+  ],
+  "3": [
+   "the city-wide truce fractures into open ambushes across night transit",
+   "daylight authorities raid a major front with mysteriously accurate warrants",
+   "a trusted ally's mortal loved ones are taken as collateral",
+   "every exit out of town is watched by both mortal badges and night hounds"
+  ],
+  "4": [
+   "midnight summit on neutral ground turns into a coup for the city's throne",
+   "stopping what woke beneath downtown risks exposing the hidden world forever",
+   "paying the final ledger requires rewriting who rules the night",
+   "dawn approaches with one last chance to save both halves of your life"
+  ]
+ },
+ "cliches": [
+  "brooding on a rain-soaked gargoyle for an hour",
+  "sunglasses indoors at two in the morning",
+  "every immortal happens to own a techno nightclub",
+  "centuries-old beings baffled by a smartphone",
+  "the masquerade somehow survives a downtown bazooka fight",
+  "an ancient prophecy written on a subway wall yesterday"
+ ]
+}

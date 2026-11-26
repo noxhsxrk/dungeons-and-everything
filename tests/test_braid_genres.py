@@ -114,7 +114,7 @@ class Presets(unittest.TestCase):
         self.assertEqual({g for g, d in cat.items() if d["early"]},
                          {"wuxia", "litrpg", "analog-horror", "competition", "survival", "thai-ghost", "thriller", "spy",
                           "post-apoc", "superhero", "western", "kids-adventure", "court-intrigue", "pirates", "kaiju",
-                          "mafia"})
+                          "mafia", "portal-fantasy", "road-trip", "abyss-delve", "urban-occult", "magic-academy"})
         self.assertTrue(all(d["system"] == "core" for d in cat.values()))
         for kind in genres.KINDS:
             self.assertTrue(any(d["kind"] == kind for d in cat.values()), kind)

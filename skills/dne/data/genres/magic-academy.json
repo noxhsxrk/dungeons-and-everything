@@ -1,0 +1,57 @@
+{
+ "id": "magic-academy",
+ "name": "Magic academy",
+ "kind": "setting",
+ "system": "core",
+ "early": true,
+ "story_axes": "magic-academy",
+ "modules": [
+  "labels",
+  "strings",
+  "seasons"
+ ],
+ "optional": [
+  "clues",
+  "contest",
+  "emotions"
+ ],
+ "dials": {
+  "storyteller": "banter",
+  "pacing": "mixed",
+  "difficulty": "standard",
+  "claims": "declare",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard",
+  "romance": "fade"
+ },
+ "gm_moves": [
+  "turn an ordinary exam or lecture into a personal rivalry",
+  "ring the curfew bell right when they are deepest off-limits",
+  "let a faculty member offer help with invisible strings attached",
+  "make house standings shift because of one student's mistake",
+  "wake up something old that the founders bricked behind the classroom wall"
+ ],
+ "tags": [
+  "magic",
+  "school",
+  "coming-of-age",
+  "rivalry",
+  "secrets",
+  "semesters"
+ ],
+ "fits": [
+  "a school of magic",
+  "rival student houses",
+  "forbidden library after curfew",
+  "practical spellcraft exams",
+  "secret society on campus",
+  "coming of age among apprentices"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted",
+  "school rules and academic stakes matter alongside danger"
+ ]
+}

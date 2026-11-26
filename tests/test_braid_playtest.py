@@ -518,6 +518,51 @@ class GenreScene(unittest.TestCase):
             self.assertEqual((d["added"], self.value("party", "crew_heat")), (5, 5))
             self.assertTrue(self.one("[GM]: who talked", {"action": "roles", "reveal": True, "expect": seal})["verified"])
 
+    def test_portal_the_night_bus(self):
+        with self.scene("portal-fantasy"):
+            self.one("[Mira Vale]: we will get home", {"action": "vow", "owner": "Mira Vale", "name": "Find the way home",
+                                                       "rank": "hard"})
+            d = self.check(self.one("[Theo]: I bargain with the ferry cook", {"action": "position", "actor": "Theo",
+                                                                              "approach": "heart", "label": "news of home"}))
+            self.assertIn("position", d["reading"])
+
+    def test_road_the_last_drive(self):
+        with self.scene("road-trip"):
+            self.one("[Mira Vale]: we make the picnic", {"action": "vow", "owner": "Mira Vale", "name": "Reach the picnic",
+                                                         "rank": "easy"})
+            self.one("[GM]: the detour he wanted", {"action": "emotion", "owner": "Theo", "name": "guilty",
+                                                     "why": "he took the seat"})
+            self.check(self.one("[Theo]: I say sorry at the ferry", {"action": "roll", "actor": "Theo", "approach": "heart",
+                                                                     "label": "the apology"}))
+            self.assertTrue(self.one("[Theo]: it is said", {"action": "emotion", "owner": "Theo", "name": "guilty",
+                                                            "act": True})["cleared"])
+
+    def test_abyss_the_fourth_tier(self):
+        with self.scene("abyss-delve"):
+            self.one("[GM]: lamp oil", {"action": "upkeep", "dice": {"lamp oil": "d8"}})
+            self.assertEqual(self.one("[Theo]: we light up", {"action": "use", "item": "lamp oil"})["was"], "d8")
+            d = self.check(self.one("[Mira Vale]: I climb past the moss", {"action": "position", "actor": "Mira Vale",
+                                                                           "approach": "grit", "label": "the wet wall"}))
+            doom = self.doom(0, d["doom"])
+            self.doom(doom, self.one("[GM]: the beetles call", {"action": "doom", "add": 1, "why": "the beetles"}))
+
+    def test_urban_the_neutral_ground(self):
+        with self.scene("urban-occult"):
+            self.one("[Mira Vale]: the elder owes me", {"action": "string", "by": "Mira Vale", "on": "Theo", "gain": 1,
+                                                        "why": "she kept his name out of it"})
+            self.one("[GM]: the dashcam footage", {"action": "emotion", "owner": "Theo", "name": "guilty", "why": "the video"})
+            d = self.one("[GM]: the police ask questions", {"action": "crew_heat", "job": "contained", "hostile_turf": True})
+            self.assertEqual(self.value("party", "crew_heat"), d["added"])
+
+    def test_magic_the_bricked_up_wing(self):
+        with self.scene("magic-academy"):
+            d = self.one("[GM]: the term turns", {"action": "season"})
+            self.assertEqual(self.thing("season", "party")["name"], d["season"])
+            self.check(self.one("[Theo]: I duel the prefect", {"action": "identity", "owner": "Theo", "roll": "proud",
+                                                               "label": "in front of the whole house"}))
+            self.one("[Mira Vale]: I covered for him at curfew", {"action": "string", "by": "Mira Vale", "on": "Theo",
+                                                                  "gain": 1})
+
 
 class EveryGenreAndModuleHasAScene(unittest.TestCase):
     def test_coverage(self):

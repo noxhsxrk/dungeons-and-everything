@@ -1,0 +1,56 @@
+{
+ "id": "portal-fantasy",
+ "name": "Portal Fantasy",
+ "kind": "plot",
+ "system": "core",
+ "early": true,
+ "story_axes": "portal-fantasy",
+ "modules": [
+  "vows",
+  "position_effect"
+ ],
+ "optional": [
+  "emotions",
+  "realm",
+  "status_window"
+ ],
+ "dials": {
+  "storyteller": "pulp",
+  "pacing": "adventure",
+  "difficulty": "standard",
+  "claims": "declare",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "make a familiar habit count as a promise under local custom",
+  "let an ally risk their reputation by vouching for the outsiders",
+  "show how a small skill from home solves a problem locals have learned to live with",
+  "put a lead about the way home in the hands of someone who needs a favor",
+  "let someone the party helped build a future that depends on them staying"
+ ],
+ "tags": [
+  "otherworld",
+  "crossing",
+  "outsiders",
+  "homecoming",
+  "belonging"
+ ],
+ "fits": [
+  "everyday people stranded in another world",
+  "a group summoned across worlds by mistake",
+  "a familiar doorway opening into a foreign realm",
+  "an old life traded for a second life elsewhere",
+  "crossing between home and a world with different laws",
+  "choosing which world to call home"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted",
+  "establish who crossed, what they left unfinished, and what they owe on arrival",
+  "show a local rule in action and give the party a fair chance to learn it",
+  "build from a local obligation to a decision about who can cross and on what terms"
+ ]
+}

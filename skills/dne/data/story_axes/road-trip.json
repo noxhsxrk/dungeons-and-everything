@@ -1,0 +1,99 @@
+{
+ "_about": "Road trip: a journey where the group decides which stops and promises matter most. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "frame",
+ "axes": {
+  "destination": [
+   "a beach where a family is holding its last annual picnic",
+   "a mountaintop hall about to host its final dance",
+   "a coastal workshop waiting for a donated instrument",
+   "a conservatory opening a box of letters from former students",
+   "a ferry quay where a friend will leave for a year",
+   "a hilltop post office announcing which unclaimed parcels can be collected",
+   "a community garden planting a bed for people who moved away",
+   "a neighborhood theater showing home films sent in by former residents"
+  ],
+  "travel_group": [
+   "former classmates reusing a route planned in their final school week",
+   "siblings taking turns carrying a box promised to relatives",
+   "traveling performers who booked one final shared engagement",
+   "neighbors trading navigation and company for a seat",
+   "a parent and grown children following a hand-annotated map",
+   "co-workers using accumulated leave for a long-postponed visit",
+   "old housemates delivering belongings they left in storage",
+   "volunteers keeping a delivery route going for a friend on leave"
+  ],
+  "first_stop": [
+   "an orchard cafe that serves fruit from whichever tree is ripe",
+   "a repair shop with a scrapbook of names left by past travelers",
+   "an overnight ferry with a cabin that used to be a clinic",
+   "a cold hillside shelter whose keeper is about to make soup",
+   "a roadside shrine where visitors leave directions for strangers",
+   "a covered market where porters sleep between weekday shifts",
+   "a stadium car park repurposed as an early-morning flower market",
+   "a village laundromat ringing a bell when a new customer comes in"
+  ],
+  "detour": [
+   "a marker for a town one traveler recognizes under a different name",
+   "a plant nursery giving away its last seedlings before closing",
+   "a slow ferry whose crew invites travelers to eat with them",
+   "a village dance advertised on the back of a bus timetable",
+   "a hill path open for one day while the flowers bloom",
+   "a field recording booth a traveler wants to leave a message in",
+   "a shared meal whose host turns out to know part of your route by heart",
+   "a tiny museum asking for help matching faces to an old group photograph"
+  ],
+  "travel_disagreement": [
+   "someone promised a rider a seat another traveler meant to keep free",
+   "one traveler has asked a host to join them without telling the group",
+   "half the group wants to make good time and half is retracing old stops",
+   "the person keeping the schedule has an appointment they are afraid to mention",
+   "two travelers remember the reason for the original journey differently",
+   "one traveler has been paying for the others and now needs to ask for help",
+   "someone wants to document the journey and a companion wants parts kept private",
+   "a familiar route passes a home one traveler has avoided since moving away"
+  ],
+  "keepsake": [
+   "a tin of homemade sweets with a note tucked under the liner",
+   "a torn postcard with room left for one more address",
+   "a hand-drawn map with the food stops marked first",
+   "a wool blanket passed to whoever has the coldest seat",
+   "an envelope of pictures printed for people along the route",
+   "a paper ticket a parent once used as a bookmark",
+   "a book of recipes with a blank page for each traveler",
+   "a chipped cup a friend asked to have returned in person"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "the trip starts with a seat dispute over who gets to sit together",
+   "a host learns the destination and asks the party to carry a small message",
+   "a wrong turn brings the travelers to a place one of them recognizes",
+   "the first stop prompts two incompatible accounts of a shared memory"
+  ],
+  "2": [
+   "a detour worth taking uses the time promised to somebody else",
+   "a new passenger needs help across the next leg and space is tight",
+   "a companion who has been going along quietly asks to change the itinerary",
+   "a host offers to solve a travel problem if the party stays for an important event"
+  ],
+  "3": [
+   "the last connection and a commitment at an earlier stop now fall at the same hour",
+   "a companion considers leaving early unless the group addresses why they came",
+   "a borrowed ride ends one leg early and everyone must choose how to continue",
+   "the recipient changes their plans and the group has to decide whether to reroute"
+  ],
+  "4": [
+   "the destination is in sight and reaching it together means letting one traveler change the promise",
+   "only one of two important meetings is still possible and the excluded person is waiting for a call",
+   "a person at the destination asks the group to choose who keeps a responsibility created along the way",
+   "the group reaches its planned last stop and must decide whether to accompany somebody on a journey beyond it"
+  ]
+ },
+ "cliches": [
+  "every local exists to dispense advice to the travelers",
+  "the vehicle breaks down at every meaningful stop",
+  "the quiet traveler has been hiding a terminal diagnosis",
+  "the destination fixes every relationship",
+  "one driver makes every decision"
+ ]
+}

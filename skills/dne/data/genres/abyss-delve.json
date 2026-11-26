@@ -1,0 +1,56 @@
+{
+ "id": "abyss-delve",
+ "name": "Abyssal delve (megadungeon expedition)",
+ "kind": "plot",
+ "system": "core",
+ "early": true,
+ "story_axes": "abyss-delve",
+ "modules": [
+  "usage_die",
+  "doom",
+  "position_effect"
+ ],
+ "optional": [
+  "mooks",
+  "vows",
+  "gm_budget"
+ ],
+ "dials": {
+  "storyteller": "pulp",
+  "pacing": "adventure",
+  "difficulty": "hard",
+  "claims": "grounded",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "make hauling the treasure back harder than grabbing it",
+  "burn down a supply die right before a cold camp",
+  "show signs of an earlier expedition that made the wrong call",
+  "let the environment behave like a living ecosystem, not an empty room",
+  "tempt them one layer deeper when their packs are nearly full"
+ ],
+ "tags": [
+  "dungeon",
+  "expedition",
+  "relics",
+  "supplies",
+  "depths",
+  "exploration"
+ ],
+ "fits": [
+  "delving a bottomless chasm",
+  "relic hunters in a megadungeon",
+  "camping and cooking underground",
+  "hauling treasure back to town",
+  "cursed ruins that shift",
+  "deeper layers get stranger"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted",
+  "going down is easy compared to getting back up alive"
+ ]
+}

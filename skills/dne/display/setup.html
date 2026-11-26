@@ -182,6 +182,7 @@ const DIALS = [
 const LISTS = [["lines", "Lines: never in the story"], ["veils", "Veils: may happen, off screen"]];
 // Braid genre presets (data/genres/*.json; a test keeps this in step): id, name, early, modules
 const GENRES = [
+  ["abyss-delve", "Abyssal delve (megadungeon expedition)", true, ["usage_die", "doom", "position_effect"]],
   ["analog-horror", "Analog horror (found footage, broadcasts)", true, ["composure", "doom"]],
   ["comedy", "Comedy / gonzo", false, ["mooks"]],
   ["competition", "Competition / courtroom", true, ["contest"]],
@@ -195,9 +196,12 @@ const GENRES = [
   ["kids-adventure", "Kids on bikes / coming of age", true, ["labels", "strings", "clues"]],
   ["litrpg", "LitRPG / another world", true, ["status_window", "mooks"]],
   ["mafia", "Crime family / gangster", true, ["heat", "strings", "roles"]],
+  ["magic-academy", "Magic academy", true, ["labels", "strings", "seasons"]],
   ["mystery", "Mystery", false, ["clues", "gm_budget"]],
   ["pirates", "Pirates / high seas", true, ["usage_die", "vows", "mooks"]],
+  ["portal-fantasy", "Portal Fantasy", true, ["vows", "position_effect"]],
   ["post-apoc", "Post-apocalypse", true, ["usage_die", "seasons", "vows"]],
+  ["road-trip", "Road Trip", true, ["vows", "emotions"]],
   ["romance", "Romance / drama", false, ["strings", "emotions"]],
   ["sci-fi", "Hard science fiction", false, ["usage_die", "vows"]],
   ["slasher", "Survival horror (slasher)", false, ["panic", "doom", "usage_die"]],
@@ -209,6 +213,7 @@ const GENRES = [
   ["thriller", "Psychological thriller / twist", true, ["clues", "memories", "gm_budget"]],
   ["timeloop", "Time loop", false, ["loop"]],
   ["traitor", "Traitor among us", false, ["roles"]],
+  ["urban-occult", "Urban occult (night world)", true, ["strings", "heat", "emotions"]],
   ["war", "War", false, ["war_layer", "position_effect", "usage_die"]],
   ["western", "Western / frontier", true, ["usage_die", "vows", "heat"]],
   ["wuxia", "Wuxia / cultivation", true, ["realm", "mooks", "vows"]],

@@ -15,7 +15,7 @@ Dungeons & Everything has no genre menu. At `/dne new` you describe the story yo
 ## How it works
 
 1. You type `/dne new <name>` and describe the story. One line is enough; a full page is fine too.
-2. The GM matches your description against 30 **genre presets**, and mixes them when your story is more than one thing. A preset is a bundle of small rules (a composure track for horror, heat after a loud job, seasons for a village), not a box your story has to fit. It takes up to five that are closest, the strongest first.
+2. The GM matches your description against 35 **genre presets**, and mixes them when your story is more than one thing. A preset is a bundle of small rules (a composure track for horror, heat after a loud job, seasons for a village), not a box your story has to fit. It takes up to five that are closest, the strongest first.
 3. It pitches the result back in plain words: one line per rule and why it suits your story. No codes, no categories.
 4. You say what to change. Then the GM builds the world, and a story generator rolls the bones of the plot so it does not repeat your last campaign.
 
@@ -382,11 +382,56 @@ Family, territory, loyalty, and the law closing in.
 - **Rules:** **heat** from the police and rivals; **strings**: loyalty and debts inside the family; **secret roles**: the informant is dealt under a seal. Optional: position and effect, a complication budget, emotions.
 - **Defaults:** noir voice, mixed pacing, hard difficulty, `declare` claims, content suggested at 18.
 
+### Portal fantasy *(early)*
+
+Ordinary people cross into another world, owe something on arrival, and have to choose which world is home.
+
+- **Say things like:** another world, a doorway, summoned, stranded, crossing over, *we want to get home* (with no game system: for levels and status screens, see LitRPG).
+- **Try:** *"Three office workers take the last night bus and get off at a second dawn, in a town that packs its houses onto sleds."* · *"A family's old wardrobe opens onto a salt orchard, and the people there think we owe them for the fruit we ate."*
+- **Rules:** **vows**: the promise to get home (or to stay); position and effect. Optional: emotions, realms, a status window.
+- **Defaults:** pulp voice, constant pressure, standard difficulty, `declare` claims.
+
+### Road trip *(early)*
+
+The journey is the story: stops, detours, and what the travelers say to each other on the way.
+
+- **Say things like:** road trip, one last drive, a journey, a tour, a pilgrimage, stops along the way.
+- **Try:** *"Four old classmates drive from Bangkok to Mae Hong Son for a friend's last exhibition, one stop a session."* · *"A touring band on a tiny budget, ten gigs in ten towns, and a van that might not make it."*
+- **Rules:** **vows**: the promise to arrive; **emotions**: what is left unsaid weighs on the roll until it is said. Optional: usage dice for fuel and money, a complication budget, contests.
+- **Defaults:** plain voice, mixed pacing, easy difficulty.
+
+### Abyssal delve *(early)*
+
+A chasm with layers, a strange ecology, and getting back up is the hard part.
+
+- **Say things like:** megadungeon, delve, the depths, expedition, relic hunters, camping underground, *deeper layers get stranger*.
+- **Try:** *"Relic hunters from a rim town go down the great sinkhole to bring back a sister's compass from the fourth tier."* · *"An expedition into a cave system under Isan, where the deeper you go, the slower time runs."*
+- **Rules:** **usage dice** for lamp oil, rope and food; **doom**: every risk in the deep draws something closer; position and effect. Optional: mooks, vows, a complication budget.
+- **Defaults:** pulp voice, constant pressure, hard difficulty.
+
+### Urban occult / night world *(early)*
+
+The city has a second life after dark: clans, exorcists, and a truce nobody fully trusts.
+
+- **Say things like:** vampires, night clans, exorcists, a secret supernatural world, a truce, blood debts, *the mortals mustn't know*.
+- **Try:** *"Night-shift exorcists in Bangkok, and someone is selling cursed amulets at the Chatuchak night market."* · *"A neutral-ground jazz club, three rival families, and a regent burned to ash in a locked lift."*
+- **Rules:** **strings**: favours and blood debts; **heat**: every loud night draws the police and the clans; **emotions**. Optional: doom, mooks, vows.
+- **Defaults:** noir voice, mixed pacing, hard difficulty, content suggested at 18, romance suggested at `fade`.
+
+### Magic academy *(early)*
+
+Classes, houses, curfew, and something old behind the classroom wall.
+
+- **Say things like:** magic school, academy, students, houses, exams, curfew, a secret society on campus.
+- **Try:** *"First year at a magic school built on a storm cloud. The top graduate vanished during last year's final exam."* · *"Scholarship students at a school of talisman calligraphy, and someone is selling exam charms that eat memories."*
+- **Rules:** **identity labels**: who each student is becoming; **strings** with rivals and friends; **seasons**: the term turns and brings exams and holidays. Optional: clues, contests, emotions.
+- **Defaults:** banter voice, mixed pacing, standard difficulty, `declare` claims.
+
 ## When nothing fits
 
 A description no preset matches still works. The GM starts from the nearest preset and swaps rules, or uses plain Braid with only the rules your story needs. Some examples:
 
-- *"A road trip with friends, one stop a session"*: cozy's strings, usage dice for money and fuel, vows for the destination.
+- *"A cooking show where we are the contestants and the judges"*: competition's contests with cozy's easy difficulty and `open` claims.
 - *"An ordinary year in an ordinary family"*: cozy's seasons and strings, nothing else.
 - *"A mockumentary about our office"*: comedy with `open` claims and no fights; the camera crew is part of the joke.
 - *"A documentary about our own town"*: historical, low danger, `open` claims so you bring the stories.

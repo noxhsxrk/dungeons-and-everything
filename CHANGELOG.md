@@ -13,7 +13,7 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 - Every genre preset lists the stories it `fits` (creepypasta, first contact, documentary, isekai…); `genres.py list` prints them for the GM.
 
 ### Added
-- 12 new genre presets (all marked early), each with its own story-generator table: survival, Thai ghost story / folk horror, psychological thriller / twist, spy, post-apocalypse, superheroes, western, kids on bikes / coming of age, court intrigue, pirates, kaiju / giant robots, crime family. Western and pirates drop era-breaking things (radios, phones, engines) from the genres they are mixed with. 30 presets in all; no new modules.
+- 12 new genre presets (all marked early), each with its own story-generator table: survival, Thai ghost story / folk horror, psychological thriller / twist, spy, post-apocalypse, superheroes, western, kids on bikes / coming of age, court intrigue, pirates, kaiju / giant robots, crime family; and from an outside brainstorm, reviewed and normalised: portal fantasy, road trip, abyssal delve, urban occult, magic academy. Western and pirates drop era-breaking things (radios, phones, engines) from the genres they are mixed with. 35 presets in all; no new modules.
 - `ANY_GENRE.md` / `ANY_GENRE.th.md`: how to prompt for the story you want, mixing genres, and every preset with example prompts.
 
 ## [2.0.0-alpha] — 2026-11-26 — Braid: any genre
