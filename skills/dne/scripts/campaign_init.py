@@ -270,7 +270,12 @@ def _calendar_error(cal: dict) -> "str | None":
 
 
 def _run(env: dict, script: str, *args: str) -> "tuple[int, str]":
-    r = subprocess.run([sys.executable, str(HERE / script), *args], capture_output=True, text=True, encoding="utf-8",
+    cmd = [sys.executable, str(HERE / script), *args]
+    if os.name != "nt":
+        # A non-UTF-8 POSIX locale can't put Thai month names in argv: send UTF-8 bytes, and the child reads them as UTF-8.
+        cmd = [os.fsencode(cmd[0]), os.fsencode(cmd[1]), *(a.encode("utf-8") for a in args)]
+        env = {**env, "PYTHONUTF8": "1"}
+    r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
                        errors="replace", env=env)
     return r.returncode, (r.stdout + r.stderr).strip()
 
