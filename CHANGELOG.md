@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [2.0.2-alpha] — 2026-11-26 — Mix eras, fair clues
+
 ### Fixed
 - A player who says **D&D** at `/dne new` gets classic 5e with no genre preset, as before 2.0; a 5e world never takes a preset's `when_down` (death saves stay 5e's).
 - A story no preset fits writes its modules into the seed's flags (the World engine path), so they are no longer lost; a `/dne new` theme is the players' answer and is not asked again.
