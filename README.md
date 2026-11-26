@@ -1,20 +1,21 @@
 <div align="center">
   <img src="docs/images/hero.jpg" alt="Dungeons & Everything — a glowing d20 whose faces show neon Bangkok, a Thai temple, a Weird West town, a 1990s small town and a starship diving into a sun" width="100%">
 
-  <h3>Describe any world. Your AI Game Master builds it, runs it, and plays everyone in it.</h3>
-  <p>Dungeons &amp; Everything is a Game Master skill for any AI coding agent, running on the <b>Unrolled Engine</b>:<br>a d20 engine with a 5e SRD core and a world that keeps moving when the party isn't looking.</p>
+  <h3>Describe any story. Your AI Game Master builds it, runs it, and plays everyone in it.</h3>
+  <p>Dungeons &amp; Everything is a Game Master skill for any AI coding agent, running on the <b>Unrolled Engine</b>:<br>a murder mystery, a heist, a slasher night, a cozy village or a D&amp;D dungeon, each on rules made for it,<br>and a world that keeps moving when the party isn't looking.</p>
 
   <p>
     <a href="https://github.com/noxhsxrk/dungeons-and-everything/actions/workflows/tests.yml"><img src="https://github.com/noxhsxrk/dungeons-and-everything/actions/workflows/tests.yml/badge.svg" alt="tests"></a>
-    <a href="https://github.com/noxhsxrk/dungeons-and-everything/releases/latest"><img src="https://img.shields.io/github/v/release/noxhsxrk/dungeons-and-everything" alt="latest release"></a>
+    <a href="https://github.com/noxhsxrk/dungeons-and-everything/releases"><img src="https://img.shields.io/github/v/release/noxhsxrk/dungeons-and-everything?include_prereleases&label=release" alt="newest release"></a>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/noxhsxrk/dungeons-and-everything" alt="license: AGPL-3.0"></a>
     <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+">
   </p>
 
   <p>
     <a href="#quick-start">Quick start</a> ·
+    <a href="#any-genre">Any genre</a> ·
+    <a href="#three-ways-to-play">Three ways to play</a> ·
     <a href="#what-the-engine-does">What the engine does</a> ·
-    <a href="#play-any-genre-with-braid-alpha">Any genre</a> ·
     <a href="#play-together">Play together</a> ·
     <a href="#install">Install</a> ·
     <a href="README.th.md">ภาษาไทย</a>
@@ -22,6 +23,8 @@
 </div>
 
 ---
+
+> **2.0.0-alpha.** This is the first release that plays any genre. The 5e side is unchanged from 1.8.6; the new rules are young and their numbers will move. If you want only the stable 5e engine, `git checkout v1.8.6` after cloning.
 
 ## Quick start
 
@@ -33,8 +36,8 @@ cd ~/dungeons-and-everything && python3 install.py     # sets up every AI agent 
 Then, in your agent (Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copilot, Cursor …):
 
 ```
-/dne new hollow-9          # describe your world
-/dne character new         # build a character from that world's origins and classes
+/dne new hollow-9          # describe the story, pick its genres and its rules
+/dne character new         # make a character for that world
 /dne load hollow-9         # play: type what your character does
 ```
 
@@ -44,18 +47,87 @@ Python 3.10+. For the TV and phone display: `pip3 install flask flask-cors numpy
 
 <sub>Five worlds built and played while testing: <b>Neon Krung</b> (Bangkok 2077) · <b>Himmapan</b> (mythic Ayutthaya) · <b>Iron Hymn</b> (Weird West, 1881) · <b>Cedar Falls</b> (1994, no powers at all) · <b>Perihelion</b> (hard sci-fi on the 2024 rules).</sub>
 
+## Any genre
+
+At `/dne new` you describe the story and pick one to five genres, the main one first. Each genre switches on the small rules it needs; the table can add or drop any of them.
+
+| Kind | Genre | What it switches on |
+|---|---|---|
+| **Plot** (what the story is about) | Mystery | clues placed so the case stays solvable; a budget of complications the GM may bring in |
+| | Heist | position and effect, one plan with one detail and then straight in, heat after a loud job |
+| | War | a war layer (time, pressure, morale and supply), position and effect, usage dice for what runs short |
+| | Competition / courtroom | contests: races, countdowns, concessions |
+| **Mood** (how it feels) | Cosmic horror | composure that frays; clues |
+| | Slasher | panic, a doom track, supplies that run out |
+| | Analog horror *(early)* | composure and doom, told through tapes and broadcasts |
+| | Romance / drama | strings one character holds on another, feelings that weigh on a roll until acted on |
+| | Cozy | seasons that turn with the calendar, strings with the neighbours |
+| | Comedy / gonzo | nameless mooks that come in groups |
+| **Setting** (where it happens) | Fantasy | vows on a progress track, usage dice for torches and rations |
+| | Hard sci-fi | usage dice for air, fuel and parts; vows |
+| | Space opera / cyberpunk | position and effect, heat, mooks |
+| | Wuxia / cultivation *(early)* | realms and tribulations, mooks, vows |
+| | LitRPG *(early)* | a status window that announces every change; mooks |
+| | Historical / docudrama | usage dice for what runs short |
+| **Frame** (how the story is built) | Time loop | the same day again: the engine rewinds the world, the characters remember |
+| | Traitor among us | secret roles dealt under a seal anyone can check at the end |
+
+**Mixing.** *Slasher + romance*, *heist + wuxia*, *mystery + time loop + cozy* all work. The first genre leads. When two genres disagree (a cozy pace inside a war), the engine names the clash and the table picks. Two plot genres at once ask which one drives the story.
+
+**A different story every time.** The story generator rolls a skeleton (the crime, the victim, who did it, why, how, the twist, the red herring) from each genre's own lists and remembers past campaigns, so the hundredth murder is not the first one again. A mystery is checked before play: every place reachable, every conclusion backed by at least three clues in at least two places, and still solvable in 95% of 1000 trials that hide a third of the clues.
+
+**Who decides what is true.** The `claims` dial sets what a player's *"actually, there's a back door"* does: `grounded` (true only if the world supports it or a roll says so), `declare` (small details just become true, big ones cost a token) or `open` (the players co-write the world).
+
+The genres live in [`data/genres/`](skills/dne/data/genres/), the 23 modules in [`data/modules/`](skills/dne/data/modules/) (`modules.py list` shows them all).
+
+## Three ways to play
+
+Each campaign picks its rules once, at `/dne new`.
+
+| | **Braid** (default for a new world) | **Story mode** | **5e** |
+|---|---|---|---|
+| The roll | 2d6 + an approach | the oracle: *likely*, *50/50*, *unlikely* | d20 + modifier against a DC |
+| The sheet | five approaches, labels, a drive and a flaw, harm 0–4, stress 0–6, bonds | the Braid sheet; an approach only sets the odds | full 5e: ability scores, class, level, HP, AC, spell slots |
+| Enemies | a threat 1–5 and the moves it makes | as in Braid | stat blocks from the SRD or your World Kit |
+| Best for | any genre, short or long | tables that never want to see dice | dungeons, tactical fights, D&D campaigns |
+
+**Braid** is our own ruleset: one roll for every genre. You roll 2d6 plus one of five approaches (Force, Finesse, Wits, Heart, Grit) and read a five-step ladder:
+
+| 3 or less | 4–6 | 7–9 | 10–11 | 12+ |
+|---|---|---|---|---|
+| critical failure | failure | success at a cost | success | critical success |
+
+The cost is named before the dice, so a 7–9 is a choice, not a surprise. Push for +1 at the price of stress, get +1 help from someone you share a bond with, spend a token to move a result one step up. Experience comes from playing your drive and your flaw, from failing and from milestones. The rules are in [`SKILL-core.md`](skills/dne/SKILL-core.md); every number is in [`data/braid.json`](skills/dne/data/braid.json).
+
+**5e** campaigns play exactly as before: say "D&D" or "5e" at `/dne new`. Existing saves are stamped `**System:** d20` once, with a backup, the next time they load.
+
+Braid borrows ideas from many games (the five-step ladder, push and help, usage dice, clocks, progress tracks, the oracle) and writes all of them in its own words; [`THIRD_PARTY.md`](THIRD_PARTY.md) lists every outside source we use. Braid is not compatible with, or endorsed by, any other game.
+
 ## What the engine does
 
 An AI that improvises everything forgets the rules, the prices and who owed whom by the third session. The Unrolled Engine keeps all of that in scripts the Game Master has to go through, so the AI tells the story and the engine keeps it honest. The name is a nod to the big game engines: a world that hasn't been rolled yet, unrolled one day at a time.
 
 ### 1. Rules that are computed, not guessed
 
-- **Dice, attacks, damage, conditions, hit points, rests, XP and money** all come from scripts, with the math shown. A player can roll their own dice and type the result.
+- **Every roll goes through one resolver**, Braid, story or 5e, with the math shown. A player can roll their own dice and type the result.
+- **Tracks, clocks, pools and conditions are engine records**: stress, heat, doom, a cultivation stage or a 5e spell slot changes only through an engine action, and shows on the display.
 - **Every turn can be rewound** (`/dne undo`), files and all, and a late message from a rewound turn can't change the present.
-- **2014 or 2024 rules** (SRD 5.1 or 5.2) per campaign.
-- **Fights that make sense.** Encounters are balanced from the world's own bestiary; enemies see only what is in their line of sight, take cover, retreat when broken, and spend only the actions and resources they have. Areas (spheres, cubes, lines, cones) are sheltered by walls. A fight can end when its point is settled (the witness is safe), not when the last hit point is gone.
+- **5e in full:** attacks, damage, conditions, rests, XP and money from scripts; 2014 or 2024 rules (SRD 5.1 or 5.2) per campaign; enemies that see only what is in their line of sight, take cover, retreat when broken and spend only what they have; a fight that ends when its point is settled, not when the last hit point is gone.
 
-### 2. A rulebook for any world (the World Kit)
+### 2. A world that lives on its own
+
+Braid campaigns always run on it; 5e campaigns can switch it on at `/dne new` (or later, with a backup first).
+
+- **One clock for everything.** In-world time passes only through the engine. What was set in motion arrives when it is due, a rest or a journey stops for the players to decide when something comes up, and a month skipped at once ends in exactly the same world as thirty single days.
+- **Turns that survive.** Input is stored once, a roll is made once, a message is shown once. A crash or a compacted chat picks up where it stopped.
+- **Roads, caravans and markets.** Who holds a bridge, what it costs to cross, whether the flour arrives. Prices state their reason; the last sack goes to one buyer.
+- **Nobody knows what they weren't told.** News travels by rider, rumour or radio and can be intercepted. NPCs keep appointments; factions plan from what they have actually heard.
+- **Communities that keep themselves alive.** Machines wear and fail, whoever has the skill takes over, a shortage brings a rota, and what the trouble made stays.
+- **New worlds ready on turn one.** `/dne new` collects the whole world into one seed that the engine checks (every problem comes back with where to fix it) and builds in one go.
+
+The contract every engine module keeps is in [`world_db.py`](skills/dne/scripts/world_db.py); a playtest script is in [`docs/world-engine-playtest.md`](docs/world-engine-playtest.md).
+
+### 3. A rulebook for any world (the World Kit)
 
 Describe the world in a line or a full setting bible:
 
@@ -63,55 +135,29 @@ Describe the world in a line or a full setting bible:
 
 <img src="docs/images/eden.jpg" alt="Cross-section of a ruined city patrolled by robots, above an underground colony with a failing oxygen generator" width="100%">
 
-The engine turns that into the world's own rulebook, `worldkit.json`, and checks it before play:
+The engine turns that into the world's own rulebook, `worldkit.json`, and checks it before play. In Braid it holds the world's labels, gear and threats. In 5e it holds full origins, classes on a 5e chassis, re-skinned spells and items, threats with CR-correct XP, and the world's own words (spell → protocol, long rest → lockdown):
 
-| The world gets | Built as | In the EDEN example |
-|---|---|---|
-| Origins and classes | 5e traits; a world profession on a 5e **chassis** class | Tunnel-Born; Soldier *(fighter)*, Mechanic *(wizard)*, Medic *(cleric)* |
-| Subclasses and backgrounds | the world's own specialisations | Medic → Trauma Surgeon; Ex-EDEN Technician |
-| Powers and gear | 5e spells and items, re-skinned and priced | *Static Burst*; Rail Pistol (1d10) |
-| Threats | full stat blocks, CR-correct XP | Watcher CR ¼, Reaper CR 5, Titan CR 15 |
-| Language | renamed terms and skills | spell → protocol, long rest → lockdown, Arcana → Systems |
+| The world gets | In the EDEN example |
+|---|---|
+| Origins and classes *(5e)* / labels *(Braid)* | Tunnel-Born; Soldier, Mechanic, Medic |
+| Powers and gear | *Static Burst*; Rail Pistol |
+| Threats | Watcher, Reaper, Titan |
+| Language | spell → protocol, Arcana → Systems |
 
-The character builder, rules lookup, encounter generator and display all read from your world first. Say **"classic fantasy"** to play on the bundled 5e SRD. Example kit: [`worldkit.example.json`](skills/dne/templates/worldkit.example.json).
+Say **"classic fantasy"** to play on the bundled 5e SRD. Example kit: [`worldkit.example.json`](skills/dne/templates/worldkit.example.json).
 
-### 3. Table rules from other great games, switch by switch
+### 4. Table rules for 5e, switch by switch
 
 <img src="docs/images/rules.jpg" alt="A game master's table: a d20 beside five glowing tokens from red to gold, a chase track, bond and flaw cards, a med kit, hero coins and a notebook of monster numbers" width="100%">
 
-Success at a cost and five degrees of success, playbook moves and bonds (PbtA), flaws, reaction rolls and tech levels (GURPS), Hero Points and Victory Points for chases and heists (PF2e), faction turns, monster morale and place tags (WWN). Each one is rebuilt on the d20 core and switched per campaign. Reference: [`SKILL-table-rules.md`](skills/dne/SKILL-table-rules.md).
-
-### 4. A world that lives on its own (opt-in)
-
-Answer *yes* to "should the world live on its own?" at `/dne new` (or enable it on an existing campaign; it is backed up first). Then:
-
-- **One clock for everything.** In-world time passes only through the engine. What was set in motion arrives when it is due, a rest or a journey stops for the players to decide when something comes up, and a month skipped at once ends in exactly the same world as thirty single days.
-- **Turns that survive.** Input is stored once, a roll is made once, a message is shown once. A crash or a compacted chat picks up where it stopped. When a turn finishes, the engine records what the narration stands on and keeps a block in `state.md` that any agent can read.
-- **Roads, caravans and markets.** Who holds a bridge, what it costs to cross, whether the flour arrives. Prices state their reason; the last sack goes to one buyer.
-- **Nobody knows what they weren't told.** News travels by rider, rumour or radio and can be intercepted. NPCs keep appointments and turn back at a closed road; factions plan from what they have actually heard.
-- **Each world declares its own work.** A forge that needs coal, a ferry that can't land in a flood, a heist crew: tasks wait for what they lack, reserve their materials, and are cancelled when the world changes under them.
-- **Communities that keep themselves alive.** Machines wear and fail; whoever is there with the skill takes over; the council rules; a shortage brings a rota, a neighbour offers a pact, and what the trouble made stays. Every day writes who did what, why they could, and what it left.
-- **New worlds ready on turn one.** `/dne new` can collect the whole world into one seed that the engine checks (every problem comes back with where to fix it) and builds in one go.
-
-It is experimental. The contract every engine module keeps is in [`world_db.py`](skills/dne/scripts/world_db.py); a playtest script is in [`docs/world-engine-playtest.md`](docs/world-engine-playtest.md).
+A 5e table can still mix in rules from other games: success at a cost and degrees of success, playbook moves and bonds, flaws, reaction rolls and tech levels, hero points and victory points for chases and heists, faction turns, monster morale and place tags. Each one is rebuilt on the d20 core and switched per campaign. Reference: [`SKILL-table-rules.md`](skills/dne/SKILL-table-rules.md).
 
 ### 5. A Game Master that is held to account
 
 - **NPCs are real records** the moment they appear: stats, aliases, voice, history. They grow while the party is away.
-- **A note with every player action** tells the GM what is due (a save, an XP award, a clock out of step) and which rules apply right now.
+- **A note with every player action** tells the GM what is due (a save, an XP award, a clock out of step) and which rules apply right now. A Braid GM is never pointed at a 5e script.
 - **A style guard** catches repeated phrases, feelings narrated for the players and talking past the moment to stop; a **spark** every few turns offers an idea the GM may drop.
-- **Your table's limits.** Content `standard`, `18` or `20`; romance `off`, `fade` or `open` (adults only); lines and veils; anyone can type `x` to skip a moment.
-
-## Play any genre with Braid (alpha)
-
-Not every story wants hit points and spell slots. From 2.0 a campaign can run on **Braid**, our own light rules for any genre, instead of 5e:
-
-- **One roll.** 2d6 plus one of five approaches (Force, Finesse, Wits, Heart, Grit). 10+ you do it, 7–9 you do it at a cost named before the dice, 6 or less it goes wrong. Harm and stress instead of hit points; an enemy is a threat from 1 to 5. Or play **story mode**: no numbers on the sheet, the oracle answers every risk.
-- **Pick your genres.** Run `/dne new`, describe the world and pick one to five of 18 genres, the main one first: mystery, heist, war, competition, cosmic horror, slasher, analog horror, romance, cozy, comedy, fantasy, hard sci-fi, space opera, wuxia, LitRPG, historical, time loop, traitor among us. Each genre switches on the small rules it needs (a mind that frays in horror, heat after a loud job, seasons in a cozy village, a day that resets in a time loop, sealed secret roles in a traitor game), and the table can add or drop any of them. When mixed genres disagree, the engine says where, and the table picks.
-- **A story that holds together.** The story generator rolls the skeleton of the story so it does not repeat the last one, and checks that a mystery stays solvable even when the players miss a third of the clues.
-- **Your 5e campaigns play as before.** Say "D&D" or "5e" at `/dne new` to play on the 5e rules as before.
-
-It is an alpha: the numbers are our starting values and will change with play, and wuxia, LitRPG, analog horror and competition are marked *early*. The rules are in [`SKILL-core.md`](skills/dne/SKILL-core.md), the genres in [`data/genres/`](skills/dne/data/genres/), and what changed in the [changelog](CHANGELOG.md).
+- **Your table's limits.** Content `standard`, `18` or `20`; romance `off`, `fade` or `open` (adults only); lines and veils; anyone can type `x` to skip a moment. The Table Settings page (`setup.html`) sets the dials with ticks instead of typing.
 
 ## Play together
 
@@ -188,7 +234,7 @@ python3 -m venv .venv && .venv/bin/pip install pytest flask flask-cors pyyaml
 .venv/bin/python -m pytest tests/ -q
 ```
 
-The Game Master is [`SKILL.md`](skills/dne/SKILL.md) (core rules), [`SKILL-commands.md`](skills/dne/SKILL-commands.md) (every `/dne` procedure) and [`SKILL-scripts.md`](skills/dne/SKILL-scripts.md) (script reference); the engine is in [`skills/dne/scripts/`](skills/dne/scripts/), the display in [`skills/dne/display/`](skills/dne/display/). Read [CONTRIBUTING.md](CONTRIBUTING.md) before a pull request, and [CHANGELOG.md](CHANGELOG.md) for what changed.
+The Game Master is [`SKILL.md`](skills/dne/SKILL.md) (core rules and the 5e Game Master), [`SKILL-core.md`](skills/dne/SKILL-core.md) (Braid), [`SKILL-commands.md`](skills/dne/SKILL-commands.md) (every `/dne` procedure) and [`SKILL-scripts.md`](skills/dne/SKILL-scripts.md) (script reference); the engine is in [`skills/dne/scripts/`](skills/dne/scripts/), the display in [`skills/dne/display/`](skills/dne/display/). Read [CONTRIBUTING.md](CONTRIBUTING.md) before a pull request, and [CHANGELOG.md](CHANGELOG.md) for what changed.
 
 ## Support
 
