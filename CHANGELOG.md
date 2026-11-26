@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [2.0.4-alpha] — 2026-11-26 — Kit content for every genre
+
 ### Added
 - **Genre-tagged kit content** (`data/content.json`, `content.py <genres>`): 73 labels, 34 pieces of gear and 69 threats, each tagged with the genres it fits. A mix draws from the union, the main genre first, with the era bans applied (`--mix-eras` keeps everything). `/dne new` step 7 (Braid) starts the World Kit from it.
 - `story_gen.py skeleton --drives <genre>`: the thread that leads, when it is not the first plot genre.
