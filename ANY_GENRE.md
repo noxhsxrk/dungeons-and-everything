@@ -15,7 +15,7 @@ Dungeons & Everything has no genre menu. At `/dne new` you describe the story yo
 ## How it works
 
 1. You type `/dne new <name>` and describe the story. One line is enough; a full page is fine too.
-2. The GM matches your description against 18 **genre presets**, and mixes them when your story is more than one thing. A preset is a bundle of small rules (a composure track for horror, heat after a loud job, seasons for a village), not a box your story has to fit. It takes up to five that are closest, the strongest first.
+2. The GM matches your description against 30 **genre presets**, and mixes them when your story is more than one thing. A preset is a bundle of small rules (a composure track for horror, heat after a loud job, seasons for a village), not a box your story has to fit. It takes up to five that are closest, the strongest first.
 3. It pitches the result back in plain words: one line per rule and why it suits your story. No codes, no categories.
 4. You say what to change. Then the GM builds the world, and a story generator rolls the bones of the plot so it does not repeat your last campaign.
 
@@ -40,6 +40,10 @@ The best stories are rarely one thing. Describe a story that is two or three thi
 | *"A data heist on a corporate arcology in neon Bangkok."* | heist + space opera | position and effect, engagement, heat, mooks |
 | *"A box of 1990s tapes holds the only clues to a disappearance."* | analog horror + mystery | composure, doom, clues |
 | *"A cooking contest whose two finalists used to be married."* | competition + romance | contests, strings, feelings |
+| *"A haunted rubber plantation in the deep south, and a death the police called an accident."* | Thai ghost story + mystery | composure, clues that stay solvable, a complication budget |
+| *"Two spies from rival agencies, posing as a married couple in Hanoi, slowly stop pretending."* | spy + romance | position and effect, heat, a sealed double agent; strings and feelings |
+| *"Plane crash on a jungle mountain. Six survivors, and one of them caused it."* | survival + traitor | usage dice, doom, a vow to get home, secret roles under a seal |
+| *"Four kids in a 1990s provincial town, and the cinema that shows a film nobody made."* | kids on bikes + cosmic horror | identity labels, strings, clues, composure |
 
 ### How the mix is decided
 
@@ -112,7 +116,7 @@ Each preset below lists what it plays like, words that point the GM at it, two e
 
 A case with one true answer, built so you cannot get stuck.
 
-- **Say things like:** detective, murder, whodunit, noir, cold case, twist, *who did it*.
+- **Say things like:** detective, murder, whodunit, noir, cold case, police, *who did it*.
 - **Try:** *"A noir murder in 1950s Bangkok. I'm a disgraced police captain; my partner is a reporter. The victim is a nightclub singer and everyone lies."* · *"A locked-room death at a mountain monastery. We're pilgrims snowed in with the killer."*
 - **Rules:** **clues**: the answer is fixed before play and checked so the case stays solvable even if you miss a third of the clues; **a complication budget**: the GM can bring in a few unasked troubles per session, and no more. Optional: *make the case* (no hidden answer: a well-argued theory becomes true), composure, secret roles.
 - **Defaults:** noir voice, mixed pacing, standard difficulty.
@@ -148,8 +152,8 @@ Two sides want the same thing, over several rounds.
 
 Small wrong details, things that should not be, knowledge that costs.
 
-- **Say things like:** horror, haunting, cult, the occult, folk horror, something unknowable.
-- **Try:** *"Folk horror in a northern village. The rice festival is coming and the elders are too calm."* · *"Researchers at an Antarctic station dig up a signal older than the ice."*
+- **Say things like:** horror, haunting, cult, the occult, an ancient god, something unknowable.
+- **Try:** *"A cult on a small island is waiting for something under the sea, and the ferry only comes on Sundays."* · *"Researchers at an Antarctic station dig up a signal older than the ice."*
 - **Rules:** **composure**: a 0–10 mind track that only goes down; seeing what should not be costs it; **clues**. Optional: doom, a time loop, memories.
 - **Defaults:** dread voice, slow pacing, hard difficulty, content suggested at 18.
 
@@ -157,7 +161,7 @@ Small wrong details, things that should not be, knowledge that costs.
 
 Something is hunting you and the night is long.
 
-- **Say things like:** survival, being hunted, a killer, zombies, creature, outbreak, disaster.
+- **Say things like:** being hunted, a killer, zombies, a creature, an outbreak, a home invasion.
 - **Try:** *"Six friends at a lake house. The ferry doesn't come back. Something in the woods is picking us off."* · *"A zombie outbreak in a Bangkok condo tower; we're on the 31st floor and the lifts are dead."*
 - **Rules:** **panic**: fear piles onto stress and the script rolls what you do when you break; **doom**: a party track that rises with every risk and brings disasters; **usage dice** for batteries, fuel, the last shell. Optional: a complication budget, mooks.
 - **Defaults:** dread voice, constant pressure, deadly, content suggested at 18.
@@ -211,7 +215,7 @@ Roads, ruins and old oaths.
 
 Distance, air and physics are the danger.
 
-- **Say things like:** sci-fi, space, first contact, aliens, colony, generation ship, post-apocalypse.
+- **Say things like:** sci-fi, space, first contact, aliens, colony, generation ship.
 - **Try:** *"First contact on a mining asteroid. The thing in the ice is answering our drills."* · *"A colony on Mars, year 12. The supply ship is late and the council is lying about why."*
 - **Rules:** **usage dice** for air, fuel and parts; **vows**. Optional: panic, a status window, position and effect.
 - **Defaults:** plain voice, mixed pacing, hard difficulty.
@@ -220,7 +224,7 @@ Distance, air and physics are the danger.
 
 Chrome, corps and crews on the run.
 
-- **Say things like:** space opera, cyberpunk, megacity, corporation, starship, mecha, pirates.
+- **Say things like:** space opera, cyberpunk, megacity, corporation, starship, rebellion, space pirates.
 - **Try:** *"Neon Bangkok 2077. We're couriers for a data broker; tonight's package is a person."* · *"A smuggler crew with a ship older than all of us and a debt to a syndicate."*
 - **Rules:** position and effect, **heat**, **mooks**. Optional: engagement, labels, vows.
 - **Defaults:** pulp voice, constant pressure, standard difficulty.
@@ -265,18 +269,126 @@ The same day again. The world forgets; you do not.
 
 One of you is not who they say.
 
-- **Say things like:** traitor, mole, spy, social deduction, werewolf or mafia game, *who can we trust*.
+- **Say things like:** traitor, mole, social deduction, werewolf or mafia game, *who can we trust*.
 - **Try:** *"An expedition crew on a stranded ship. One of us is working for the company that left us here."* · *"A resistance cell. Someone keeps tipping off the police."*
 - **Rules:** **secret roles**: the script deals roles under a seal, nobody (not even the GM) can move the traitor afterwards, and anyone can check the seal at the end. Optional: clues, a complication budget.
 - **Defaults:** noir voice, mixed pacing, standard difficulty.
+
+### Survival *(early)*
+
+No villain. The land, the weather and the group are the danger.
+
+- **Say things like:** survival, stranded, castaway, crash, flood, earthquake, lost at sea, a trek, *no help is coming*.
+- **Try:** *"Our tour bus went off a mountain road in the rainy season. No signal, the river is rising, and we have to get down on our own."* · *"We're the only survivors of a boat that sank in the Andaman Sea, washed up on an island with no people. Water and food are almost gone."*
+- **Rules:** **usage dice** for food, water and fuel; **doom**: the weather and the land close in with every risk; **vows**: the promise to get everyone home. Optional: panic, seasons, a complication budget.
+- **Defaults:** plain voice, constant pressure, hard difficulty.
+
+### Thai ghost story / folk horror *(early)*
+
+Spirits with a reason to stay, and a village that knows more than it says.
+
+- **Say things like:** ghost, phi pop, krasue, spirit house, a curse, a broken vow, karma, a haunted village, folk horror.
+- **Try:** *"I go back to my grandmother's village in Isan for her funeral, and people say there's a phi pop. Everyone's scared, but nobody will say whose body it's in."* · *"We just moved into a condo. They tore down the old spirit house to build it; now strange things happen every night, and the old guard says this used to be a graveyard."*
+- **Rules:** **composure**; **clues**: the wrong that keeps the spirit here can always be found. The story generator rolls the spirit, the wrong never set right, the taboo broken, who still knows the old ways, and the rite that could put it to rest. Optional: memories, doom, emotions.
+- **Defaults:** dread voice, slow pacing, hard difficulty, content suggested at 18.
+
+### Psychological thriller / twist *(early)*
+
+Someone close is lying, and your own memory is not on your side.
+
+- **Say things like:** thriller, twist, unreliable narrator, lost memory, gaslighting, a missing person, *I can't trust myself*.
+- **Try:** *"I wake up in hospital with no memory of that night. My husband says I crashed the car on my own, but there's a text on my phone I don't remember sending."* · *"My sister went missing a week ago. Everyone says she ran away. I'm sure someone is lying, and the more I dig, the less sure I am of myself."*
+- **Rules:** **clues**; **memories**: a mind holds only five, and what it lets go is gone; **a complication budget**. The twist is rolled (or pinned by you) before play. Optional: composure, secret roles, *make the case*.
+- **Defaults:** noir voice, mixed pacing, hard difficulty.
+
+### Spy / espionage *(early)*
+
+Covers, assets, and a handler who may not be on your side.
+
+- **Say things like:** spy, agent, undercover, double agent, defection, handler, extraction, cold war.
+- **Try:** *"We're spies posing as hotel staff in Bangkok. The job is to steal a minister's bribe ledger before the summit, but the handler thinks one of us is a double agent."* · *"Get a defecting scientist across the Mekong before dawn while the other side's agents close in."*
+- **Rules:** position and effect; **heat**: every loud move draws attention; **secret roles**: the double agent is dealt under a seal. Optional: engagement, strings, clues.
+- **Defaults:** noir voice, mixed pacing, standard difficulty, `declare` claims (*"I planted a contact there last year"*).
+
+### Post-apocalypse *(early)*
+
+After the end: what is left, and what is worth rebuilding.
+
+- **Say things like:** post-apocalypse, wasteland, after the end, survivors, scavenging, a settlement, rebuilding.
+- **Try:** *"Ten years after the grid died, we run a walled-in school and the well is going bad."* · *"We scavenge the drowned city for medicine and have to deal with the river gangs."*
+- **Rules:** **usage dice** for what is scarce; **seasons**: winters and harvests set the year; **vows** to rebuild. Optional: a war layer, mooks, panic.
+- **Defaults:** plain voice, mixed pacing, hard difficulty.
+
+### Superheroes *(early)*
+
+Powers with a price, a city that is not sure it wants you, and a secret identity.
+
+- **Say things like:** superhero, powers, vigilante, a hero team, a villain, a secret identity.
+- **Try:** *"I'm a college student with powers, and every time I use them I lose a memory."* · *"A hero team in Bangkok that the city blames for the last flood."*
+- **Rules:** **identity labels**: who you are in your own eyes and the city's, shifting with what you do; **mooks** to throw around; **strings** with the people who know your secret. Optional: emotions, heat, vows.
+- **Defaults:** pulp voice, constant pressure, standard difficulty, `declare` claims.
+
+### Western / frontier *(early)*
+
+Dust, water rights, outlaws and the railroad coming.
+
+- **Say things like:** western, frontier, cowboy, outlaw, sheriff, gunfight, ranch, railroad town.
+- **Try:** *"A dusty frontier town. A cattle baron owns the water, and the railroad is coming."* · *"An old outlaw trying to clear his name before the showdown at noon."*
+- **Rules:** **usage dice** for bullets, water and feed; **vows**; **heat**: the law and the bounty hunters. Mixed with other genres, the era drops what it cannot have (radios, phones, cars).
+- **Defaults:** plain voice, constant pressure, hard difficulty.
+
+### Kids on bikes / coming of age *(early)*
+
+A summer, a small town, and a secret the grown-ups won't see.
+
+- **Say things like:** kids, teens, summer break, a gang of friends, a small town, growing up, *the adults don't believe us*.
+- **Try:** *"A gang of kids in a small town over summer break finds something in the woods the grown-ups won't believe."* · *"Teenagers in an Isan railway town, the last summer before one of us moves away."*
+- **Rules:** **identity labels** for who each kid is becoming; **strings** between friends; **clues** to the secret. Optional: emotions, composure, seasons.
+- **Defaults:** banter voice, mixed pacing, standard difficulty, `declare` claims.
+
+### Court intrigue / politics *(early)*
+
+The throne, the council, the vote: won with favours, secrets and poison.
+
+- **Say things like:** court, palace, succession, heir, council, scheming nobles, a royal marriage, an election.
+- **Try:** *"A dying king, three heirs, and every one of us owes a favour to someone at court. We have until the coronation."* · *"I play a lady-in-waiting who knows who poisoned the queen, and has to decide who to sell that secret to."*
+- **Rules:** **strings**: favours and secrets held over each other; **secret roles**: who is really loyal to whom; **a complication budget**. Optional: emotions, clues, *make the case*.
+- **Defaults:** noir voice, slow pacing, standard difficulty.
+
+### Pirates / high seas *(early)*
+
+A ship, a crew that might mutiny, and something worth sailing for.
+
+- **Say things like:** pirates, ship, crew, captain, treasure, smugglers, navy, mutiny, the high seas.
+- **Try:** *"A ragged pirate crew with a stolen sloop and half a treasure map, and a navy frigate two days behind us."* · *"Smugglers in the Andaman Sea in monsoon season: storms, ports full of spies, and a captain nobody trusts."*
+- **Rules:** **usage dice** for water, powder and rations; **vows**; **mooks** for boarding fights. Mixed with other genres, the era drops engines, radios and phones.
+- **Defaults:** pulp voice, constant pressure, standard difficulty, `declare` claims.
+
+### Kaiju / giant robots *(early)*
+
+Something enormous comes out of the sea, and the city is in between.
+
+- **Say things like:** giant monster, kaiju, giant robot, mecha, pilot, a city under attack.
+- **Try:** *"A giant monster keeps rising out of the gulf, and we pilot the one machine that can still fight it."* · *"Bangkok is flooding because something huge is moving in the river, and we have to get the city out alive."*
+- **Rules:** **a war layer**: time, pressure, morale and supply between attacks; **mooks**; **doom**: every attack brings the city closer to the end. Optional: position and effect, strings, usage dice.
+- **Defaults:** pulp voice, constant pressure, hard difficulty.
+
+### Crime family / gangster *(early)*
+
+Family, territory, loyalty, and the law closing in.
+
+- **Say things like:** mafia, gangster, crime family, the mob, turf war, the boss, an informant.
+- **Try:** *"Our family runs the docks and the underground lottery. The old boss just died, and someone in the family is talking to the police."* · *"A rival family is moving on our night market, and there's a debt nobody will forgive."*
+- **Rules:** **heat** from the police and rivals; **strings**: loyalty and debts inside the family; **secret roles**: the informant is dealt under a seal. Optional: position and effect, a complication budget, emotions.
+- **Defaults:** noir voice, mixed pacing, hard difficulty, `declare` claims, content suggested at 18.
 
 ## When nothing fits
 
 A description no preset matches still works. The GM starts from the nearest preset and swaps rules, or uses plain Braid with only the rules your story needs. Some examples:
 
-- *"A survival trek across a frozen pass"*: usage dice for food and fuel, a doom track for the weather, no killer.
+- *"A road trip with friends, one stop a session"*: cozy's strings, usage dice for money and fuel, vows for the destination.
 - *"An ordinary year in an ordinary family"*: cozy's seasons and strings, nothing else.
-- *"A story that is mostly one big twist"*: a mystery with the twist pinned in the story generator.
+- *"A mockumentary about our office"*: comedy with `open` claims and no fights; the camera crew is part of the joke.
 - *"A documentary about our own town"*: historical, low danger, `open` claims so you bring the stories.
 
 If you are not sure what is possible, ask the GM *"what kind of stories could we play?"*. It answers with example stories, not a list.

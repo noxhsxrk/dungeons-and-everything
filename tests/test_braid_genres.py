@@ -111,7 +111,10 @@ class Presets(unittest.TestCase):
         self.assertEqual(set(cat), set(story_gen.genre_ids()))
         for gid in cat:
             self.assertEqual(genres.validate(gid), [], gid)
-        self.assertEqual({g for g, d in cat.items() if d["early"]}, {"wuxia", "litrpg", "analog-horror", "competition"})
+        self.assertEqual({g for g, d in cat.items() if d["early"]},
+                         {"wuxia", "litrpg", "analog-horror", "competition", "survival", "thai-ghost", "thriller", "spy",
+                          "post-apoc", "superhero", "western", "kids-adventure", "court-intrigue", "pirates", "kaiju",
+                          "mafia"})
         self.assertTrue(all(d["system"] == "core" for d in cat.values()))
         for kind in genres.KINDS:
             self.assertTrue(any(d["kind"] == kind for d in cat.values()), kind)

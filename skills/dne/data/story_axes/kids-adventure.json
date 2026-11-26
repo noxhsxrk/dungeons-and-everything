@@ -1,0 +1,91 @@
+{
+ "_about": "Kids on bikes and coming of age: children or teens, a small town, a summer, and a secret the adults won't see. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "mood",
+ "axes": {
+  "town": [
+   "a lake town where the tourists left",
+   "a mill town with one stoplight",
+   "a fishing village on the gulf of thailand",
+   "a suburb at the edge of a forest",
+   "a railway town in northern isan",
+   "a hill town above a quarry",
+   "a market town with a closed-down cinema",
+   "a beach town in the off season"
+  ],
+  "season": [
+   "the last summer before middle school",
+   "the long school break before the rains",
+   "the week the carnival came",
+   "a winter the snow never stopped",
+   "the songkran holidays, water everywhere",
+   "the summer the power plant opened",
+   "the month a kid went missing",
+   "the last year before someone moves away"
+  ],
+  "secret": [
+   "a light that moves in the old rice field at night",
+   "a door in the woods that was not there yesterday",
+   "a new kid who knows things no one told them",
+   "the lake gives back things people lost",
+   "a radio that picks up tomorrow's news",
+   "the abandoned shrine is lived in again",
+   "grown-ups who sleepwalk to the same place",
+   "a creature hiding in someone's shed"
+  ],
+  "deaf_adult": [
+   "a police chief who wants a quiet summer",
+   "a parent working two jobs",
+   "a teacher who calls it imagination",
+   "an older sibling who thinks it is a game",
+   "a monk who says to stop asking",
+   "a mayor whose company is involved",
+   "a grandmother who knows but will not say",
+   "a doctor who keeps prescribing rest"
+  ],
+  "friendship_strain": [
+   "one of them is moving away at the end of summer",
+   "an older kid wants the gang to grow up",
+   "a crush that splits the group",
+   "one family is falling apart at home",
+   "someone told the secret to a bully",
+   "a friend is getting famous at school",
+   "one of them is starting to forget",
+   "a fight about who is in charge"
+  ],
+  "hideout": [
+   "a treehouse built from crates",
+   "a storm drain big enough to stand in",
+   "the back room of a closed video shop",
+   "an empty water tower",
+   "a boat that does not float anymore",
+   "a spirit house clearing behind the temple",
+   "the attic of the haunted house",
+   "a railway car left on a siding"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "a weird thing only one kid sees",
+   "a pet that will not go near the woods"
+  ],
+  "2": [
+   "the secret follows one of them home",
+   "the adults start acting strange"
+  ],
+  "3": [
+   "someone in town goes missing",
+   "the gang is forbidden from seeing each other"
+  ],
+  "4": [
+   "they go in alone, at night, together",
+   "the secret must be faced before summer ends"
+  ]
+ },
+ "cliches": [
+  "the kid with glasses who knows science",
+  "the bully who becomes a friend at the end",
+  "the government van parked down the street",
+  "it was all a dream",
+  "the dog that senses danger first"
+ ]
+}

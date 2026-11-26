@@ -1,0 +1,91 @@
+{
+ "_about": "Survival: stranded by a crash, a wreck or a disaster, where the land, the weather and the group are the danger. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "plot",
+ "axes": {
+  "disaster": [
+   "a small plane down in the jungle canopy",
+   "a fishing boat sunk far from shore",
+   "a flash flood that took the bridge and the road",
+   "an earthquake that buried the town below",
+   "a bus off the road in a mountain pass",
+   "a trekking guide who never came back",
+   "a landslide that cut the valley off",
+   "a storm that wrecked the island resort"
+  ],
+  "place": [
+   "a limestone island in the Andaman Sea",
+   "teak forest in the hills along the Burmese border",
+   "a salt flat with no shade for days",
+   "a glacier valley above the tree line",
+   "a flooded river town in the monsoon",
+   "a mangrove coast at the turn of the tide",
+   "a frozen lake miles from any cabin",
+   "a canyon desert with one known spring"
+  ],
+  "shortage": [
+   "enough clean water for everyone",
+   "dry wood for a fire",
+   "food that will keep for days",
+   "a lighter with any gas left",
+   "boots that still hold together",
+   "medicine for a wound turning bad",
+   "warm clothes for the cold nights",
+   "hours of daylight to travel by"
+  ],
+  "hazard": [
+   "a river too fast to ford safely",
+   "monsoon rain that does not stop",
+   "a cold that creeps in after dark",
+   "heat that drops people by the afternoon",
+   "a cliff path that crumbles underfoot",
+   "fever from the bad water",
+   "aftershocks that bring down what is still standing",
+   "a storm front rolling in from the sea"
+  ],
+  "rift": [
+   "someone is hiding food from the others",
+   "the leader's plan is getting people hurt",
+   "one of them wants to stay put and wait",
+   "an injured friend is slowing everyone down",
+   "two of them blame each other for the crash",
+   "a stranger who joined claims to know the way",
+   "the strongest wants a bigger share",
+   "someone has given up and stopped trying"
+  ],
+  "way_out": [
+   "a ranger station marked on an old map",
+   "a fishing village somewhere down the coast",
+   "a signal fire on the highest ridge",
+   "a raft built from the wreckage",
+   "a road beyond the pass, if it is open",
+   "a satellite phone with one bar of battery",
+   "a supply drop that may or may not come",
+   "the river, followed all the way down"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "the first night is colder than anyone planned",
+   "a small cut, a twisted ankle, a lost pack"
+  ],
+  "2": [
+   "the supplies will not last the week",
+   "the first plan fails and costs them"
+  ],
+  "3": [
+   "someone falls sick or badly hurt",
+   "the group splits over the way out"
+  ],
+  "4": [
+   "one last push for the way out",
+   "the land gives them one chance, and only one"
+  ]
+ },
+ "cliches": [
+  "a rescue helicopter arrives right on time",
+  "a fire from two sticks in a minute",
+  "the expert who knows everything",
+  "the hoarder turns out to be a monster",
+  "a flare gun saves the day"
+ ]
+}

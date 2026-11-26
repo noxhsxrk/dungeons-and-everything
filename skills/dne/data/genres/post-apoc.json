@@ -1,0 +1,53 @@
+{
+ "id": "post-apoc",
+ "name": "Post-apocalypse",
+ "kind": "setting",
+ "system": "core",
+ "early": true,
+ "story_axes": "post-apoc",
+ "modules": [
+  "usage_die",
+  "seasons",
+  "vows"
+ ],
+ "optional": [
+  "war_layer",
+  "mooks",
+  "panic"
+ ],
+ "dials": {
+  "storyteller": "none",
+  "pacing": "mixed",
+  "difficulty": "hard",
+  "claims": "grounded",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "run something down: the filter clogs, the last round jams",
+  "a stranger at the gate asks for what they cannot spare",
+  "the old world leaves a gift with a hook in it",
+  "the season turns and the settlement feels it first",
+  "another band wants the same ruin, and got there first"
+ ],
+ "tags": [
+  "post-apocalypse",
+  "scavenging",
+  "settlements",
+  "scarcity",
+  "rebuilding"
+ ],
+ "fits": [
+  "after the end",
+  "a wasteland",
+  "survivors rebuilding",
+  "a dead world",
+  "scavengers",
+  "the world after a collapse"
+ ],
+ "checks": [
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

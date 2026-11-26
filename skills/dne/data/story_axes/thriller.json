@@ -1,0 +1,91 @@
+{
+ "_about": "Psychological thriller: a lie at the center, a memory that cannot be trusted, and a twist that changes everything. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "plot",
+ "axes": {
+  "lie": [
+   "the accident was never an accident",
+   "the missing wife left on her own",
+   "the hero's alibi was invented by someone else",
+   "the child in the photos is not theirs",
+   "the doctor's diagnosis was bought",
+   "the dead brother is still alive",
+   "the will was rewritten the night before",
+   "the hero signed the papers themselves"
+  ],
+  "who_benefits": [
+   "the kind neighbor who always helps",
+   "the spouse who handles all the money",
+   "the therapist with too many notes",
+   "a business partner buying out the company",
+   "a younger sibling next in line",
+   "the detective assigned to the case",
+   "an old friend who came back to town",
+   "the hero, in a way they cannot face"
+  ],
+  "forgotten": [
+   "the night of the party in Pattaya",
+   "three hours after the car crash",
+   "the last call with their mother",
+   "why they own a key to that flat",
+   "who was in the room when it happened",
+   "the year they lived in Penang",
+   "what they buried in the back garden",
+   "the face of the person they saw running"
+  ],
+  "twist": [
+   "the hero is the one being protected",
+   "the victim planned everything",
+   "two people are sharing one identity",
+   "the helper is the cause of it all",
+   "the memory was planted in therapy",
+   "the hero did it and forgot",
+   "the stalker is trying to warn them",
+   "all of this has happened once before"
+  ],
+  "who_knows": [
+   "a housekeeper who saw and was paid to forget",
+   "a taxi driver who drove them home that night",
+   "an ex who still has the old phone",
+   "a nurse on the night shift",
+   "a child who keeps drawing the same picture",
+   "a landlord with camera footage",
+   "a pharmacist who filled a strange prescription",
+   "a stranger who sends letters with no name"
+  ],
+  "deadline": [
+   "the trial starts on Monday",
+   "the insurance payout clears in three days",
+   "the house is sold at the weekend",
+   "the police reopen the case tomorrow",
+   "the flight leaves Suvarnabhumi at midnight",
+   "the pills run out at the end of the week",
+   "the wedding is on Saturday",
+   "the anniversary of the death is coming"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "a small detail does not match what they remember",
+   "a stranger seems to know them"
+  ],
+  "2": [
+   "proof that someone close lied to them",
+   "the gap in their memory opens wider"
+  ],
+  "3": [
+   "the one they trusted is not who they seemed",
+   "the evidence now points at them"
+  ],
+  "4": [
+   "the truth behind the lie comes out",
+   "they choose what to do with the twist"
+  ]
+ },
+ "cliches": [
+  "it was all a dream",
+  "the evil twin",
+  "the narrator was dead all along",
+  "the therapist is the killer",
+  "a mirror cracks as the hero remembers"
+ ]
+}

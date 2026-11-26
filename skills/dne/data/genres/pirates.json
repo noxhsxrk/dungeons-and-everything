@@ -1,0 +1,53 @@
+{
+ "id": "pirates",
+ "name": "Pirates / high seas",
+ "kind": "setting",
+ "system": "core",
+ "early": true,
+ "story_axes": "pirates",
+ "modules": [
+  "usage_die",
+  "vows",
+  "mooks"
+ ],
+ "optional": [
+  "heat",
+  "contest",
+  "seasons"
+ ],
+ "dials": {
+  "storyteller": "pulp",
+  "pacing": "adventure",
+  "difficulty": "standard",
+  "claims": "declare",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "a sail on the horizon, and it is closing",
+  "the weather turns before they reach the reef",
+  "the crew grumbles: shares, rum, or a new captain",
+  "the map is right, but someone got there first",
+  "a port that welcomed them now has a price on their heads"
+ ],
+ "tags": [
+  "pirates",
+  "ships",
+  "treasure",
+  "the sea",
+  "a crew"
+ ],
+ "fits": [
+  "pirates",
+  "high seas adventure",
+  "a treasure hunt",
+  "naval battles",
+  "smugglers",
+  "a mutiny"
+ ],
+ "checks": [
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

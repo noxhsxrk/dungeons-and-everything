@@ -1,0 +1,53 @@
+{
+ "id": "superhero",
+ "name": "Superheroes",
+ "kind": "setting",
+ "system": "core",
+ "early": true,
+ "story_axes": "superhero",
+ "modules": [
+  "labels",
+  "mooks",
+  "strings"
+ ],
+ "optional": [
+  "emotions",
+  "heat",
+  "vows"
+ ],
+ "dials": {
+  "storyteller": "pulp",
+  "pacing": "adventure",
+  "difficulty": "standard",
+  "claims": "declare",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "a civilian is in the blast radius, choose now",
+  "the mask slips in front of the one person who must not know",
+  "the power costs something today, and it is due",
+  "the papers tell the story the wrong way round",
+  "the villain offers what the hero secretly wants"
+ ],
+ "tags": [
+  "superheroes",
+  "powers",
+  "secret identities",
+  "a city",
+  "sacrifice"
+ ],
+ "fits": [
+  "superpowers",
+  "costumed heroes",
+  "a vigilante",
+  "a hero team",
+  "a villain's scheme",
+  "comic-book action"
+ ],
+ "checks": [
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

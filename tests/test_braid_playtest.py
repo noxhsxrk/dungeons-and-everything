@@ -389,6 +389,135 @@ class GenreScene(unittest.TestCase):
             self.assertTrue(d["verified"], d)
             self.assertEqual(sorted(d["deal"].values()), ["loyal", "loyal", "loyal", "traitor"])
 
+    # ── the 2.0 additions (all early) ────────────────────────────────────────
+
+    def test_survival_the_washed_out_road(self):
+        with self.scene("survival"):
+            self.one("[GM]: what we carried", {"action": "upkeep", "dice": {"water": "d6"}})
+            d = self.one("[Theo]: we drink", {"action": "use", "item": "water"})
+            self.assertEqual(d["was"], "d6")
+            self.one("[Mira Vale]: everyone gets home", {"action": "vow", "owner": "Mira Vale", "name": "Everyone gets home",
+                                                         "rank": "tough"})
+            d = self.check(self.one("[Mira Vale]: I ford the river", {"action": "roll", "actor": "Mira Vale",
+                                                                      "approach": "grit", "label": "the ford"}))
+            doom = self.doom(0, d["doom"])
+            self.doom(doom, self.one("[GM]: the rain comes back", {"action": "doom", "add": 1, "why": "the rain"}))
+
+    def test_thai_the_spirit_house(self):
+        with self.scene("thai-ghost"):
+            self.one("[GM]: the old shrine", {"action": "case", "id": "shrine", "truth": "the land was taken with a forged deed",
+                                              "clues": [{"id": "deed", "text": "a deed with a dead man's seal",
+                                                         "where": "the shrine", "obvious": True}]})
+            found = self.one("[Theo]: I look behind the shrine", {"action": "search", "actor": "Theo", "case": "shrine",
+                                                                 "where": "the shrine"})["found"]
+            self.assertEqual([f["id"] for f in found], ["deed"])
+            d = self.check(self.one("[Mira Vale]: her face in the window", {"action": "fright", "actor": "Mira Vale",
+                                                                            "rating": "serious"}))
+            self.assertEqual(self.value("Mira Vale", "composure"), 10 - d["lost"])
+
+    def test_thriller_the_missing_night(self):
+        with self.scene("thriller"):
+            self.one("[Mira Vale]: what I hold on to", {"action": "memories", "owner": "Mira Vale",
+                                                        "keep": "the text I don't remember sending"})
+            self.assertEqual(self.thing("memory", "mira vale")["held"], ["the text I don't remember sending"])
+            self.one("[GM]: that night", {"action": "case", "id": "night", "truth": "her husband sent the text",
+                                          "clues": [{"id": "phone", "text": "his phone was at home all night",
+                                                     "where": "the flat", "obvious": True}]})
+            self.assertTrue(self.one("[Theo]: I check the flat", {"action": "search", "actor": "Theo", "case": "night",
+                                                                  "where": "the flat"})["found"])
+            d = self.one("[GM]: he comes home early", {"action": "complicate", "what": "he comes home early", "cost": 1})
+            self.assertEqual(d["left"], 2)
+
+    def test_spy_the_hotel_ledger(self):
+        with self.scene("spy"):
+            d = self.one("[GM]: the cell", {"action": "roles", "deal": ["Mira Vale", "Theo", "Ada", "Kell"]})
+            seal = d["seal"]
+            d = self.check(self.one("[Mira Vale]: I lift the ledger", {"action": "position", "actor": "Mira Vale",
+                                                                       "approach": "finesse", "label": "the ledger"}))
+            self.assertIn("position", d["reading"])
+            d = self.one("[GM]: the minister noticed", {"action": "crew_heat", "job": "contained", "hostile_turf": True})
+            self.assertEqual(self.value("party", "crew_heat"), d["added"])
+            self.assertTrue(self.one("[GM]: the double agent", {"action": "roles", "reveal": True,
+                                                                "expect": seal})["verified"])
+
+    def test_post_the_flooded_school(self):
+        with self.scene("post-apoc"):
+            d = self.one("[GM]: the year turns", {"action": "season"})
+            self.assertEqual(self.thing("season", "party")["name"], d["season"])
+            self.one("[GM]: the medicine", {"action": "upkeep", "dice": {"medicine": "d8"}})
+            self.assertEqual(self.one("[Theo]: we treat the fever", {"action": "use", "item": "medicine"})["was"], "d8")
+            self.one("[Mira Vale]: we rebuild the well", {"action": "vow", "owner": "Mira Vale", "name": "Rebuild the well",
+                                                          "rank": "easy"})
+
+    def test_superhero_the_flood_blame(self):
+        with self.scene("superhero"):
+            self.one("[GM]: looters", {"action": "foe", "name": "Looters", "threat": 1, "count": 3})
+            self.check(self.one("[Mira Vale]: I save the bus", {"action": "identity", "owner": "Mira Vale", "roll": "proud",
+                                                               "label": "in front of the cameras"}))
+            self.assertEqual(self.one("[Theo]: I knock one down", {"action": "foe", "name": "Looters", "hit": 1})["left"], 2)
+            self.one("[Theo]: she knows who I am", {"action": "string", "by": "Mira Vale", "on": "Theo", "gain": 1,
+                                                    "why": "she saw him unmasked"})
+
+    def test_western_the_water_rights(self):
+        with self.scene("western"):
+            self.one("[GM]: the last cartridges", {"action": "upkeep", "dice": {"cartridges": "d6"}})
+            self.one("[Theo]: I fire", {"action": "use", "item": "cartridges"})
+            self.one("[Mira Vale]: the water stays free", {"action": "vow", "owner": "Mira Vale",
+                                                           "name": "Keep the creek free", "rank": "tough"})
+            d = self.one("[GM]: the baron's men saw it", {"action": "crew_heat", "job": "loud"})
+            self.assertEqual(self.value("party", "crew_heat"), d["added"])
+
+    def test_kids_the_thing_in_the_woods(self):
+        with self.scene("kids-adventure"):
+            self.check(self.one("[Theo]: I go in first", {"action": "identity", "owner": "Theo", "roll": "proud",
+                                                         "label": "nobody calls me a baby"}))
+            self.one("[Mira Vale]: I kept his secret", {"action": "string", "by": "Mira Vale", "on": "Theo", "gain": 1})
+            self.one("[GM]: the woods", {"action": "case", "id": "woods", "truth": "the mill owner buried the dog there",
+                                         "clues": [{"id": "collar", "text": "a dog collar under the leaves",
+                                                    "where": "the woods", "obvious": True}]})
+            self.assertTrue(self.one("[Theo]: I dig", {"action": "search", "actor": "Theo", "case": "woods",
+                                                       "where": "the woods"})["found"])
+
+    def test_court_the_coronation(self):
+        with self.scene("court-intrigue"):
+            d = self.one("[GM]: the heirs' people", {"action": "roles", "deal": ["Mira Vale", "Theo", "Ada", "Kell"]})
+            seal = d["seal"]
+            self.one("[Mira Vale]: the chancellor owes me", {"action": "string", "by": "Mira Vale", "on": "Theo", "gain": 1,
+                                                             "why": "the forged letter"})
+            self.assertEqual(self.one("[GM]: the queen falls ill", {"action": "complicate", "what": "the queen falls ill",
+                                                                    "cost": 1})["left"], 2)
+            self.assertTrue(self.one("[GM]: coronation day", {"action": "roles", "reveal": True,
+                                                              "expect": seal})["verified"])
+
+    def test_pirates_the_frigate_behind(self):
+        with self.scene("pirates"):
+            self.one("[GM]: casks of water", {"action": "upkeep", "dice": {"fresh water": "d8"}})
+            self.one("[Theo]: we drink", {"action": "use", "item": "fresh water"})
+            self.one("[GM]: boarders", {"action": "foe", "name": "Navy boarders", "threat": 2, "count": 3})
+            self.assertEqual(self.one("[Mira Vale]: I cut the rope", {"action": "foe", "name": "Navy boarders",
+                                                                     "hit": 1})["left"], 2)
+            self.one("[Mira Vale]: the treasure is ours", {"action": "vow", "owner": "Mira Vale", "name": "Find the treasure",
+                                                           "rank": "hard"})
+
+    def test_kaiju_the_gulf_rises(self):
+        with self.scene("kaiju"):
+            self.one("[GM]: the defence corps", {"action": "war", "unit": "Gulf Wardens", "quality": "trained"})
+            d = self.one("[GM]: a week between attacks", {"action": "war", "pass": True, "why": "the week"})
+            self.assertEqual((d["war_time"], d["war_pressure"]), (1, 1))
+            self.one("[GM]: the spawn", {"action": "foe", "name": "Spawn", "threat": 1, "count": 4})
+            self.assertEqual(self.one("[Theo]: cannon", {"action": "foe", "name": "Spawn", "hit": 2})["left"], 2)
+            self.doom(0, self.one("[GM]: it surfaces again", {"action": "doom", "add": 1, "why": "the tide"}))
+
+    def test_mafia_the_docks(self):
+        with self.scene("mafia"):
+            d = self.one("[GM]: the family", {"action": "roles", "deal": ["Mira Vale", "Theo", "Ada", "Kell"]})
+            seal = d["seal"]
+            self.one("[Theo]: I owe the old man", {"action": "string", "by": "Theo", "on": "Mira Vale", "gain": 1,
+                                                   "why": "he paid my debt"})
+            d = self.one("[GM]: the shooting at the market", {"action": "crew_heat", "job": "loud", "high_profile": True})
+            self.assertEqual((d["added"], self.value("party", "crew_heat")), (5, 5))
+            self.assertTrue(self.one("[GM]: who talked", {"action": "roles", "reveal": True, "expect": seal})["verified"])
+
 
 class EveryGenreAndModuleHasAScene(unittest.TestCase):
     def test_coverage(self):

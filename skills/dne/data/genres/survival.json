@@ -1,0 +1,54 @@
+{
+ "id": "survival",
+ "name": "Survival (wilderness, disaster, castaway)",
+ "kind": "plot",
+ "system": "core",
+ "early": true,
+ "story_axes": "survival",
+ "modules": [
+  "usage_die",
+  "doom",
+  "vows"
+ ],
+ "optional": [
+  "panic",
+  "seasons",
+  "gm_budget"
+ ],
+ "dials": {
+  "storyteller": "none",
+  "pacing": "adventure",
+  "difficulty": "hard",
+  "claims": "grounded",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "the weather turns, and the plan has to change",
+  "something they rely on breaks, runs out or is lost",
+  "the land offers a way through, at a price",
+  "hunger and tiredness make someone choose badly",
+  "the group splits over what to do next"
+ ],
+ "tags": [
+  "survival",
+  "wilderness",
+  "scarcity",
+  "endurance",
+  "the group"
+ ],
+ "fits": [
+  "stranded after a crash",
+  "a castaway island",
+  "a flood or earthquake",
+  "a trek across mountains or desert",
+  "lost at sea",
+  "a winter with no help coming"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

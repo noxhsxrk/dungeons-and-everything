@@ -1,0 +1,91 @@
+{
+ "_about": "Crime families: business, territory, loyalty and the law closing in. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "plot",
+ "axes": {
+  "business": [
+   "a protection racket on the waterfront",
+   "underground lottery tickets sold in every soi",
+   "a casino hidden behind a karaoke bar",
+   "loan sharking to farmers before harvest",
+   "smuggling rice whisky across the river border",
+   "a construction company that wins every contract",
+   "fixing horse races and boxing matches",
+   "a laundry that cleans more than shirts"
+  ],
+  "territory": [
+   "a night market that changes hands at dusk",
+   "the docks and the warehouses behind them",
+   "a chinatown street of gold shops",
+   "a border town where three countries meet",
+   "the taxi ranks around the central station",
+   "a beach resort strip full of tourists",
+   "a neighbourhood the family grew up in",
+   "a new highway being built through farmland"
+  ],
+  "rival": [
+   "a younger family with no respect for the old ways",
+   "a cousin who wants to be the boss",
+   "a police colonel running his own racket",
+   "a foreign syndicate with deep pockets",
+   "a politician who used to be on the payroll",
+   "a widow who took over her husband's crew",
+   "a motorbike gang that answers to no one",
+   "a reformer who wants the whole thing gone"
+  ],
+  "debt": [
+   "a son killed in a deal gone wrong",
+   "a loan the old boss made and never collected",
+   "a wedding insult that was never forgiven",
+   "a stolen shipment nobody admits to taking",
+   "a life saved in prison years ago",
+   "a sister who married into the rival family",
+   "a promise made at a funeral",
+   "a debt of honour to a monk who hid them once"
+  ],
+  "informant": [
+   "the driver who hears every conversation",
+   "a bookkeeper tired of being afraid",
+   "a nephew caught by the police and turned",
+   "a girlfriend who wants out",
+   "an old soldier who finally found religion",
+   "an undercover officer who has been inside too long",
+   "someone nobody suspects, because they are family",
+   "a rival's man feeding false information"
+  ],
+  "line": [
+   "never touch the families of rivals",
+   "no drugs in the home neighbourhood",
+   "never talk to the police, whatever happens",
+   "no business on temple ground",
+   "never betray a blood oath",
+   "children are never part of it",
+   "never kill a man in front of his mother",
+   "the boss's word, once given, is never broken"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "a dead man in the canal at dawn",
+   "a new face asks too many questions at the bar"
+  ],
+  "2": [
+   "a raid on the business",
+   "a trusted member is arrested"
+  ],
+  "3": [
+   "the rival strikes at the family's home",
+   "the informant is close to the top"
+  ],
+  "4": [
+   "a war, or a deal that costs everything",
+   "the family stands, splits, or falls"
+  ]
+ },
+ "cliches": [
+  "the offer nobody can say no to",
+  "a dead animal left as a warning",
+  "sleeping with the fishes",
+  "the hitman with a heart of gold",
+  "one last job before getting out"
+ ]
+}

@@ -1,0 +1,54 @@
+{
+ "id": "spy",
+ "name": "Spy / espionage",
+ "kind": "plot",
+ "system": "core",
+ "early": true,
+ "story_axes": "spy",
+ "modules": [
+  "position_effect",
+  "heat",
+  "roles"
+ ],
+ "optional": [
+  "engagement",
+  "strings",
+  "clues"
+ ],
+ "dials": {
+  "storyteller": "noir",
+  "pacing": "mixed",
+  "difficulty": "standard",
+  "claims": "declare",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "the handler changes the mission halfway",
+  "someone looks twice at the cover story",
+  "the asset wants more, or wants out",
+  "a face from the past turns up in the wrong place",
+  "the extraction window closes early"
+ ],
+ "tags": [
+  "espionage",
+  "cover",
+  "betrayal",
+  "tradecraft",
+  "secrets"
+ ],
+ "fits": [
+  "a spy story",
+  "espionage",
+  "a cold war tale",
+  "a double agent",
+  "an undercover mission",
+  "a defection"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

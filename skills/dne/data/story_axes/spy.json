@@ -1,0 +1,91 @@
+{
+ "_about": "Spy and espionage: a mission, a cover that must hold, an asset to run, and a double agent somewhere close. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "plot",
+ "axes": {
+  "mission": [
+   "steal a ledger of bribes from a minister's safe",
+   "turn a diplomat at an embassy party",
+   "find out who sold the codes",
+   "bring a defecting scientist across the border",
+   "plant a bug in a casino owner's office",
+   "photograph a ship's cargo at Laem Chabang port",
+   "stop an assassination at a summit in Singapore",
+   "recover a lost agent's notebook in Vientiane"
+  ],
+  "agency": [
+   "a small service everyone thinks is a joke",
+   "a handler who has not slept in a week",
+   "an old network left over from the cold war",
+   "a private intelligence firm with clients on both sides",
+   "a ministry section that officially does not exist",
+   "a handler who once worked for the other side",
+   "a service in the middle of a purge",
+   "a retired spymaster pulling strings from a care home"
+  ],
+  "cover": [
+   "a writer for a travel magazine",
+   "a wine importer with a real business",
+   "a junior attaché at the embassy",
+   "a backpacker on a long gap year",
+   "a night manager at a Bangkok hotel",
+   "an academic at a conference",
+   "the cook on a cargo ship",
+   "a married couple on a second honeymoon"
+  ],
+  "asset": [
+   "a bored translator at the ministry",
+   "a casino croupier who hears everything",
+   "a general's mistress with expensive tastes",
+   "a hacker who wants a new passport",
+   "a priest who hears the wrong confessions",
+   "a customs officer at the port, deep in debt",
+   "a Mekong ferryman who knows every face",
+   "a scientist's teenage son"
+  ],
+  "tell": [
+   "they never ask what the mission is for",
+   "they always know which route was safe",
+   "a second phone they say is for family",
+   "money that arrives right after each leak",
+   "they flinch at a name that should mean nothing",
+   "their reports are a little too clean",
+   "they once served in the enemy chief's city",
+   "they always volunteer for the dead drops"
+  ],
+  "extraction": [
+   "a fishing boat off the Gulf coast at dawn",
+   "a sleeper train over the border",
+   "a diplomatic car with one seat left",
+   "a cargo plane that will not wait",
+   "a marathon crowd to vanish into",
+   "a monastery that asks no questions",
+   "a fake funeral and a real coffin",
+   "a night bus south to Penang"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "a small slip in the cover story",
+   "the same face seen twice in one day"
+  ],
+  "2": [
+   "the asset is being watched",
+   "the handler goes silent"
+  ],
+  "3": [
+   "the cover is blown to someone who matters",
+   "a friend is taken"
+  ],
+  "4": [
+   "run the extraction under fire",
+   "unmask the double agent, or be unmasked"
+  ]
+ },
+ "cliches": [
+  "a tuxedo and a martini",
+  "the villain explains the whole plan",
+  "a gadget for every problem",
+  "the seductress who is really the enemy",
+  "a scarred foreign agent with a thick accent"
+ ]
+}

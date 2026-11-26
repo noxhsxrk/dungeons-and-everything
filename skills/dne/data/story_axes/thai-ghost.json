@@ -1,0 +1,91 @@
+{
+ "_about": "Thai and Southeast Asian ghost stories: a spirit that stays because a wrong was never set right, and the old ways that can put it to rest. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "mood",
+ "axes": {
+  "spirit": [
+   "a phi pop that hungers inside a living host",
+   "a krasue drifting over the rice fields at night",
+   "a nang tani under a banana tree by the river",
+   "a phi tai hong, dead too suddenly and too violently",
+   "a mother and unborn child who died together",
+   "the guardian of an old spirit house, offended",
+   "a drowned girl who still calls from the canal",
+   "a monk's spirit bound to an abandoned temple"
+  ],
+  "wrong": [
+   "a body never given its funeral rites",
+   "land taken with a forged deed",
+   "a promise of marriage broken for money",
+   "a death covered up as an accident",
+   "a debt of merit never repaid",
+   "a child sold away and never found",
+   "bones under a new building's foundation",
+   "a killing the whole village helped hide"
+  ],
+  "place": [
+   "a teak house on stilts in Isan",
+   "a canal-side shophouse in old Thonburi",
+   "a rubber plantation in the deep south",
+   "a forest temple with no monks left",
+   "a night ward in a provincial hospital",
+   "a Bangkok condo built over an old cemetery",
+   "a village at the edge of the northern hills",
+   "a ferry pier on the Chao Phraya after midnight"
+  ],
+  "taboo": [
+   "a spirit house moved without asking",
+   "an offering eaten by someone hungry",
+   "a banana tree cut down by the river",
+   "a vow to the spirits never fulfilled",
+   "an amulet sold or thrown away",
+   "the name of the dead said aloud at night",
+   "a shrine's bones photographed and posted online",
+   "whistling after dark near the forest"
+  ],
+  "keeper": [
+   "an old abbot who will speak only once",
+   "a village grandmother who still makes offerings",
+   "a spirit doctor the young call a fraud",
+   "a medium who goes into trance at funerals",
+   "a temple boy who sees what adults cannot",
+   "a retired soldier who saw it decades ago",
+   "a herbalist from across the river in Laos",
+   "the victim's sister, still living nearby"
+  ],
+  "rite": [
+   "a proper funeral with monks and merit",
+   "seven days of merit made in the spirit's name",
+   "returning what was taken to where it belongs",
+   "a confession spoken at the spirit house",
+   "sacred thread tied around the whole house",
+   "the spirit's belongings burned at the crossroads",
+   "the bones found and given to the temple",
+   "the guilty one ordaining as a monk"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "an offering left out overnight is gone by morning",
+   "the dogs howl at the same spot every night"
+  ],
+  "2": [
+   "someone dreams the same dead face",
+   "an elder warns them and goes quiet"
+  ],
+  "3": [
+   "someone falls sick or is taken over",
+   "the spirit appears in daylight"
+  ],
+  "4": [
+   "the wrong must be set right tonight",
+   "face the spirit where it died"
+  ]
+ },
+ "cliches": [
+  "long black hair in the bathroom mirror",
+  "the careless outsider who mocks the shrine",
+  "a jump scare every scene",
+  "the monk chants once and it is over",
+  "it was only a dream"
+ ]
+}

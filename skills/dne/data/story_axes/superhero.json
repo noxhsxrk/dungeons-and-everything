@@ -1,0 +1,73 @@
+{
+ "_about": "Superheroes: powers, secret identities, the cost of being a hero, and a city to protect. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "setting",
+ "axes": {
+  "power_source": [
+   "a lab accident that should have killed them",
+   "a meteor shard sewn into their skin",
+   "a spirit bound to them at a shrine in chiang mai",
+   "an inheritance passed down a family line",
+   "an experimental drug from a failed trial",
+   "a pact with something that lives in mirrors",
+   "a suit built in a garage from scrap",
+   "a mutation that showed up at puberty"
+  ],
+  "price": [
+   "every use takes a memory",
+   "they cannot feel warmth anymore",
+   "the power grows and they are losing control",
+   "someone they love feels their pain",
+   "they age a day for every minute of use",
+   "it only works when they are angry",
+   "the source wants something back",
+   "they can no longer sleep"
+  ],
+  "villain_want": [
+   "to prove heroes make the city worse",
+   "to bring back a dead child",
+   "to own the city's water and power",
+   "to be seen, finally, by the public",
+   "to free everyone with powers from the law",
+   "to undo the accident that made the hero",
+   "to burn down the company that ruined them",
+   "to take the hero's place and be loved"
+  ],
+  "city": [
+   "a neon port city that never stops building",
+   "bangkok, flooding every rainy season",
+   "a rust-belt town where the factories closed",
+   "a glittering capital run by one corporation",
+   "a harbor city in the philippines with a famous bridge",
+   "a desert boomtown built too fast",
+   "an old river city with a corrupt police force",
+   "a city rebuilt after the last super-fight"
+  ],
+  "identity_risk": [
+   "a journalist who is getting close",
+   "a little sibling who found the costume",
+   "a boss who notices every absence",
+   "a partner who thinks they are cheating",
+   "a phone photo going viral",
+   "a doctor who treated the hero's wounds",
+   "a villain who already knows and waits",
+   "a teacher who recognized their voice"
+  ],
+  "public_view": [
+   "heroes need a licence now",
+   "the hero is blamed for the last disaster",
+   "kids wear the hero's mask to school",
+   "the city council wants them banned",
+   "a tabloid runs a hero ranking every week",
+   "the police hate them, the people love them",
+   "nobody believes heroes exist",
+   "a rival hero is the city's favorite"
+  ]
+ },
+ "cliches": [
+  "the origin story told again in full",
+  "the villain falls into a vat",
+  "the mask is just glasses",
+  "a death that is undone next issue",
+  "the love interest kidnapped to a rooftop"
+ ]
+}

@@ -1,0 +1,91 @@
+{
+ "_about": "Court intrigue and politics: a seat at stake, factions, secrets and favours owed. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "plot",
+ "axes": {
+  "seat": [
+   "a throne whose old king is dying slowly",
+   "the regency over a child queen",
+   "the high chancellor's chair, empty since a fall",
+   "the head of a merchant republic's council",
+   "the title of first consort",
+   "command of the palace guard",
+   "the white elephant stables and the luck they carry",
+   "the high priesthood of the river temple"
+  ],
+  "faction": [
+   "old landed houses who remember every slight",
+   "new money that bought its titles last year",
+   "the queen mother's ladies-in-waiting",
+   "eunuchs of the inner palace who keep the keys",
+   "a foreign envoy and his generous gifts",
+   "the temple, which crowns whoever it blesses",
+   "the generals, tired of taking orders from poets",
+   "a provincial lord from the far northern hills"
+  ],
+  "secret": [
+   "the heir is not the king's child",
+   "the late queen was poisoned at her own feast",
+   "the treasury has been empty for three years",
+   "a royal marriage was never truly made",
+   "the chancellor was born a commoner under another name",
+   "the war was started with a forged letter",
+   "a prince is alive in a monastery up the river",
+   "the court astrologer has been lying about the omens"
+  ],
+  "favour": [
+   "a life spared on a battlefield long ago",
+   "a debt of gold to a silk merchant's widow",
+   "a silence kept about a night in the garden",
+   "a pardon signed and never used",
+   "a daughter's marriage arranged as payment",
+   "a seat at the council bought with a vote",
+   "a hidden child raised by a loyal steward",
+   "a promise sworn before the temple's golden image"
+  ],
+  "weapon": [
+   "a bundle of love letters in the wrong hand",
+   "a slow poison in the betel box",
+   "a scandal at the floating market festival",
+   "a forged seal that nobody can tell apart",
+   "a witness who saw the real murderer",
+   "a ledger of bribes paid by every house",
+   "a portrait that shows a forbidden likeness",
+   "a mob in the lower city that can be stirred"
+  ],
+  "deadline": [
+   "the coronation at the next full moon",
+   "the council vote at dawn",
+   "the royal wedding in seven days",
+   "the king's last breath, any hour now",
+   "the envoy sails home after the harvest feast",
+   "the annual oath of loyalty on the temple steps",
+   "the rains close the mountain passes",
+   "the trial of a traitor before the whole court"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "a favour you cannot refuse",
+   "a rumour no one can trace"
+  ],
+  "2": [
+   "an ally is bought or broken",
+   "a body is found inside the palace walls"
+  ],
+  "3": [
+   "two factions demand the same player's loyalty",
+   "the secret is half out"
+  ],
+  "4": [
+   "the deadline comes early, and everyone must choose",
+   "the seat changes hands, or blood is spilled for it"
+  ]
+ },
+ "cliches": [
+  "the evil vizier",
+  "poison in the wine goblet at the feast",
+  "the secret twin heir",
+  "a villain who explains the whole plot",
+  "the naive princess who needs saving"
+ ]
+}

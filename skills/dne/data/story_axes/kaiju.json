@@ -1,0 +1,91 @@
+{
+ "_about": "Giant monsters, the machines and pilots built to meet them, and the city in between. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "setting",
+ "axes": {
+  "monster": [
+   "a coral-backed titan that rises from the trench",
+   "a winged thing that blots out the sun",
+   "a swarm that joins into one giant body",
+   "a crab the size of a cathedral",
+   "a naga of the river, woken by dredging",
+   "a burning beast that walks out of a volcano",
+   "a creature made of the city's own rubble",
+   "something that looks like it is grieving"
+  ],
+  "why_it_comes": [
+   "it is following a signal nobody knew was sent",
+   "its nest was destroyed by a deep-sea mine",
+   "it hunts the reactor that powers the city",
+   "it is fleeing something even larger",
+   "it comes back to the same bay every hundred years",
+   "a cult has been calling it with drums",
+   "it wants its stolen egg back",
+   "it is dying and looking for a place to rest"
+  ],
+  "defense": [
+   "a walking machine piloted by two linked minds",
+   "a rail cannon on the harbour wall",
+   "an old temple ritual the monks still remember",
+   "a fleet of patched-together salvage mechs",
+   "a weapon made from the bones of the last one",
+   "a chemical that makes the sea taste wrong to it",
+   "a song that soothes it, if anyone can sing it",
+   "a prototype machine nobody has finished testing"
+  ],
+  "city": [
+   "a coastal megacity rebuilt behind a giant wall",
+   "bangkok's canals, flooded and full of boats",
+   "a fishing town with one great sea wall",
+   "a floating city anchored in a typhoon belt",
+   "a mountain capital the monsters never reached until now",
+   "a harbour of shipyards that build the machines",
+   "a refugee city made of shipping containers",
+   "an island nation running out of places to retreat"
+  ],
+  "cost": [
+   "every launch burns the pilot's memories",
+   "the machines run on a fuel that poisons the bay",
+   "each victory flattens another district",
+   "the funding comes from a company with a secret",
+   "the only working pilot is a frightened teenager",
+   "the monster's blood turns the ground barren",
+   "a link between pilots that never fully closes",
+   "the government lies about how many died"
+  ],
+  "people_below": [
+   "a street food vendor who will not leave her cart",
+   "a school bus stuck on a collapsing bridge",
+   "a salvage crew who sells monster parts",
+   "a reporter filming everything from the rooftops",
+   "a hospital that cannot evacuate in time",
+   "a pilot's family in the evacuation zone",
+   "a cult that wants to be eaten",
+   "monks who refuse to leave the riverside temple"
+  ]
+ },
+ "ladder": {
+  "1": [
+   "a tremor on the instruments and a shadow in the sea",
+   "the beaches close and nobody says why"
+  ],
+  "2": [
+   "the first fight goes badly",
+   "a district falls while the city watches"
+  ],
+  "3": [
+   "the machine is broken and the next one is not ready",
+   "two monsters rise at once"
+  ],
+  "4": [
+   "the final stand at the city's heart",
+   "the monster's purpose is understood, too late or just in time"
+  ]
+ },
+ "cliches": [
+  "the monster is just nature striking back",
+  "the scientist nobody believed was right",
+  "the hothead pilot and the by-the-book commander",
+  "nuke it and hope",
+  "the giant robot gets a sword at the last moment"
+ ]
+}

@@ -1,0 +1,54 @@
+{
+ "id": "court-intrigue",
+ "name": "Court intrigue / politics",
+ "kind": "plot",
+ "system": "core",
+ "early": true,
+ "story_axes": "court-intrigue",
+ "modules": [
+  "strings",
+  "roles",
+  "gm_budget"
+ ],
+ "optional": [
+  "emotions",
+  "clues",
+  "make_the_case"
+ ],
+ "dials": {
+  "storyteller": "noir",
+  "pacing": "slow",
+  "difficulty": "standard",
+  "claims": "grounded",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "a smile in public, a knife in a letter",
+  "call in a favour at the worst possible hour",
+  "a rumour reaches the wrong ear first",
+  "an ally is offered more than they can refuse",
+  "the deadline moves closer: the vote is tomorrow"
+ ],
+ "tags": [
+  "politics",
+  "intrigue",
+  "favours",
+  "succession",
+  "secrets"
+ ],
+ "fits": [
+  "court politics",
+  "a succession crisis",
+  "palace scheming",
+  "a royal marriage",
+  "a council at war with itself",
+  "scheming nobles"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

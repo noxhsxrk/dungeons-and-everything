@@ -1,0 +1,53 @@
+{
+ "id": "western",
+ "name": "Western / frontier",
+ "kind": "setting",
+ "system": "core",
+ "early": true,
+ "story_axes": "western",
+ "modules": [
+  "usage_die",
+  "vows",
+  "heat"
+ ],
+ "optional": [
+  "mooks",
+  "contest",
+  "strings"
+ ],
+ "dials": {
+  "storyteller": "none",
+  "pacing": "adventure",
+  "difficulty": "hard",
+  "claims": "grounded",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "the stage brings a stranger with a past",
+  "the well runs low, and someone controls the rest",
+  "the law shows up, and it is bought",
+  "a promise made in town gets tested out on the trail",
+  "set a time and a place for the reckoning"
+ ],
+ "tags": [
+  "frontier",
+  "outlaws",
+  "the law",
+  "land and water",
+  "a showdown"
+ ],
+ "fits": [
+  "a western",
+  "the frontier",
+  "cowboys",
+  "outlaws",
+  "a gunfight",
+  "a railroad town"
+ ],
+ "checks": [
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

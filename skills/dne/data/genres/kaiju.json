@@ -1,0 +1,54 @@
+{
+ "id": "kaiju",
+ "name": "Kaiju / giant robots",
+ "kind": "setting",
+ "system": "core",
+ "early": true,
+ "story_axes": "kaiju",
+ "modules": [
+  "war_layer",
+  "mooks",
+  "doom"
+ ],
+ "optional": [
+  "position_effect",
+  "strings",
+  "usage_die"
+ ],
+ "dials": {
+  "storyteller": "pulp",
+  "pacing": "adventure",
+  "difficulty": "hard",
+  "claims": "grounded",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "the ground shakes before anyone sees it",
+  "the machine breaks at the worst moment",
+  "the people below are in the way of the fight",
+  "a second signal rises from the deep",
+  "the people in charge choose the city or the pilots"
+ ],
+ "tags": [
+  "giant monsters",
+  "giant robots",
+  "disaster",
+  "pilots",
+  "a city"
+ ],
+ "fits": [
+  "kaiju",
+  "giant robots",
+  "mecha",
+  "monster attacks",
+  "a city under siege",
+  "a pilot drama"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

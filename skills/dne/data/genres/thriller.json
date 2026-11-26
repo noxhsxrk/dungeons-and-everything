@@ -1,0 +1,54 @@
+{
+ "id": "thriller",
+ "name": "Psychological thriller / twist",
+ "kind": "plot",
+ "system": "core",
+ "early": true,
+ "story_axes": "thriller",
+ "modules": [
+  "clues",
+  "memories",
+  "gm_budget"
+ ],
+ "optional": [
+  "composure",
+  "roles",
+  "make_the_case"
+ ],
+ "dials": {
+  "storyteller": "noir",
+  "pacing": "mixed",
+  "difficulty": "hard",
+  "claims": "grounded",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "a memory they trusted turns out to be wrong",
+  "someone close tells a small lie, and they notice",
+  "the deadline is closer than they thought",
+  "the evidence points at the hero",
+  "the person who knows is about to vanish"
+ ],
+ "tags": [
+  "thriller",
+  "twist",
+  "memory",
+  "lies",
+  "paranoia"
+ ],
+ "fits": [
+  "a psychological thriller",
+  "a twist ending",
+  "an unreliable narrator",
+  "lost memory",
+  "being lied to by those closest",
+  "a missing person"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

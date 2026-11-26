@@ -1,0 +1,73 @@
+{
+ "_about": "Post-apocalypse: after the fall, scavenging, settlements, and what is worth rebuilding. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "kind": "setting",
+ "axes": {
+  "the_end": [
+   "a sickness that took the cities first",
+   "the rains that would not stop",
+   "a war nobody remembers starting",
+   "the sun went pale and the crops failed",
+   "the machines that ran everything just stopped",
+   "the sea came in over the deltas",
+   "a fungus that grew through everything",
+   "a quiet night when the grid never came back"
+  ],
+  "how_long": [
+   "the ashes are still warm, one month on",
+   "the first hard winter after",
+   "five years, and the canned food is running out",
+   "a generation, and children ask what a city was",
+   "so long the old world is only stories",
+   "ten years, long enough for new borders",
+   "three harvests since the last broadcast",
+   "long enough that the rust has won"
+  ],
+  "settlement": [
+   "a fortified school with a rooftop garden",
+   "a floating village of lashed-together barges on the chao phraya",
+   "a monastery that took everyone in",
+   "a highway overpass walled in with buses",
+   "a dam town that still has power, barely",
+   "a mall turned into a market with its own laws",
+   "a hill temple above the flood line in northern laos",
+   "a ring of farms around an old prison"
+  ],
+  "scarcity": [
+   "clean water that does not make you sick",
+   "antibiotics past their date",
+   "seed that will still grow",
+   "diesel for the one working pump",
+   "salt",
+   "someone who can still read the old manuals",
+   "bullets that fire",
+   "children, too few are born"
+  ],
+  "faction": [
+   "a convoy that trades fuel for people",
+   "a cult that says the fall was a cleansing",
+   "the last soldiers still following old orders",
+   "a family that owns the only well",
+   "scavenger crews who strip the dead cities",
+   "a council of elders who ban the old tech",
+   "a river fleet that taxes every crossing",
+   "doctors who choose who gets treated"
+  ],
+  "relic": [
+   "a working solar panel, half cracked",
+   "a seed vault key on a dead man's neck",
+   "a library in a sealed basement",
+   "a hospital generator that needs one part",
+   "a map of underground water drawn before the fall",
+   "a satellite phone that sometimes hears voices",
+   "a cold storage room full of vaccines",
+   "a train engine in a jungle depot outside hat yai"
+  ]
+ },
+ "cliches": [
+  "leather, spikes and mohawks",
+  "the raiders are just evil",
+  "one man rebuilds civilization alone",
+  "the bunker of rich people who survived",
+  "a radio voice promising a safe zone"
+ ]
+}

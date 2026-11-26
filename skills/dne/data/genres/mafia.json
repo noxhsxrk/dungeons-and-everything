@@ -1,0 +1,54 @@
+{
+ "id": "mafia",
+ "name": "Crime family / gangster",
+ "kind": "plot",
+ "system": "core",
+ "early": true,
+ "story_axes": "mafia",
+ "modules": [
+  "heat",
+  "strings",
+  "roles"
+ ],
+ "optional": [
+  "position_effect",
+  "gm_budget",
+  "emotions"
+ ],
+ "dials": {
+  "storyteller": "noir",
+  "pacing": "mixed",
+  "difficulty": "hard",
+  "claims": "declare",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "18"
+ },
+ "gm_moves": [
+  "a friend asks a favour that cannot be refused",
+  "the law turns up the heat on the family",
+  "someone inside is talking",
+  "a rival moves on the territory while they look away",
+  "the family asks them to cross a line"
+ ],
+ "tags": [
+  "crime",
+  "family",
+  "loyalty",
+  "territory",
+  "betrayal"
+ ],
+ "fits": [
+  "a crime family",
+  "gangsters",
+  "the mob",
+  "a turf war",
+  "organized crime",
+  "a rise to power"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

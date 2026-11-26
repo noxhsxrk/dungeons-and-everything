@@ -1,0 +1,54 @@
+{
+ "id": "kids-adventure",
+ "name": "Kids on bikes / coming of age",
+ "kind": "mood",
+ "system": "core",
+ "early": true,
+ "story_axes": "kids-adventure",
+ "modules": [
+  "labels",
+  "strings",
+  "clues"
+ ],
+ "optional": [
+  "emotions",
+  "composure",
+  "seasons"
+ ],
+ "dials": {
+  "storyteller": "banter",
+  "pacing": "mixed",
+  "difficulty": "standard",
+  "claims": "declare",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "standard"
+ },
+ "gm_moves": [
+  "an adult explains it away, and almost believes it",
+  "the curfew bell, the porch light, mom calling their name",
+  "a friend has to choose: the gang or getting along",
+  "the secret leaves something behind only they can find",
+  "the summer is ending, and so is the time to act"
+ ],
+ "tags": [
+  "coming of age",
+  "friendship",
+  "a small town",
+  "a secret",
+  "summer"
+ ],
+ "fits": [
+  "kids on bikes",
+  "a coming-of-age story",
+  "a summer adventure",
+  "a gang of kids",
+  "a small-town mystery",
+  "growing up"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}

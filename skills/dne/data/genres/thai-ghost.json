@@ -1,0 +1,53 @@
+{
+ "id": "thai-ghost",
+ "name": "Thai ghost story / folk horror",
+ "kind": "mood",
+ "system": "core",
+ "early": true,
+ "story_axes": "thai-ghost",
+ "modules": [
+  "composure",
+  "clues"
+ ],
+ "optional": [
+  "memories",
+  "doom",
+  "emotions"
+ ],
+ "dials": {
+  "storyteller": "dread",
+  "pacing": "slow",
+  "difficulty": "hard",
+  "claims": "grounded",
+  "when_down": "choices"
+ },
+ "suggest": {
+  "content": "18"
+ },
+ "gm_moves": [
+  "the spirit shows itself only to the one who broke the taboo",
+  "an elder warns them, then will say no more",
+  "an offering is gone, or left untouched",
+  "the village knows, and has kept quiet for years",
+  "a dream shows what happened, and who did it"
+ ],
+ "tags": [
+  "horror",
+  "ghosts",
+  "folklore",
+  "a village",
+  "karma"
+ ],
+ "fits": [
+  "a Thai ghost story",
+  "folk horror",
+  "a haunted village",
+  "a spirit house",
+  "a curse from a broken vow",
+  "a krasue or a phi pop"
+ ],
+ "checks": [
+  "a ladder of 3+ steps that rise one after another",
+  "no empty story axis, and no seed fact contradicted"
+ ]
+}
