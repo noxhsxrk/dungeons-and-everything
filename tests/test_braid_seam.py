@@ -275,6 +275,29 @@ class Refusals(unittest.TestCase):
             self.assertIn("`roll` and `judge`", r.stderr, call)
             self.assertEqual(r.stdout.strip(), "", call)
 
+    def test_without_c_the_campaign_in_play_decides(self):
+        calls = [("xp.py", "calc", "--party", "4", "--monsters", "goblin"),
+                 ("encounter_gen.py", "--party", "4", "--level", "2"),
+                 ("character.py", "hitdie", "--char", "mira", "--remaining", "3"),
+                 ("lookup.py", "goblin"),
+                 ("combat.py", "attack", "--effects", "Mira")]
+        rt = self.root / "rt"
+        rt.mkdir(exist_ok=True)
+        (rt / "active-campaign.json").write_text(json.dumps({"name": "braid"}), encoding="utf-8")
+        for call in calls:
+            r = self.run_py(*call)
+            self.assertEqual(r.returncode, 2, (call, r.stdout, r.stderr))
+            self.assertIn("Braid", r.stderr, call)
+        (rt / "active-campaign.json").write_text(json.dumps({"name": "fivee"}), encoding="utf-8")
+        self.assertEqual(self.run_py("lookup.py", "goblin").returncode, 0)   # a 5e world in play passes
+
+    def test_braid_buy_never_sorts_by_the_srd(self):
+        code = ("import economy; print(economy._inventory_section('braid', 'Longsword'), "
+                "economy._inventory_section('fivee', 'Longsword'))")
+        r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, encoding="utf-8",
+                           env=self.env, cwd=SCRIPTS, timeout=60)
+        self.assertEqual(r.stdout.split(), ["Adventuring", "Gear", "Weapons"], r.stderr)
+
     def test_a_5e_campaign_is_not_refused(self):
         r = self.run_py("xp.py", "check", "--campaign", "fivee")
         self.assertEqual(r.returncode, 0, r.stderr)

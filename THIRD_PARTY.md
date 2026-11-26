@@ -77,6 +77,8 @@ is SRD material, credited above. `dnd5e_srd_2024.json` names both projects in
   rule (3-5 foes one threat step up, 6-10 two) follow Ironsworn's; written in our own words in
   `skills/dne/SKILL-core.md` and `skills/dne/data/braid.json`.
 - **Changes:** words lower-cased; nothing else.
+- **The one exception to our own-words rule:** everywhere else we borrow mechanics, never text. These two word
+  lists are quoted because the oracle is the list itself, and CC BY 4.0 allows it with the credit above.
 - **Checked:** 2026-11-26, against the Ironsworn SRD text from https://www.ironswornrpg.com.
 
 ## Oracle chaos factor and event focus (no third-party text)

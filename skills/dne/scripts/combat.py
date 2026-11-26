@@ -385,15 +385,8 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(1)
-    from paths import refuse_unless_d20, runtime_dir, find_campaign
-    refuse_unless_d20(sys.argv[2:], "combat.py")
-    try:                         # no -c: the campaign in play (/dne load, campaign_init) decides
-        _active = json.loads((runtime_dir() / "active-campaign.json").read_text(encoding="utf-8")).get("name")
-    except (OSError, ValueError, AttributeError):
-        _active = None
-    named = any(a in ("-c", "--campaign") or a.startswith("--campaign=") for a in sys.argv[2:])
-    if _active and not named and (find_campaign(_active) / "state.md").is_file():
-        refuse_unless_d20(["-c", _active], "combat.py")
+    from paths import refuse_unless_d20
+    refuse_unless_d20(sys.argv[2:], "combat.py")   # no -c: the campaign in play decides
 
     cmd = sys.argv[1]
 

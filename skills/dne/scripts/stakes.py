@@ -188,24 +188,17 @@ def _judge(ctx, intent: dict) -> dict:
         took = str(ctx.answers["cost"]["value"]).strip().lower().startswith(("a", "y"))
         return close("success_at_a_cost" if took else "failure",
                      **({"cost": intent.get("cost", "")} if took else {"if_fails": intent["if_fails"], "opens": intent.get("opens", "")}))
-    spec, edge = roll.get("spec"), {"notes": [], "push": False}
-    if system != "d20":                                  # Braid: sheet approach, conditions, push, help (as `roll`)
-        import mechanics
-        edge = mechanics.edged(ctx, intent, system, actor, spec)
-        if edge.get("error"):
-            return {"status": "done", "elapsed_minutes": 0, "data": {"error": edge["error"]}}
-        spec = edge["spec"]
+    edge = checks.edge(ctx, intent, system, actor, roll.get("spec"))
+    if edge.get("error"):
+        return {"status": "done", "elapsed_minutes": 0, "data": {"error": edge["error"]}}
+    spec = edge["spec"]
     if system != "story" and ctx.flag("roll_mode", "players") == "players" and "roll" not in ctx.answers:
         shown = f" (DC {dc})" if system == "d20" and ctx.flag("show_dc", "on") == "on" else ""
-        asked = roll.get("spec", "1d20") if system == "d20" else checks.shown(system, spec)
         return {"status": "waiting_for_player",
-                "requests": [{"key": "roll", "kind": "roll", "expected": actor,
-                              **({"dice": checks.CORE_DICE} if system == "core" else {}),
-                              "text": f"{actor}: roll {roll.get('label') or 'for it'} — {asked}{shown}. "
-                                      f"At stake: {intent['risk']}"}]}
+                "requests": [checks.ask(system, roll, spec, actor, "roll", f"{actor}: roll {roll.get('label') or 'for it'}",
+                                        f"{shown}. At stake: {intent['risk']}")]}
     got = [int(ctx.answers["roll"]["value"])] if "roll" in ctx.answers else ctx.roll("roll", sides, num)
-    graded = checks.resolve(system, spec, dc, got[:1] if system == "d20" else got,   # d20 reads one die, as before 2.0
-                            likelihood=str(roll.get("likelihood") or "50/50"), chaos=checks.chaos(ctx.campaign, system))
+    graded = checks.grade(ctx, system, spec, dc, got, roll)
     if edge["push"]:                                     # marked once: a re-run after the cost answer returns above
         import mechanics
         edge["notes"] = edge["notes"] + [f"stress crossed {c['at']}: {c['note']}" for c in mechanics.push(ctx, actor)]

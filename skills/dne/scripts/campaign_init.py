@@ -286,6 +286,7 @@ def build(seed: dict) -> dict:
     if errors:
         return {"ok": False, "errors": errors}
     seed = _with_system(seed)
+    braid = seed.get("system", "d20") != "d20"
     name = seed["campaign"]
     root = paths._root()
     stage_root = root / f".dne-init-{name}"
@@ -306,12 +307,12 @@ def build(seed: dict) -> dict:
             text = text.replace("<campaign-name>", name).replace("<date>", today).replace("# Campaign: <name>", f"# Campaign: {name}")
             if t == "state.md":
                 text = text.replace("**Ruleset:** 2014  **System:** d20", f"**System:** {seed['system']}"
-                                    if seed.get("system", "d20") != "d20" else f"**Ruleset:** {seed.get('ruleset', '2014')}  **System:** d20")
+                                    if braid else f"**Ruleset:** {seed.get('ruleset', '2014')}  **System:** d20")
                 text = text.replace("**Party size:** <N>", f"**Party size:** {seed.get('party_size', '<N>')}")
                 text = text.replace("**Starting level:** <N>", f"**Starting level:** {seed.get('starting_level', '<N>')}")
                 if seed.get("worldkit") is not None:
                     text = text.replace("<worldkit.json | none — classic SRD fantasy>", "worldkit.json")
-                if seed.get("system", "d20") != "d20":    # Braid has no levels, HP or AC
+                if braid:    # Braid has no levels, HP or AC
                     text = text.replace("<worldkit.json | none — classic SRD fantasy>", "none")
                     text = text.replace(f"  **Starting level:** {seed.get('starting_level', '<N>')}", "")
                     text = re.sub(r"<Origin/Race> <Class> <Level> \| HP X/X \| AC X", "<concept> | harm X/4 | stress X/6", text)
@@ -319,11 +320,11 @@ def build(seed: dict) -> dict:
                     text = re.sub(r"^- (success_at_cost|degrees|hero_points|when_down|show_dc): \S+\n", "", text, flags=re.M)
                     text = text.replace("`Prone — Derribado`, `Short Rest — Descanso corto`",
                                         "`Stress — Estrés`, `Taken out — Fuera de combate`")
-            if t == "world.md" and seed.get("system", "d20") != "d20":
+            if t == "world.md" and braid:
                 text = text.replace("Mechanically these are 5e spells from worldkit.json (or the SRD).",
                                     "Under Braid there are no spells: a power is a label, a move or a module's track "
                                     "(SKILL-core.md).")
-            if t == "npcs-full.md" and seed.get("system", "d20") != "d20":   # the entry pattern, in Braid's stat line
+            if t == "npcs-full.md" and braid:   # the entry pattern, in Braid's stat line
                 text = text.replace("**CR/Level:**", "**Threat:**").replace(
                     "- **HP:** | **AC:** | **Attack:** | **Notable abilities:**", "- **Harm:** | **Deals:** | **Moves:**")
             (camp / t).write_text(text, encoding="utf-8")
@@ -375,7 +376,7 @@ def build(seed: dict) -> dict:
             if fail:
                 break
             args = ["-c", name, "add", "--name", n["name"], "--role", n["role"],
-                    *(["--threat", str(n["threat"])] if seed.get("system", "d20") != "d20" else ["--cr", str(n["cr"])])]
+                    *(["--threat", str(n["threat"])] if braid else ["--cr", str(n["cr"])])]
             for k in ("faction", "location", "attitude", "notes", "voice"):
                 if n.get(k):
                     args += [f"--{k}", str(n[k])]

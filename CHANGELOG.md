@@ -8,6 +8,17 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Fixed
+- In a Braid world the 5e-only scripts (`xp.py calc`, `encounter_gen.py`, `character.py`, `lookup.py`, `combat.py`) refuse even without `-c`: the campaign in play decides, as `combat.py` already did. A 5e world in play is unchanged.
+- `economy.py buy` in a Braid world no longer sorts gear through the 5e SRD.
+- One shared helper (`resolve.edge`, `ask`, `grade`) now prepares, asks for and grades every check in `stakes.py`, `table.py` and `story.py`; the requests and results are unchanged.
+
+### Notes for 5e players (changes since 1.8.6 you can see)
+- `save_check.py` marks ☐ on a state.md row that still holds the untouched template (it used to tick it).
+- `calendar.py` accepts dusk, noon, sunrise and sunset (they used to be errors).
+- `campaign_init.py` writes the `active-campaign.json` marker for every new world, the same one `/dne load` writes.
+- The oracle's event-focus labels are reworded (`remote event` → `news from afar`), so one `--seed` gives the same roll with new label words.
+
 ## [2.0.2-alpha] — 2026-11-26 — Mix eras, fair clues
 
 ### Fixed

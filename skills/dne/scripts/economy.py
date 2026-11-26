@@ -37,7 +37,7 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
-from paths import find_campaign, find_character_file, campaign_ruleset, norm_key
+from paths import find_campaign, find_character_file, campaign_ruleset, campaign_system, norm_key
 
 # Standard D&D 5e coin conversion to copper pieces (cp)
 COIN_TO_CP = {"pp": 1000, "gp": 100, "ep": 50, "sp": 10, "cp": 1}
@@ -180,6 +180,8 @@ def _inventory_section(campaign: str, item: str) -> str:
     from lookup import lookup_record
 
     key = norm_key(item)
+    if campaign_system(campaign) != "d20":       # Braid gear has no armour/weapon category; the SRD is 5e content
+        return "Adventuring Gear"
     for source in ({"campaign": campaign}, {"ruleset": campaign_ruleset(campaign)}):
         record = lookup_record(item, "equipment", **source)
         if not record or key not in (norm_key(record.get("name")), norm_key(record.get("index"))):

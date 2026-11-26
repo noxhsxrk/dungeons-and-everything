@@ -65,6 +65,29 @@ def chaos(campaign: str, system: str) -> int:
         return oracle.CHAOS_DEFAULT
 
 
+def edge(ctx, intent: dict, system: str, actor: str, spec) -> dict:
+    """The step every check takes before its dice (mechanics.edged: approach, conditions, push, help).
+    A d20 check is untouched and never loads the Braid rules."""
+    if system == "d20":
+        return {"spec": spec, "mod": 0, "notes": [], "push": False}
+    import mechanics
+    return mechanics.edged(ctx, intent, system, actor, spec)
+
+
+def ask(system: str, roll: dict, spec, actor: str, key: str, before: str, after: str = "") -> dict:
+    """The roll request a player answers: "<before> — <dice><after>", and core's dice kind."""
+    asked = roll.get("spec", "1d20") if system == "d20" else shown(system, spec)
+    return {"key": key, "kind": "roll", "expected": actor, **({"dice": CORE_DICE} if system == "core" else {}),
+            "text": f"{before} — {asked}{after}"}
+
+
+def grade(ctx, system: str, spec, dc: int, got: list, roll: dict, step_up: int = 0) -> dict:
+    """resolve() as every check calls it: d20 reads one die (as before 2.0), plus the roll's likelihood and the
+    campaign's chaos."""
+    return resolve(system, spec, dc, got[:1] if system == "d20" else got, step_up=step_up,
+                   likelihood=str(roll.get("likelihood") or "50/50"), chaos=chaos(ctx.campaign, system))
+
+
 def resolve(system: str, spec, target=None, rolled=(), *, step_up: int = 0, likelihood: str = "50/50",
             chaos: int = oracle.CHAOS_DEFAULT) -> dict:
     """Grade one check. {"degree", "raw", "total", "passed"}.

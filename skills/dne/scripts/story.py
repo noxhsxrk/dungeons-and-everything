@@ -425,22 +425,16 @@ def _register() -> None:
             return {"status": "done", "elapsed_minutes": 0, "data": {"error": err}}, None
         num, sides, mod = checks.dice_for(system, roll.get("spec"))
         actor = str(intent.get("actor") or "Party")
-        spec, edge = roll.get("spec"), {"notes": [], "push": False}
-        if system != "d20":                                 # sheet approach, conditions, push, help: as `roll`
-            import mechanics
-            edge = mechanics.edged(ctx, intent, system, actor, spec)
-            if edge.get("error"):
-                return {"status": "done", "elapsed_minutes": 0, "data": {"error": edge["error"]}}, None
-            spec = edge["spec"]
+        edge = checks.edge(ctx, intent, system, actor, roll.get("spec"))
+        if edge.get("error"):
+            return {"status": "done", "elapsed_minutes": 0, "data": {"error": edge["error"]}}, None
+        spec = edge["spec"]
         if advantage and system == "core":
             spec = f"{checks.CORE_DICE}{checks.dice_for(system, spec)[2] + 1:+d}"
         if system != "story" and ctx.flag("roll_mode", "players") == "players" and key not in ctx.answers:
             twice = " Roll twice and send the higher." if advantage and system == "d20" else ""
-            asked = roll.get("spec", "1d20") if system == "d20" else checks.shown(system, spec)
             return {"status": "waiting_for_player",
-                    "requests": [{"key": key, "kind": "roll", "expected": actor,
-                              **({"dice": checks.CORE_DICE} if system == "core" else {}),
-                                  "text": f"{actor}: {text} — {asked}.{twice}"}]}, None
+                    "requests": [checks.ask(system, roll, spec, actor, key, f"{actor}: {text}", f".{twice}")]}, None
         if key in ctx.answers:
             got = [int(ctx.answers[key]["value"])]
         elif system == "d20":
@@ -448,12 +442,12 @@ def _register() -> None:
         else:
             got = ctx.roll(key, sides, num)
         dc = int(roll.get("dc", 10))
-        graded = checks.resolve(system, spec, dc, got, step_up=int(advantage and system == "story"),
-                                likelihood=str(roll.get("likelihood") or "50/50"), chaos=checks.chaos(ctx.campaign, system))
+        graded = checks.grade(ctx, system, spec, dc, got, roll, step_up=int(advantage and system == "story"))
         if system == "d20":
             return None, {"dice": graded["raw"], "total": graded["total"], "dc": dc, "passed": graded["passed"],
                           "advantage": advantage}
         if edge["push"]:
+            import mechanics
             edge["notes"] = edge["notes"] + [f"stress crossed {c['at']}: {c['note']}" for c in mechanics.push(ctx, actor)]
         return None, {"dice": graded["raw"], "total": graded["total"], "degree": graded["degree"],
                       "passed": graded["passed"], "advantage": advantage, **({"edges": edge["notes"]} if edge["notes"] else {})}

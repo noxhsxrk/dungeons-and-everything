@@ -496,7 +496,7 @@ def edged(ctx, intent: dict, system: str, actor: str, spec) -> dict:
             return {"error": f"no approach {asked['approach']!r} on {actor}'s sheet: send a spec (\"2d6+1\") or "
                              f"one of {', '.join(BRAID['approaches'])}"}
         spec = f"{checks.CORE_DICE}{base:+d}"
-    edge = edges(ctx, asked, system, actor)
+    edge = _modifiers(ctx, asked, system, actor)
     if edge.get("error"):
         return edge
     if edge["mod"] and system == "core":
@@ -504,7 +504,7 @@ def edged(ctx, intent: dict, system: str, actor: str, spec) -> dict:
     return {**edge, "spec": spec, "push": bool(asked["push"])}
 
 
-def edges(ctx, intent: dict, system: str, actor: str) -> dict:
+def _modifiers(ctx, intent: dict, system: str, actor: str) -> dict:
     """The modifier conditions, a push and help add to `actor`'s check ({"mod", "notes"} or {"error"}). Reads only:
     the push's stress is marked by `push()` once the roll is done (the handler runs again when a player's dice come)."""
     if system == "story":

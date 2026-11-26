@@ -237,27 +237,21 @@ def _search(ctx, intent: dict) -> dict:
         if err:
             return {"status": "done", "elapsed_minutes": 0, "data": {"error": err}}
         num, sides, mod = checks.dice_for(system, roll.get("spec"))
-        spec, edge = roll.get("spec"), {"notes": [], "push": False}
-        if system != "d20":                               # sheet approach, conditions, push, help: as `roll`
-            import mechanics
-            edge = mechanics.edged(ctx, intent, system, actor, spec)
-            if edge.get("error"):
-                return {"status": "done", "elapsed_minutes": 0, "data": {"error": edge["error"]}}
-            spec = edge["spec"]
+        edge = checks.edge(ctx, intent, system, actor, roll.get("spec"))
+        if edge.get("error"):
+            return {"status": "done", "elapsed_minutes": 0, "data": {"error": edge["error"]}}
+        spec = edge["spec"]
         if system != "story" and ctx.flag("roll_mode", "players") == "players" and "roll" not in ctx.answers:
-            asked = roll.get("spec", "1d20") if system == "d20" else checks.shown(system, spec)
             return {"status": "waiting_for_player",
-                    "requests": [{"key": "roll", "kind": "roll", "expected": actor,
-                              **({"dice": checks.CORE_DICE} if system == "core" else {}),
-                                  "text": f"{actor}: roll {roll.get('label') or 'to search'} — {asked}"}]}
+                    "requests": [checks.ask(system, roll, spec, actor, "roll", f"{actor}: roll {roll.get('label') or 'to search'}")]}
         got = [int(ctx.answers["roll"]["value"])] if "roll" in ctx.answers else ctx.roll("roll", sides, num)
-        graded = checks.resolve(system, spec, int(roll.get("dc", 10)), got[:1] if system == "d20" else got,
-                                likelihood=str(roll.get("likelihood") or "50/50"), chaos=checks.chaos(ctx.campaign, system))
+        graded = checks.grade(ctx, system, spec, int(roll.get("dc", 10)), got, roll)
         good = graded["passed"]
         if system != "d20":                       # Braid: the GM needs the reading, and one roll is not the whole room
             check = {"total": graded["total"], "degree": graded["degree"], **({"edges": edge["notes"]} if edge["notes"] else {})}
             hidden_cap = SEARCH_HIDDEN.get(graded["degree"], 0)
         if edge["push"]:
+            import mechanics
             crossed = mechanics.push(ctx, actor)
             if check is not None:
                 check["stress"] = "+1 (pushed)" + "".join(f"; crossed {c['at']}: {c['note']}" for c in crossed)

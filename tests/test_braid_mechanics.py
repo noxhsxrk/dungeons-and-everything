@@ -49,6 +49,15 @@ class Mechanics(EngineCase):
         self.turn.resolve("oldworld", [{"action": "track", "owner": "Mira", "id": "stress", "mark": 1, "why": "again"}])
         self.assertEqual(self.value("track", "mira/stress", "value"), 2)
 
+    def test_a_resent_table_roll_rolls_once(self):
+        self.turn.begin("oldworld", "setup")
+        intent = {"action": "table_roll", "table": [f"entry {n}" for n in range(50)], "why": "the house stirs"}
+        first = self.data(self.turn.resolve("oldworld", [intent]))
+        self.assertNotIn("error", first)
+        self.assertIn("entry ", json.dumps(first))
+        for _ in range(5):                                                 # retries never roll again
+            self.assertEqual(self.data(self.turn.resolve("oldworld", [intent])), first)
+
     def test_undo_restores_the_previous_values(self):
         self.do("first", *[i for i, _ in CHANGES])
         self.turn.finish("oldworld", "One.")

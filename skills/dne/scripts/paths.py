@@ -296,14 +296,27 @@ def not_d20(name: str, what: str, instead: str = "") -> "str | None":
                                        f"(turn.py -c {name} resolve) make every check in this system."))
 
 
+def active_campaign():
+    """The campaign in play, or None when no marker names one with a state.md."""
+    import json
+    try:
+        name = json.loads((runtime_dir() / "active-campaign.json").read_text(encoding="utf-8")).get("name")
+        return name if name and (find_campaign(name) / "state.md").is_file() else None
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
 def refuse_unless_d20(argv: list, what: str) -> None:
-    """CLI gate for the 5e-only scripts: when -c/--campaign names a non-d20 campaign, say why and exit 2."""
+    """CLI gate for the 5e-only scripts: when -c/--campaign names a non-d20 campaign, say why and exit 2.
+    With no -c, the campaign in play (active-campaign.json, written by /dne load and campaign_init) decides."""
     name = None
     for i, a in enumerate(argv):
         if a in ("-c", "--campaign") and i + 1 < len(argv):
             name = argv[i + 1]
         elif a.startswith("--campaign="):
             name = a.split("=", 1)[1]
+    if not name:
+        name = active_campaign()
     if not name:
         return
     try:
