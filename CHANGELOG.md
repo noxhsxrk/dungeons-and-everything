@@ -8,6 +8,8 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+## [2.0.5-alpha] — 2026-11-26 — NPCs know only their own
+
 ### Fixed
 - NPCs knew what only the player knew: an NPC quoted the grandfather's notebook from the PC's sheet (Braid), and a girlfriend appeared because a PC said so (5e). Each turn's context now lists, for every NPC in the scene, what they know of the PCs (their bond line, what they witnessed or were told) and that this is all they know; GM only. SKILL.md (both systems): a PC's sheet and past are the player's, and a character's word is a claim: what an NPC feels, agrees to or has done is hers, and no disposition, bond or graph edge changes from a PC's statement alone. The `claims` dial covers the world, never another character's mind.
 - A Braid bond takes a `note` at character creation (SKILL-core), the one thing that NPC knows of the character's past.
