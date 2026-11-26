@@ -13,7 +13,7 @@
  "optional": [
   "composure",
   "roles",
-  "make_the_case"
+  "strings"
  ],
  "dials": {
   "storyteller": "noir",

@@ -155,6 +155,19 @@ class FleshFlow(_Root):
 
 
 class SettingBans(_Root):
+    def test_era_bans_share_one_vocabulary_and_can_be_mixed(self):
+        mixed = sg.tables_for(["western", "analog-horror"])
+        flat = json.dumps(mixed["analog-horror"])
+        for word in ("unlabelled tapes", "voicemail inbox", "the recording addresses"):
+            self.assertNotIn(word, flat)
+        self.assertIn("unlabelled tapes", json.dumps(sg.tables_for(["western", "analog-horror"], mix_eras=True)))
+        kept = json.dumps(sg.tables_for(["pirates", "magic-academy", "abyss-delve"]))
+        for word in ("train war-casters", "ancient engine", "electric eels"):   # verbs and natural words survive
+            self.assertIn(word, kept)
+        self.assertTrue(sg._mentions("two cars", ["car"]) and not sg._mentions("a cart", ["car"]))
+        skel = sg.generate(["pirates", "analog-horror"], 7, record=False, mix_eras=True)
+        self.assertTrue(skel["mix_eras"])
+
     def test_a_wuxia_siege_never_rolls_a_radio(self):
         for seed in range(150):
             skel = sg.generate(["war", "wuxia", "traitor"], seed, record=False)

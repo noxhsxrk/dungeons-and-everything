@@ -180,44 +180,6 @@ const DIALS = [
     ["open", "Open", "The players help write the world", "You know him, and the GM asks you what he owes you."]]],
 ];
 const LISTS = [["lines", "Lines: never in the story"], ["veils", "Veils: may happen, off screen"]];
-// Braid genre presets (data/genres/*.json; a test keeps this in step): id, name, early, modules
-const GENRES = [
-  ["abyss-delve", "Abyssal delve (megadungeon expedition)", true, ["usage_die", "doom", "position_effect"]],
-  ["analog-horror", "Analog horror (found footage, broadcasts)", true, ["composure", "doom"]],
-  ["comedy", "Comedy / gonzo", false, ["mooks"]],
-  ["competition", "Competition / courtroom", true, ["contest"]],
-  ["court-intrigue", "Court intrigue / politics", true, ["strings", "roles", "gm_budget"]],
-  ["cozy", "Cozy / slice of life", false, ["seasons", "strings"]],
-  ["fantasy", "Fantasy adventure", false, ["vows", "usage_die"]],
-  ["heist", "Heist", false, ["position_effect", "engagement", "heat"]],
-  ["historical", "Historical / docudrama", false, ["usage_die"]],
-  ["horror", "Cosmic horror", false, ["composure", "clues"]],
-  ["kaiju", "Kaiju / giant robots", true, ["war_layer", "mooks", "doom"]],
-  ["kids-adventure", "Kids on bikes / coming of age", true, ["labels", "strings", "clues"]],
-  ["litrpg", "LitRPG / another world", true, ["status_window", "mooks"]],
-  ["mafia", "Crime family / gangster", true, ["heat", "strings", "roles"]],
-  ["magic-academy", "Magic academy", true, ["labels", "strings", "seasons"]],
-  ["mystery", "Mystery", false, ["clues", "gm_budget"]],
-  ["pirates", "Pirates / high seas", true, ["usage_die", "vows", "mooks"]],
-  ["portal-fantasy", "Portal fantasy", true, ["vows", "position_effect"]],
-  ["post-apoc", "Post-apocalypse", true, ["usage_die", "seasons", "vows"]],
-  ["road-trip", "Road trip", true, ["vows", "emotions"]],
-  ["romance", "Romance / drama", false, ["strings", "emotions"]],
-  ["sci-fi", "Hard science fiction", false, ["usage_die", "vows"]],
-  ["slasher", "Survival horror (slasher)", false, ["panic", "doom", "usage_die"]],
-  ["space-opera", "Space opera / cyberpunk", false, ["position_effect", "heat", "mooks"]],
-  ["spy", "Spy / espionage", true, ["position_effect", "heat", "roles"]],
-  ["superhero", "Superheroes", true, ["labels", "mooks", "strings"]],
-  ["survival", "Survival (wilderness, disaster, castaway)", true, ["usage_die", "doom", "vows"]],
-  ["thai-ghost", "Thai ghost story / folk horror", true, ["composure", "clues"]],
-  ["thriller", "Psychological thriller / twist", true, ["clues", "memories", "gm_budget"]],
-  ["timeloop", "Time loop", false, ["loop"]],
-  ["traitor", "Traitor among us", false, ["roles"]],
-  ["urban-occult", "Urban occult (night world)", true, ["strings", "heat", "emotions"]],
-  ["war", "War", false, ["war_layer", "position_effect", "usage_die"]],
-  ["western", "Western / frontier", true, ["usage_die", "vows", "heat"]],
-  ["wuxia", "Wuxia / cultivation", true, ["realm", "mooks", "vows"]],
-];
 
 const q = new URLSearchParams(location.search);   // prefill: setup.html?pacing=slow&content=18
 const f = document.getElementById("f");
@@ -234,15 +196,8 @@ for (const [key, title, hint, def, scene, opts] of DIALS) {
 f.insertAdjacentHTML("beforeend", `<section><h2>Lines &amp; Veils</h2><p class="hint">Separate with commas, e.g. spiders, animal cruelty</p><div class="two">` +
   LISTS.map(([k, l]) => `<div><label for="${k}">${l}</label><textarea id="${k}" name="${k}">${esc(q.get(k) || "")}</textarea></div>`).join("") +
   `</div></section>`);
-f.insertAdjacentHTML("beforeend", `<section><h2>Genres &amp; modules<code>modules</code></h2><p class="hint">Braid only (not 5e). Tick 1–5 genres to fill in their modules; the GM shows the rest of the preset. “Early” genres run on rules of our own design.</p><div class="opts">` +
-  GENRES.map(([id, name, early]) => `<label class="opt"><input type="checkbox" name="genre" value="${id}"><b>${esc(name)}</b>${early ? "<span>early</span>" : ""}</label>`).join("") +
-  `</div><p class="warn" id="genre-note" hidden>Five genres at most</p><div class="two"><div><label for="modules">Modules (comma-separated; none = all off; empty = leave as is)</label><textarea id="modules" name="modules">${esc(q.get("modules") || "")}</textarea></div></div></section>`);
-f.addEventListener("change", e => {
-  if (e.target.name !== "genre") return;
-  const ticked = [...f.querySelectorAll("input[name=genre]:checked")].map(i => i.value);
-  document.getElementById("genre-note").hidden = ticked.length <= 5;
-  f.elements.modules.value = [...new Set(GENRES.filter(g => ticked.includes(g[0])).flatMap(g => g[3]))].join(", ");
-});
+f.insertAdjacentHTML("beforeend", `<section><h2>Modules<code>modules</code></h2><p class="hint">Braid only (not 5e). The GM picks these from the story you described; change them here if you like.</p>` +
+  `<div class="two"><div><label for="modules">Modules (comma-separated; none = all off; empty = leave as is)</label><textarea id="modules" name="modules">${esc(q.get("modules") || "")}</textarea></div></div></section>`);
 
 function text() {
   const d = new FormData(f), lines = ["[DnE table settings]",

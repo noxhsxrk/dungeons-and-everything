@@ -74,6 +74,8 @@ def validate(gid: str) -> list:
         out.append("system must be core: presets never force 5e")
     if g["story_axes"] not in story_gen.genre_ids():
         out.append(f"story_axes {g['story_axes']!r} is not a data/story_axes file")
+    if not g["fits"]:
+        out.append("fits: at least one story it fits (genres.py list matches players' words to these)")
     for f in (*LISTS, "fits"):
         if not all(isinstance(x, str) and x.strip() for x in g[f]):
             out.append(f"{f}: a list of non-empty text")
@@ -158,6 +160,13 @@ def combine(ids, drives=None, sets=None) -> dict:
     # what the table settled is no longer a conflict, and a module switched on is no longer one to add
     out["conflicts"] = [c for c in out["conflicts"] if c["field"].split(".", 1)[1] not in sets]
     out["optional"] = [m for m in out["optional"] if m not in out["modules"]]
+    # the clues module plays the case that only story_gen's mystery thread builds
+    if "clues" in out["modules"] and "mystery" not in out["story_axes"]:
+        if len(out["story_axes"]) < MAX:
+            out["story_axes"].append("mystery")
+            out["warnings"].append("clues: mystery added to the story generator as a thread, so a case is built")
+        else:
+            out["warnings"].append("clues: no case without mystery in the story generator: drop a genre or use make_the_case")
     import modules
     errors, warnings = modules.problems(out["modules"])
     out["errors"] += errors
@@ -168,8 +177,9 @@ def combine(ids, drives=None, sets=None) -> dict:
 
 
 def flag_lines(mix: dict, system: str = "core") -> list:
-    """The Session Flags the mix writes. 5e (d20) keeps its own rules: dials only, no modules."""
-    lines = [f"- {k}: {v}" for k, v in mix["dials"].items()]
+    """The Session Flags the mix writes. 5e (d20) keeps its own rules: dials only, no modules, and no `when_down`
+    (a preset's `choices` means Braid's harm 4; on 5e it would replace death saves)."""
+    lines = [f"- {k}: {v}" for k, v in mix["dials"].items() if system != "d20" or k != "when_down"]
     if system != "d20":
         lines.insert(0, f"- modules: {', '.join(mix['modules']) or '(none)'}")
     return lines
@@ -231,8 +241,8 @@ def main(argv=None) -> int:
     try:
         if args.cmd == "list":
             for gid, g in catalog().items():
-                print(f"{gid:14} {g['name']}{'  [early]' if g['early'] else ''}: fits {', '.join(g['fits'])}"
-                      f" | modules {', '.join(g['modules'])}")
+                print(f"{gid:14} {g['name']}{'  [early]' if g['early'] else ''}: fits {', '.join(g.get('fits') or ['?'])}"
+                      f" | modules {', '.join(g.get('modules', []))}")
             return 0
         if args.cmd == "show":
             print(json.dumps(load(args.id), ensure_ascii=False, indent=1))

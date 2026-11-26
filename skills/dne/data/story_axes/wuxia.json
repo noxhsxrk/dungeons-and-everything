@@ -1,7 +1,7 @@
 {
  "_about": "Martial arts and cultivation: sects, grudges, manuals and the jianghu. Designed by us. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
  "kind": "setting",
- "bans": ["radio", "radios", "tape", "tapes", "video", "voicemail", "recording", "recordings", "screen", "camera", "cameras", "data", "network", "gun", "guns", "rifle", "train", "trains", "railway", "car", "cars", "garage"],
+ "bans": ["@digital", "@motor", "@railway", "@firearm"],
  "axes": {
   "sect": [
    "a mountain sword sect in decline",

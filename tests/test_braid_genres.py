@@ -124,9 +124,10 @@ class Presets(unittest.TestCase):
             self.assertEqual(d["kind"], story_gen.load_genre(gid)["kind"], gid)
 
     def test_no_trade_names(self):
-        for path in sorted(genres.DIR.glob("*.json")):
+        for path in [*sorted(genres.DIR.glob("*.json")), *sorted(story_gen.axes_dir().glob("*.json"))]:
             text = path.read_text(encoding="utf-8")
-            self.assertEqual([t for t in TRADE_4 + TRADE_5 if re.search(t, text)], [], path.name)
+            self.assertEqual([t for t in TRADE_4 + TRADE_5 + [r"(?i)kids on bikes", r"(?i)groundhog"]
+                              if re.search(t, text)], [], path.name)
 
     def test_presets_never_write_content(self):
         for gid, d in genres.catalog().items():
@@ -148,12 +149,31 @@ class Mixing(unittest.TestCase):
         self.assertNotIn("clues", mix["optional"])
         self.assertEqual(genres.combine("cozy,mystery")["dials"]["storyteller"], "banter")
 
+    def test_clues_without_mystery_adds_the_mystery_thread(self):
+        self.assertEqual(genres.combine("thai-ghost")["story_axes"], ["thai-ghost", "mystery"])
+        self.assertEqual(genres.combine("mystery,thai-ghost")["story_axes"], ["mystery", "thai-ghost"])
+        self.assertEqual(genres.combine("western")["story_axes"], ["western"])
+        skel = story_gen.generate(genres.combine("thai-ghost")["story_axes"], seed=4, record=False)
+        self.assertTrue(next(t for t in skel["threads"] if t["genre"] == "mystery").get("case"))
+
+    def test_list_survives_a_preset_without_fits(self):
+        from contextlib import redirect_stdout
+        from unittest import mock
+        bad = {**genres.load("western")}
+        bad.pop("fits")
+        with mock.patch.object(genres, "catalog", return_value={"western": bad}), redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(genres.main(["list"]), 0)
+        self.assertIn("fits ?", out.getvalue())
+        with mock.patch.object(genres, "load", return_value={**bad, "fits": []}):
+            self.assertTrue(any(p.startswith("fits:") for p in genres.validate("western")))
+
     def test_two_plot_genres_must_choose_a_driver(self):
         mix = genres.combine("horror,heist,war")
         self.assertTrue(any("only one drives" in e for e in mix["errors"]), mix["errors"])
         mix = genres.combine("horror,heist,war", drives="war")
         self.assertEqual(mix["errors"], [])
-        self.assertEqual((mix["drives"], mix["story_axes"]), ("war", ["horror", "war", "heist"]))
+        # horror's clues bring a mystery thread to build the case
+        self.assertEqual((mix["drives"], mix["story_axes"]), ("war", ["horror", "war", "heist", "mystery"]))
         skel = story_gen.generate(mix["story_axes"], seed=3, record=False)
         self.assertEqual(skel["drives"], "war")
         self.assertTrue(genres.combine("horror,heist,war", drives="horror")["errors"])     # not a plot genre
@@ -210,6 +230,7 @@ class Apply(unittest.TestCase):
         for five in ({**SEED, "system": "d20"}, {k: v for k, v in SEED.items() if k != "system"}):  # none = d20
             d20 = genres.apply_to_seed({**five, "ruleset": "2014"}, genres.combine("fantasy"))["seed"]
             self.assertNotIn("modules", d20["flags"])
+            self.assertNotIn("when_down", d20["flags"])                 # death saves stay as in 5e
             self.assertEqual(d20["flags"]["storyteller"], "pulp")
             self.assertEqual(d20.get("system", "d20"), "d20")
 
@@ -264,14 +285,12 @@ class Flags(unittest.TestCase):
         self.assertIn("state.md Session Flags: add `- claims: grounded` (ask the table)", todo)
         self.assertIn("state.md Session Flags: add `- modules: (none)`", todo)
 
-    def test_setup_page_lists_claims_and_the_genres_in_step_with_the_data(self):
+    def test_setup_page_lists_claims_and_never_a_genre_menu(self):
         page = (ROOT / "skills" / "dne" / "display" / "setup.html").read_text(encoding="utf-8")
         for v in genres.DIALS["claims"]:
             self.assertIn(f'["{v}", ', page)
-        block = page.split("const GENRES = [", 1)[1].split("];", 1)[0]
-        rows = [json.loads(line.strip().rstrip(",")) for line in block.strip().splitlines()]
-        want = [[d["id"], d["name"], d["early"], d["modules"]] for d in genres.catalog().values()]
-        self.assertEqual(rows, want)
+        self.assertNotIn('name="genre"', page)                    # players describe the story; the GM matches presets
+        self.assertIn('name="modules"', page)
 
     def test_worldkit_show_prints_a_braid_kit(self):
         import worldkit

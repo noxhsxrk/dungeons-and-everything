@@ -1,5 +1,5 @@
 {
- "_about": "Kids on bikes and coming of age: children or teens, a small town, a summer, and a secret the adults won't see. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
+ "_about": "Kids' adventure and coming of age: children or teens, a small town, a summer, and a secret the adults won't see. Story axes for story_gen.py. Each axis is rolled on its own; an entry is a string (weight 1) or {v, w, decay}. All text is our own.",
  "kind": "mood",
  "axes": {
   "town": [

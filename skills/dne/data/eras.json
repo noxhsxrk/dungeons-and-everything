@@ -1,0 +1,10 @@
+{
+ "_about": "Era vocabularies for story_axes bans. A setting genre names them as \"@digital\" etc. in its bans; story_gen.py leaves out every value of a mixed-in genre that mentions one of the words (whole words, plurals included). Write singular forms.",
+ "digital": ["radio", "phone", "telephone", "smartphone", "internet", "online", "computer", "laptop", "drone", "satellite",
+             "television", "tv", "video", "camera", "cctv", "email", "screen", "app", "website", "tape", "voicemail",
+             "recording", "data", "network", "neon", "robot", "spaceship", "laser", "gps", "livestream", "social media"],
+ "motor": ["car", "truck", "bus", "plane", "airplane", "helicopter", "motorbike", "motorcycle", "missile", "submarine",
+           "electricity", "power line", "light bulb", "garage", "petrol", "gasoline", "highway"],
+ "railway": ["railway", "railroad", "locomotive", "train station", "steam train", "subway"],
+ "firearm": ["gun", "rifle", "pistol", "revolver", "shotgun"]
+}

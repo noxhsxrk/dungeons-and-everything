@@ -34,10 +34,10 @@ story_gen.py -c <camp> skeleton --genre war,mystery,horror [--seed N]
 ```
 
 - **Genres.** Give 1–5, main genre first. Each genre has a kind:
-  - **plot:** mystery, heist, war, competition
-  - **mood:** horror, slasher, analog-horror, romance, cozy, comedy
-  - **setting:** fantasy, sci-fi, space-opera, wuxia, litrpg, historical
-  - **frame:** timeloop, traitor
+  - **plot:** abyss-delve, competition, court-intrigue, heist, mafia, mystery, portal-fantasy, spy, survival, thriller, war
+  - **mood:** analog-horror, comedy, cozy, horror, kids-adventure, romance, slasher, thai-ghost
+  - **setting:** fantasy, historical, kaiju, litrpg, magic-academy, pirates, post-apoc, sci-fi, space-opera, superhero, urban-occult, western, wuxia
+  - **frame:** road-trip, timeloop, traitor
 - **Who drives.** The first plot genre drives the story. Every other genre is a sub-thread: in war + mystery the
   mission is the spine and the case is a thread inside it. With no plot genre, the first genre drives.
 - **How each genre is rolled.** Each axis (culprit, motive, twist, obstacle…) is rolled on its own from
@@ -50,12 +50,17 @@ story_gen.py -c <camp> skeleton --genre war,mystery,horror [--seed N]
     clues with `id`, `text`, `where`, `obvious`), plus `proves` and `leads` for you. The clue `text` is a
     stand-in: flesh each clue with `--slot clue:<id>` (step 3) before the case reaches play, because `search`
     sends the text to the player's phone word for word.
-  - **horror, slasher, analog-horror, war, competition, comedy:** a ladder of at least 3 steps that rise one
-    after another. Play them in order. Do not jump to the top step.
+  - **a ladder** (abyss-delve, analog-horror, comedy, competition, court-intrigue, horror, kaiju, kids-adventure,
+    mafia, magic-academy, portal-fantasy, road-trip, slasher, spy, survival, thai-ghost, thriller, urban-occult,
+    war): at least 3 steps that rise one after another. Play them in order. Do not jump to the top step.
   - **heist:** a plan with the target, two defences, the insider and what goes wrong.
   - **romance:** obstacles. One comes from a character, one from circumstance.
-- **Setting genres keep their era.** wuxia, fantasy and historical leave out values that do not fit them (radios,
-  guns, recordings, data…) in every genre in play; `axes` shows what each leaves out. A pin still wins.
+- **Setting genres keep their era.** fantasy, historical, pirates, western and wuxia leave out values that do not
+  fit them (radios, phones, cars, guns, recordings, data…) in every genre in play, from the shared vocabularies in
+  `data/eras.json`; `axes` shows what each leaves out. A pin still wins. When the players want the eras mixed
+  (pirates with phones, a cyber-western), add `--mix-eras` to `skeleton`: nothing is left out, and `check` keeps it.
+- **The clues module needs the mystery thread.** Only mystery builds a case. `genres.py combine` adds mystery to
+  the story generator line when `clues` is on without it, so a Thai ghost story or a thriller gets its case too.
 - **In a campaign (`-c`).** A mystery's places become the campaign's map places (the party's place first, where
   the trail starts) and its suspects get the names of NPCs in npcs.md, as far as there are enough of each. Places
   the map lacks keep their generated names: add them to the map, or rename them with

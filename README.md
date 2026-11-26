@@ -44,7 +44,7 @@ Then, in your agent (Claude Code, Codex, Gemini CLI, Antigravity, opencode, Copi
 
 Python 3.10+. For the TV and phone display: `pip3 install flask flask-cors numpy cryptography`.
 
-<img src="docs/images/worlds.jpg" alt="Five worlds on one engine: neon Bangkok 2077, a mythic Thai kingdom, a Weird West showdown, kids on bikes in a 1994 small town, a ship diving into a star" width="100%">
+<img src="docs/images/worlds.jpg" alt="Five worlds on one engine: neon Bangkok 2077, a mythic Thai kingdom, a Weird West showdown, kids on bicycles in a 1994 small town, a ship diving into a star" width="100%">
 
 <sub>Five worlds built and played while testing: <b>Neon Krung</b> (Bangkok 2077) · <b>Himmapan</b> (mythic Ayutthaya) · <b>Iron Hymn</b> (Weird West, 1881) · <b>Cedar Falls</b> (1994, no powers at all) · <b>Perihelion</b> (hard sci-fi on the 2024 rules).</sub>
 
@@ -52,7 +52,7 @@ Python 3.10+. For the TV and phone display: `pip3 install flask flask-cors numpy
 
 At `/dne new` you just describe the story you want, in your own words: *"a murder in a monsoon fishing village, and something in the fog"*, *"we're stuck in the same school day and one of us is lying"*, *"a quiet year running a noodle shop"*. The GM reads it and pitches back how it will run it, in plain words, and you change what you like. There is no menu to pick from.
 
-Behind that pitch the engine has 35 genre presets, each a bundle of small rules rather than a box your story has to fit: mystery, heist, war, competition, psychological thriller, spy, court intrigue, crime family, survival; cosmic horror, Thai ghost story, slasher, analog horror, romance, cozy, comedy, kids on bikes; fantasy, portal fantasy, magic academy, abyssal delve, urban occult, hard sci-fi, space opera, post-apocalypse, superheroes, western, pirates, kaiju and giant robots, wuxia, LitRPG, historical; time loop, road trip and traitor among us. A story none of them fits runs on plain Braid with only the rules it needs (23 modules to pick from).
+Behind that pitch the engine has 35 genre presets, each a bundle of small rules rather than a box your story has to fit: mystery, heist, war, competition, psychological thriller, spy, court intrigue, crime family, survival; cosmic horror, Thai ghost story, slasher, analog horror, romance, cozy, comedy, kids' adventure; fantasy, portal fantasy, magic academy, abyssal delve, urban occult, hard sci-fi, space opera, post-apocalypse, superheroes, western, pirates, kaiju and giant robots, wuxia, LitRPG, historical; time loop, road trip and traitor among us. A story none of them fits runs on plain Braid with only the rules it needs (23 modules to pick from).
 
 <img src="docs/images/genres.jpg" alt="A board of 35 genre presets, from abyssal delve and analog horror to western and wuxia" width="100%">
 

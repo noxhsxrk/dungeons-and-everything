@@ -15,7 +15,7 @@ Four steps (GM procedure: SKILL-storygen.md):
 Usage:
   story_gen.py axes     mystery,horror                          (every axis and its values: what `seed` can pin)
   story_gen.py seed     --file F "fact" ["mystery.motive=an old debt" ...]
-  story_gen.py skeleton --file F --genre war,mystery,horror [--seed N] [--history-at K]
+  story_gen.py skeleton --file F --genre war,mystery,horror [--seed N] [--history-at K] [--mix-eras]
   story_gen.py flesh    --file F --slot premise                 (prints the brief and the ban list)
   story_gen.py flesh    --file F --slot premise --candidates '[{"text": "...", "p": 0.08}, ...]'
   story_gen.py fill     --file F                                (plain text for every unwritten hidden clue)
@@ -83,14 +83,21 @@ def _entries(values: list) -> list:
 
 
 def _mentions(text: str, words: list) -> bool:
-    return any(w and re.search(rf"(?<!\w){re.escape(w)}(?!\w)", text, re.I) for w in words)
+    return any(w and re.search(rf"(?<!\w){re.escape(w)}(?:s|es)?(?!\w)", text, re.I) for w in words)
 
 
-def tables_for(genres: list) -> dict:
+def ban_words(table: dict) -> list:
+    """A table's bans, each "@era" expanded from data/eras.json (one shared vocabulary, so settings don't drift)."""
+    eras = json.loads((paths.data_dir() / "eras.json").read_text(encoding="utf-8"))
+    return [w for b in table.get("bans", []) for w in (eras[b[1:]] if b.startswith("@") else [b])]
+
+
+def tables_for(genres: list, mix_eras: bool = False) -> dict:
     """Each genre's table with the values a setting genre in play rules out (radios in a wuxia siege) taken out.
-    A list the bans would empty is kept whole; a pinned value is never filtered."""
+    A list the bans would empty is kept whole; a pinned value is never filtered. `mix_eras`: the players want the
+    eras mixed (pirates with phones), so nothing is taken out."""
     tables = {g: load_genre(g) for g in genres}
-    bans = [b for t in tables.values() for b in t.get("bans", [])]
+    bans = [] if mix_eras else [b for t in tables.values() for b in ban_words(t)]
     if not bans:
         return tables
 
@@ -536,7 +543,7 @@ def check(skel: dict) -> dict:
     """Every thread's validator, plus the seed facts. Repairs in place; re-rolls a mystery it cannot repair,
     but only while its clue texts are still stand-ins: a written case is never thrown away, its problems are listed."""
     out, ok = {}, True
-    tables = tables_for([t["genre"] for t in skel["threads"]])
+    tables = tables_for([t["genre"] for t in skel["threads"]], skel.get("mix_eras", False))
     for n, thread in enumerate(skel["threads"]):
         table = tables[thread["genre"]]
         pins = parse_pins(skel.get("facts") or [], thread["genre"], table)
@@ -563,13 +570,13 @@ def check(skel: dict) -> dict:
 
 # ── the four steps ────────────────────────────────────────────────────────────
 
-def generate(genres: list, seed=None, facts=None, history_at=None, record=True, world=None) -> dict:
+def generate(genres: list, seed=None, facts=None, history_at=None, record=True, world=None, mix_eras=False) -> dict:
     """Roll a skeleton for 1–5 genres. Same seed + same history_at → the same skeleton.
     `world` ({places, start, npcs}: campaign_world) puts a mystery's places and suspects into the campaign."""
     genres = [g.strip() for g in genres if g.strip()]
     if not 1 <= len(genres) <= 5 or len(set(genres)) != len(genres):
         raise ValueError("give 1 to 5 different genres")
-    tables = tables_for(genres)
+    tables = tables_for(genres, mix_eras)
     if seed is None:
         seed = random.SystemRandom().randrange(1, 2 ** 31)
     history = read_history(history_at)
@@ -604,7 +611,7 @@ def generate(genres: list, seed=None, facts=None, history_at=None, record=True, 
             thread["obstacles"] = build_romance(thread["axes"])
         threads.append(thread)
     skel = {"seed": seed, "history_at": history_at, "genres": genres, "drives": drives, "facts": facts,
-            "threads": threads, "flesh": {}, **({"world": world} if world else {})}
+            "threads": threads, "flesh": {}, **({"world": world} if world else {}), **({"mix_eras": True} if mix_eras else {})}
     skel["checked"] = check(skel)
     if record:
         append_history({"kind": "skeleton", "seed": seed, "history_at": history_at, "genres": genres,
@@ -694,6 +701,7 @@ def main(argv=None) -> int:
     k.add_argument("--genre", required=True, help="comma list, main genre first")
     k.add_argument("--seed", type=int)
     k.add_argument("--history-at", type=int, help="replay against the first K history lines; records nothing")
+    k.add_argument("--mix-eras", action="store_true", help="the players want eras mixed (pirates with phones): no era bans")
     f = sub.add_parser("flesh")
     f.add_argument("--slot", required=True)
     f.add_argument("--candidates", help='JSON list of 5 {"text", "p"}; omit to print the brief')
@@ -706,7 +714,7 @@ def main(argv=None) -> int:
     try:
         if args.cmd == "axes":
             for gid, table in tables_for(args.genres.split(",")).items():
-                print(f"## {gid} ({table['kind']})" + (f" — leaves out: {', '.join(table['bans'])}" if table.get("bans") else ""))
+                print(f"## {gid} ({table['kind']})" + (f" — leaves out: {', '.join(ban_words(table))}" if table.get("bans") else ""))
                 for axis, values in table["axes"].items():
                     print(f"{gid}.{axis}: " + " | ".join(v for v, _w, _d in _entries(values)))
             return 0
@@ -721,7 +729,8 @@ def main(argv=None) -> int:
             if args.history_at is None:
                 drop_unused(data)
             skel = generate(args.genre.split(","), args.seed, data.get("facts"), args.history_at,
-                            record=args.history_at is None, world=campaign_world(args.campaign) if args.campaign else None)
+                            record=args.history_at is None, world=campaign_world(args.campaign) if args.campaign else None,
+                            mix_eras=args.mix_eras)
             _save(path, skel)
             print(json.dumps(skel, ensure_ascii=False, indent=1))
             return 0 if skel["checked"]["ok"] else 1

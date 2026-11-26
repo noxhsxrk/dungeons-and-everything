@@ -43,13 +43,14 @@ The best stories are rarely one thing. Describe a story that is two or three thi
 | *"A haunted rubber plantation in the deep south, and a death the police called an accident."* | Thai ghost story + mystery | composure, clues that stay solvable, a complication budget |
 | *"Two spies from rival agencies, posing as a married couple in Hanoi, slowly stop pretending."* | spy + romance | position and effect, heat, a sealed double agent; strings and feelings |
 | *"Plane crash on a jungle mountain. Six survivors, and one of them caused it."* | survival + traitor | usage dice, doom, a vow to get home, secret roles under a seal |
-| *"Four kids in a 1990s provincial town, and the cinema that shows a film nobody made."* | kids on bikes + cosmic horror | identity labels, strings, clues, composure |
+| *"Four kids in a 1990s provincial town, and the cinema that shows a film nobody made."* | kids' adventure + cosmic horror | identity labels, strings, clues, composure |
 
 ### How the mix is decided
 
 - **The first genre leads.** It sets the narration's voice, the pacing and the difficulty. *Slasher + romance* is a horror story with a love story inside it (dread, constant pressure, deadly); *romance + slasher* is a love story that turns into horror (banter, slow, easy until it isn't). Say which one is the main story and the GM orders them that way.
 - **Clashes are your call.** Every place the genres disagree is named, never settled silently. The GM asks in story words: *"constant pressure like the slasher, or slow like the romance?"*, *"can we invent details, or only what the world supports?"*
 - **One plot drives.** Two plot-driving stories (*a heist and a murder*) need one in front; the GM asks *"is this mainly the heist, or mainly the murder?"* and the other becomes a thread inside it.
+- **Eras stay in their era, unless you say otherwise.** Western, pirates, fantasy, wuxia and historical drop the other genres' modern things (radios, phones, cars). Want them mixed on purpose, like pirates with smartphones or a cyber-western? Say so (*"pirates, but in today's world"*) and the GM keeps everything.
 - **Up to five genres.** More than eight rules at once is allowed, but the GM will offer to trim.
 - **Change anything after.** *"Keep the slasher, drop the feelings rule."* *"Add a secret traitor."*
 
@@ -260,7 +261,7 @@ The real past, where institutions act and wounds linger.
 
 The same day again. The world forgets; you do not.
 
-- **Say things like:** time loop, the same day, it resets, Groundhog Day, fixing the past.
+- **Say things like:** time loop, the same day, it resets, living it over and over, fixing the past.
 - **Try:** *"Every time the school bell rings at 4 pm the day restarts. Someone in our class dies at 3:55."* · *"A wedding day that loops until we find out who poisons the groom."*
 - **Rules:** **the loop**: the engine rewinds the world to the morning and keeps what the characters learned; something changes each time. Optional: memories, clues.
 - **Defaults:** plain voice, mixed pacing, standard difficulty.
@@ -289,7 +290,7 @@ Spirits with a reason to stay, and a village that knows more than it says.
 
 - **Say things like:** ghost, phi pop, krasue, spirit house, a curse, a broken vow, karma, a haunted village, folk horror.
 - **Try:** *"I go back to my grandmother's village in Isan for her funeral, and people say there's a phi pop. Everyone's scared, but nobody will say whose body it's in."* · *"We just moved into a condo. They tore down the old spirit house to build it; now strange things happen every night, and the old guard says this used to be a graveyard."*
-- **Rules:** **composure**; **clues**: the wrong that keeps the spirit here can always be found. The story generator rolls the spirit, the wrong never set right, the taboo broken, who still knows the old ways, and the rite that could put it to rest. Optional: memories, doom, emotions.
+- **Rules:** **composure**; **clues**: the wrong that keeps the spirit here can always be found (a mystery thread is added to build that case). The story generator rolls the spirit, the wrong never set right, the taboo broken, who still knows the old ways, and the rite that could put it to rest. Optional: memories, doom, emotions.
 - **Defaults:** dread voice, slow pacing, hard difficulty, content suggested at 18.
 
 ### Psychological thriller / twist *(early)*
@@ -298,7 +299,7 @@ Someone close is lying, and your own memory is not on your side.
 
 - **Say things like:** thriller, twist, unreliable narrator, lost memory, gaslighting, a missing person, *I can't trust myself*.
 - **Try:** *"I wake up in hospital with no memory of that night. My husband says I crashed the car on my own, but there's a text on my phone I don't remember sending."* · *"My sister went missing a week ago. Everyone says she ran away. I'm sure someone is lying, and the more I dig, the less sure I am of myself."*
-- **Rules:** **clues**; **memories**: a mind holds only five, and what it lets go is gone; **a complication budget**. The twist is rolled (or pinned by you) before play. Optional: composure, secret roles, *make the case*.
+- **Rules:** **clues**; **memories**: a mind holds only five, and what it lets go is gone; **a complication budget**. The twist is rolled (or pinned by you) before play, with a mystery thread for the case. Optional: composure, secret roles, strings.
 - **Defaults:** noir voice, mixed pacing, hard difficulty.
 
 ### Spy / espionage *(early)*
@@ -334,16 +335,16 @@ Dust, water rights, outlaws and the railroad coming.
 
 - **Say things like:** western, frontier, cowboy, outlaw, sheriff, gunfight, ranch, railroad town.
 - **Try:** *"A dusty frontier town. A cattle baron owns the water, and the railroad is coming."* · *"An old outlaw trying to clear his name before the showdown at noon."*
-- **Rules:** **usage dice** for bullets, water and feed; **vows**; **heat**: the law and the bounty hunters. Mixed with other genres, the era drops what it cannot have (radios, phones, cars).
+- **Rules:** **usage dice** for bullets, water and feed; **vows**; **heat**: the law and the bounty hunters. Optional: mooks, contests, strings. Mixed with other genres, the era drops what it cannot have (radios, phones, cars, recordings).
 - **Defaults:** plain voice, constant pressure, hard difficulty.
 
-### Kids on bikes / coming of age *(early)*
+### Kids' adventure / coming of age *(early)*
 
 A summer, a small town, and a secret the grown-ups won't see.
 
 - **Say things like:** kids, teens, summer break, a gang of friends, a small town, growing up, *the adults don't believe us*.
 - **Try:** *"A gang of kids in a small town over summer break finds something in the woods the grown-ups won't believe."* · *"Teenagers in an Isan railway town, the last summer before one of us moves away."*
-- **Rules:** **identity labels** for who each kid is becoming; **strings** between friends; **clues** to the secret. Optional: emotions, composure, seasons.
+- **Rules:** **identity labels** for who each kid is becoming; **strings** between friends; **clues** to the secret (a mystery thread builds it). Optional: emotions, composure, seasons.
 - **Defaults:** banter voice, mixed pacing, standard difficulty, `declare` claims.
 
 ### Court intrigue / politics *(early)*
@@ -361,7 +362,7 @@ A ship, a crew that might mutiny, and something worth sailing for.
 
 - **Say things like:** pirates, ship, crew, captain, treasure, smugglers, navy, mutiny, the high seas.
 - **Try:** *"A ragged pirate crew with a stolen sloop and half a treasure map, and a navy frigate two days behind us."* · *"Smugglers in the Andaman Sea in monsoon season: storms, ports full of spies, and a captain nobody trusts."*
-- **Rules:** **usage dice** for water, powder and rations; **vows**; **mooks** for boarding fights. Mixed with other genres, the era drops engines, radios and phones.
+- **Rules:** **usage dice** for water, powder and rations; **vows**; **mooks** for boarding fights. Optional: heat, contests, seasons. Mixed with other genres, the era drops cars, radios, phones and railways.
 - **Defaults:** pulp voice, constant pressure, standard difficulty, `declare` claims.
 
 ### Kaiju / giant robots *(early)*
@@ -425,7 +426,7 @@ Classes, houses, curfew, and something old behind the classroom wall.
 - **Say things like:** magic school, academy, students, houses, exams, curfew, a secret society on campus.
 - **Try:** *"First year at a magic school built on a storm cloud. The top graduate vanished during last year's final exam."* · *"Scholarship students at a school of talisman calligraphy, and someone is selling exam charms that eat memories."*
 - **Rules:** **identity labels**: who each student is becoming; **strings** with rivals and friends; **seasons**: the term turns and brings exams and holidays. Optional: clues, contests, emotions.
-- **Defaults:** banter voice, mixed pacing, standard difficulty, `declare` claims.
+- **Defaults:** banter voice, mixed pacing, standard difficulty, `declare` claims, romance suggested at `fade`.
 
 ## When nothing fits
 

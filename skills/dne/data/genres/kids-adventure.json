@@ -1,6 +1,6 @@
 {
  "id": "kids-adventure",
- "name": "Kids on bikes / coming of age",
+ "name": "Kids' adventure / coming of age",
  "kind": "mood",
  "system": "core",
  "early": true,
@@ -40,7 +40,7 @@
   "summer"
  ],
  "fits": [
-  "kids on bikes",
+  "kids on bicycles",
   "a coming-of-age story",
   "a summer adventure",
   "a gang of kids",

@@ -8,6 +8,17 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 
 ## [Unreleased]
 
+### Fixed
+- A player who says **D&D** at `/dne new` gets classic 5e with no genre preset, as before 2.0; a 5e world never takes a preset's `when_down` (death saves stay 5e's).
+- A story no preset fits writes its modules into the seed's flags (the World engine path), so they are no longer lost; a `/dne new` theme is the players' answer and is not asked again.
+- `clues` without mystery in the mix (Thai ghost, thriller, kids' adventure, horror) now adds a mystery thread to the story generator, so the case it promises is built and checked.
+- Era bans come from one shared vocabulary (`data/eras.json`: digital, motor, railway, firearm), match plurals, and no longer drop values over verbs like "train" or words like "electric": western and pirates now also drop tapes, recordings, data and neon.
+- Players who want eras mixed on purpose (pirates with phones) get them: `story_gen.py skeleton --mix-eras` keeps every value.
+- The Table Settings page no longer shows a genre menu; it keeps the modules field.
+- `genres.py list` no longer crashes on a preset without `fits`, and a preset needs at least one fit.
+- The kids' preset is renamed "Kids' adventure / coming of age", and a film title left the time-loop data.
+- The GM's story-generator guide lists all 35 genres by kind and every genre with a ladder.
+
 ## [2.0.1-alpha] — 2026-11-26 — Any story, 35 genres
 
 ### Changed
@@ -16,7 +27,7 @@ The installed version is in the `VERSION` file at the repo root. Run `/dne updat
 - Every genre preset lists the stories it `fits` (creepypasta, first contact, documentary, isekai…); `genres.py list` prints them for the GM.
 
 ### Added
-- 12 new genre presets (all marked early), each with its own story-generator table: survival, Thai ghost story / folk horror, psychological thriller / twist, spy, post-apocalypse, superheroes, western, kids on bikes / coming of age, court intrigue, pirates, kaiju / giant robots, crime family; and from an outside brainstorm, reviewed and normalised: portal fantasy, road trip, abyssal delve, urban occult, magic academy. Western and pirates drop era-breaking things (radios, phones, engines) from the genres they are mixed with. 35 presets in all; no new modules.
+- 17 new genre presets (all marked early), each with its own story-generator table: survival, Thai ghost story / folk horror, psychological thriller / twist, spy, post-apocalypse, superheroes, western, kids' adventure / coming of age, court intrigue, pirates, kaiju / giant robots, crime family; and from an outside brainstorm, reviewed and normalised: portal fantasy, road trip, abyssal delve, urban occult, magic academy. Western and pirates drop era-breaking things (radios, phones, cars) from the genres they are mixed with. 35 presets in all; no new modules.
 - `ANY_GENRE.md` / `ANY_GENRE.th.md`: how to prompt for the story you want, mixing genres, and every preset with example prompts.
 
 ## [2.0.0-alpha] — 2026-11-26 — Braid: any genre
